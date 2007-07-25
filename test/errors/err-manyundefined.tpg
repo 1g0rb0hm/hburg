@@ -1,0 +1,22 @@
+generator		-- Import Statements
+declarations	-- General Declarations
+operators		-- Operators (our Node Kinds)
+	CONST,
+	ADD
+rules			-- Production Rules
+	test = CONST ( test, CONST (test, XXX)) : 1.
+
+    test1 = test : 2.
+    test2 = test1 : 3.
+    test3 = test2 : 0.
+    test4 = test3 : 0.
+    test5 = test4 : 1
+		| BLA : 0.		-- Error 1
+	test6 = ADD : 1
+		| BLABLA : 0	-- Error 2
+		| blabla : 0.	-- Error 3
+end
+
+
+
+

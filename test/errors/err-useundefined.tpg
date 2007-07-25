@@ -1,0 +1,7 @@
+generator		-- Import Statements
+declarations	-- General Declarations
+operators		-- Operators (our Node Kinds)
+	CONST
+rules			-- Production Rules
+	test = CONST (CONST (test), test) : 1 .
+end

@@ -1,0 +1,69 @@
+generator 
+	(: 
+		import static compiler.ir.NodeKind.*; 
+		import compiler.Code; 
+		import compiler.Register; 
+		import java.util.List; 
+		import java.util.LinkedList; 
+	:) 
+declarations 
+	(: 
+		public void print(String s) { 
+			// log errors to system err 
+			System.err.println("DEBUG: " + s); 
+		} 
+	:)
+operators 
+	CONST(:E_CONST:),STOREA(:E_STOREA:),
+	ADD(:E_ADD:), TEST
+rules
+	stmt
+		=
+		(: LinkedList instrList = new LinkedList(); :) 
+			reg <: out String r, instrList :> 
+			: 0 
+		| STOREA st1(ADD a1 (reg <: out String v1, instrList  :> r1, 
+						 reg <: out String v2, instrList :> r2 ), 
+					reg <: out String v3, instrList :> r3)
+			[ stmt ]
+			: 4
+		. 
+
+	reg <:out String s, List<String> instrList:> (: String s = null; :) 
+		= 
+		CONST c1 
+				(: 
+					s = Register.getNextRegName(); 
+					Code.emit("loadi " + s + "," + c1.name); 
+					instrList.add(Code.getLastInstruction()); 
+				:) 
+			: 0 
+		| 
+		(: print("Evaluating ADD node."); :) 
+		ADD a1 (
+			  reg <: out String v1, instrList :> r1, 
+			  reg <: out String v2, instrList :> r2
+			) 
+				(: 
+					s = Register.getNextRegName(); 
+					Code.emit("add " + s + "," + v1 + "," + v2); 
+					instrList.add(Code.getLastInstruction()); 
+					print("Left Register: " + r1.name): 
+					print("Right Register: " + r2.name); 
+				:) 
+			: 1
+		|
+		(: sem0 :)
+		TEST t1 (: sem1 :) 
+			((: sem2:) 
+				ADD a1 (: sem3 :) 
+					(
+						(: sem4 :) reg <: out String v1, instrList :> r1 (: sem5 :),
+						(: sem6 :) reg <: out String v2, instrList :> r2 (: sem7 :)
+					) ,
+				(: sem8 :) reg <: out String v2, instrList :> r3 (: sem9 :)
+			) (: sem10 :)
+			[ reg <: out String v2, instrList :> r4 ] (: sem11 :)
+			: 10
+		. 
+end 

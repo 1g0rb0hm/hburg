@@ -1,0 +1,340 @@
+generator
+	(:
+		import slcomp.parser.Obj;
+		import java.util.LinkedList;
+		import java.util.List;
+	:)
+declarations
+	(:
+		/* -------- General Declerations and Cost functions if present */
+			private static int nextreg  = 0;
+	
+			private static String nreg() {
+				return "r" + ++nextreg;
+			}
+
+			private static String label(LirNode n) {
+				return (n.label != null) ? n.label + ":" : "";
+			}
+			/* The following is our instruction list */
+			public static List<:String:> l = new LinkedList<:String:>();
+	:)
+operators
+	ENTER,FUN,SIDEFFECT,SIDEFFECTP,
+	FUNAP,FUNAPP,
+	STORE,STOREA,CSTORE,CSTOREA,
+	LOAD,LOADA,CLOAD,CLOADA,
+	CBR,JUMP,JUMPI,
+	XOR,OR,AND,
+	CMP_GT,CMP_GE,CMP_NE,CMP_EQ,CMP_LT,CMP_LE,
+	NUM,VAL,LAB,RETURN,
+	RSHIFT,LSHIFT,
+	MOD,ADD,SUB,DIV,MULT,
+	I2I,I2C,C2I,C2C,
+	NOP,TBL,
+	TEST,TEST -- ERROR
+rules	
+	root = 
+			(:	System.out.println("Starting Emitting Code....");	:)
+			stmt st1
+			(:	System.out.println("End of Code emission.");	:)	
+		: 0
+		.	
+	stmt =
+		ENTER(stmt s,stmt s) -- ERROR
+		: 0
+		| FUN(stmt) 
+		  [ stmt ]
+		  : 0
+		| SIDEFFECT(jump)
+		  [ stmt ]
+		  : 1
+		| SIDEFFECTP(reg <:out r1:> ,jump)
+		  [ stmt ]
+		  : 1
+		| assign
+		  : 0
+		| branch
+		  : 0
+		| jump
+		  : 0
+		| reg <:r1:> -- ERROR
+		  : 0
+		| NOP
+		  [ stmt ] 
+		  : 1    
+		| TBL(reg <:out r:> r1, lab <:out r:>l1)
+		  [ stmt ]
+		  : 0
+	.
+
+	assign = 
+		STORE(reg <:out r:> r1, reg <:out r:> r2)
+		  [ stmt ]
+		  : 2
+		| STOREA(ADD(reg <:out r:> r, reg <:out r:> r),reg <:out r:> r) -- ERROR
+		  [ stmt ]
+		  : 4
+		| STOREA(ADDX	-- ERROR
+					(reg <:out r:> r1,con <:out r:>n1),reg <:out r:> r2)
+		  [ stmt ]
+		  : 3
+		| STOREA(ADD(con <:out r:>n1,reg <:out r:> n1), -- ERROR
+				reg <:out r:> r2)
+		  [ stmt ]
+		  : 3
+		| CSTORE(reg <:out r:> r1, reg <:out r:> r2)
+		  [ stmt ]
+		  : 2
+        | CSTOREA cs1 (ADD a1 (!reg <:out r:> r1, 
+						reg <: r:> r2 -- ERROR
+					), reg <:out r:> r3)
+		  [ stmt s1 ]
+		  : 4
+		| CSTOREA(ADD  !(reg <:out r:> r1,con <:out r:>n1), reg <:out r:> r2)
+		  [ stmt ]
+		  : 3
+		| CSTOREA(!ADD (con <:out r:>n1,reg <:out r:> r1), reg <:out r:> r2)
+		  [ stmt ]
+		  : 3
+	.
+
+	branch = CBR(reg <:out r:> r1, stmt s)
+			 [ stmt ]
+			 : 2 
+			.
+
+	jump = 
+		JUMP(reg <:out r:> r1)
+		[ stmt ]
+		: 1
+		| JUMPI(lab <:out r:>l1)
+		  [ stmt ]
+		  : 1
+	.
+
+	lab <:out String result:> (: String result = null; :)
+	 = 
+		LAB l1
+				(:
+					result = l1.name;
+				:)
+		  : 0 
+		.
+
+	con <:out String result:> (: String result = null; :)
+	= 
+		NUM n1
+				(:
+					result = n1.name;
+				:)
+		  : 0 
+		.
+
+	reg <:out String result:> (: String result = null; :)
+	  =
+		lab <:out r:> l1 
+				(:
+					result = nreg();
+					String instr = label(l1) + "  li " + result + "," + r;
+					l.add(instr);
+				:)
+		: 1
+		| VAL v1 
+				(: /* value known to be in register like r_arp -:> Activation Record PTR */
+					result = v1.name;
+				:)
+		  : 0
+		| NUM : 0  -- ERROR
+		| con <:out r:> n1
+				(:
+					result = nreg();
+					String instr = label(n1) + "  li " + result + "," + n1.name;
+					l.add(instr);
+				:)
+		  : 1
+		| FUNAP f1 (:
+						if (f1.label != null)
+							l.add(label(f1));
+					:)
+				(jump)
+		  [ stmt ]
+		  : 1
+		| FUNAPP f1 (:
+						if (f1.label != null)
+							l.add(label(f1));
+					:)
+				(reg <:out r1:>, jump)
+		  [ stmt ]
+		  : 1
+		| I2I(reg <:out r1:>)
+				(:
+					l.add("# @XXX: UNIMPLEMENTED I2I(reg <:out r:> r1)");
+				:)
+		  [ stmt ]
+		  : 1
+		| C2C(reg <:out r1:>)
+				(:
+					l.add("# @XXX: UNIMPLEMENTED C2C(reg <:out r:> r1)");
+				:)
+		  [ stmt ]
+		  : 1
+		| C2I(reg <:out r1:>)
+				(:
+					l.add("# @XXX: UNIMPLEMENTED C2I(reg <:out r:> r1)");
+				:)
+		  [ stmt ]
+		  : 1
+		| I2C(reg <:out r1:>)
+				(:
+					l.add("# @XXX: UNIMPLEMENTED I2C(reg <:out r:> r1)");
+				:)
+		  [ stmt ]
+		  : 1
+		| LOAD(reg <:out r1:>) 
+				(:
+					result = nreg();
+					l.add(label(n) + "  lw " + result + "," + r1);
+				:)
+		  [ stmt ]
+		  : 1
+		| LOADA(ADD(reg <:out r:> r1 ,con <:out r:>n1)) 
+				(:
+					result = nreg();
+					l.add(label(n) + "  lw " + result + "," + ar1);
+				:)
+		  [ stmt ]
+		  : 1
+		| LOADA(ADD(con <:out r:> n1, reg <:out r:> r2))
+		  [ stmt ]
+		  : 1
+		| LOADA(ADD(reg <:out r:> r2,lab <:out r:>l1))
+		  [ stmt ]
+		  : 1
+		| LOADA(ADD(lab <:out r:>l1,reg <:out r:> r1))
+		  [ stmt ]
+		  : 1
+
+		| CLOAD(reg <:out r:> r1)
+		  [ stmt ]
+		  : 1
+		| CLOADA(ADD(reg <:out r:> r1,reg <:out r:> r2))
+		  [ stmt ]
+		  : 1
+		| CLOADA(ADD(reg <:out r:> r1,con <:out r:>n1))
+		  [ stmt ]
+		  : 1
+		| CLOADA(ADD(con <:out r:>n1,reg <:out r:> r2))
+		  [ stmt ]
+		  : 1
+		| ADD(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| ADD(reg <:out r:> r1,con <:out r:>n1)
+		  [ stmt ]
+		  : 1
+		| ADD(con <:out r:>n1,reg <:out r:> r1)
+		  [ stmt ]
+		  : 1
+		| ADD(lab <:out r:>l1,reg <:out r:> r1)
+		  [ stmt ]
+		  : 1
+		| ADD(reg <:out r:> r1,lab <:out r:>l1)
+		  [ stmt ]
+		  : 1
+		| SUB(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| SUB(reg <:out r:> r1,con <:out r:>n1)
+		  [ stmt ]
+		  : 1
+		| SUB(con <:out r:>n1,reg <:out r:> r1)
+		  [ stmt ]
+		  : 1
+		| MULT(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| MULT(reg <:out r:> r1,con <:out r:>n1)
+		  [ stmt ]
+		  : 1
+		| MULT(con <:out r:>n1,reg <:out r:> r1)
+		  [ stmt ]
+		  : 1
+		| DIV(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| DIV(reg <:out r:> r1,con <:out r:>n1)
+		  [ stmt ]
+		  : 1
+		| DIV(con <:out r:>n1,reg <:out r:> r1)
+		  [ stmt ]
+		  : 1
+		| MOD(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| MOD(reg <:out r:> r1,con <:out r:>n1)
+		  [ stmt ]
+		  : 1
+		| MOD(con <:out r:>n1,reg <:out r:> r1)
+		  [ stmt ]
+		  : 1
+		| LSHIFT(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| LSHIFT(reg <:out r:> r1,con <:out r:>n1)
+		  [ stmt ]
+		  : 1
+		| LSHIFT(con <:out r:>n1,reg <:out r:> r1)
+		  [ stmt ]
+		  : 1
+
+		| RSHIFT(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| RSHIFT(reg <:out r:> r1,con <:out r:>n1)
+		  [ stmt ]
+		  : 1
+		| RSHIFT(con <:out r:>n1,reg <:out r:> r1)
+		  [ stmt ]
+		  : 1
+		| AND(reg <:out r:> r1,reg <:out r:> r2)
+		  : 1
+		| AND(reg <:out r:> r1,con <:out r:>n1)
+		  : 1
+		| AND(con <:out r:>n1,reg <:out r:> r1)
+		  : 1
+		| OR(reg <:out r:> r1,reg <:out r:> r2)
+		  : 1
+		| OR(reg <:out r:> r1,con <:out r:>n1)
+		  : 1
+		| OR(con <:out r:>n1,reg <:out r:> r1)
+		  : 1
+		| XOR(reg <:out r:> r1,reg <:out r:> r2)
+		  : 1
+		| XOR(reg <:out r:> r1,con <:out r:>n1)
+		  : 1
+		| XOR(con <:out r:>n1,reg <:out r:> r1)
+		  : 1
+		| CMP_LE(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_LT(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_EQ(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_NE(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_GE(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_GT(reg <:out r:> r1,reg <:out r:> r2)
+		  [ stmt ]
+		  : 1
+		| RETURN(reg <:out r:>  )
+		  [ stmt ]
+		  : 1
+	.
+end

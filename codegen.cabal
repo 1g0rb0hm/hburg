@@ -1,0 +1,24 @@
+-- Package Stanza
+name:           HBURG
+version:        1.0
+license:        BSD3
+license-file:   LICENSE
+author:         Igor Böhm
+synopsis:       Haskell Bottom Up Rewrite Generator for Java
+build-depends:  base, haskell98, filepath
+
+-- Executable Stanza
+executable:     HBURG
+main-is:        Main.hs
+-- Optional Stuff in the executable stanza
+hs-source-dirs: src
+other-modules:  
+	Parser.Lexer
+	Parser.Parser
+ghc-options: -O 
+	-funbox-strict-fields 
+	-fglasgow-exts 
+	-fwarn-unused-imports 
+	-fwarn-duplicate-exports 
+	-fwarn-incomplete-patterns 
+	-fwarn-overlapping-patterns

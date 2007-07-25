@@ -1,0 +1,41 @@
+
+generator		-- Import Statements
+	(:	import java.util.LinkedList;
+		import comp.codegen.Reg;
+		import comp.ast.Node;							:) 
+declarations	-- General Declarations (not needed now)
+operators		-- Operators (our Node Kinds)
+	CONST(:E_CONST:), ADD(:E_ADD:), 
+	SUB(:E_SUB:), MULT(:E_MULT:)
+rules
+	-- Production rules for registers:
+	--		@out: produce a result register
+	--		@in: list to add instructions to
+	reg <: out String reg, List instr :>
+		=
+			CONST c1 	(:	reg = Reg.getNextReg();
+							instr.add("loadI " +
+										c1.val + "," +
+										reg);
+						 :) : 1 
+		|	ADD ( 	reg <: out String r1, instr :> , 
+					reg <: out String r2, instr :> ) 
+						(: 	reg = Reg.getNextReg();
+							instr.add("add " + 
+										r1 + "," +
+										r2 + "," +
+										reg);
+						 :) : 1
+		|	SUB (	reg <: out String  r1, instr :> , 
+					reg <: out String  r2, instr :> )
+						(: 	reg = Reg.getNextReg();
+							instr.add("sub " +
+										r1 + "," +
+										r2 + "," +
+										reg);
+						 :) : 1
+		-- MULT pattern omitted
+		. 
+end 
+
+
