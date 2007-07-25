@@ -1,6 +1,16 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  ParseErr
+-- Copyright   :  Copyright (c) 2007 Igor Böhm - Bytelabs.org. All rights reserved.
+-- License     :  BSD-style (see the file LICENSE) 
+-- Author      :  Igor Böhm  <igor@bytelabs.org>
+--
+-- This module contains various error text generation functions.
+--
+--
+-----------------------------------------------------------------------------
+
 module Parser.ParseErr (
-	-- Types
-	-- Functions
 	parseErrDupBind,
 	parseErrRedefinition,
 	parseErrTok,
