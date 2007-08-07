@@ -27,7 +27,8 @@ Description:    HBURG has been designed to produce a
 	to integrate the generated code into a compiler).
 Stability:      Experimental
 build-depends:  base, haskell98, filepath
-
+extra-source-files:
+	TODO
 -- Executable Stanza
 executable:     hburg
 main-is:        Main.hs
