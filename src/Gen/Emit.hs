@@ -110,5 +110,3 @@ emit clazz pkg nkind incl decl ops ds
 						(\x y -> x ++ ", " ++ y)
 						(map (\p -> Parameter.getIdent p) (Method.getParams m))) ++
 					");"
-		
-		

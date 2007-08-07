@@ -26,25 +26,25 @@ module Ast.Def (
         -- *  Operations on attributes
         -- $attribute operations
 		getCode, getProds, getClosures,
-		getNodeTypes, getNodeReturnType, getDefForProd,
+		getNodeReturnType, getDefForProd,
 		setProds,
 		isNodeDefined,
 		mergeDefs,
 	) where
 
 import List (find)
-import Maybe (isJust, catMaybes)
+import Maybe (isJust)
 
 import Debug (Debug(..))
 
 import qualified Ast.Ident as Id (Ident)
 import Ast.Attr (Attr, attrEqualInOut)
 import qualified Ast.Bind as B (empty)
-import Ast.Node (Node, getTy, getChildren)
+import Ast.Node (Node, getTy)
 import qualified Ast.Nt as Nt (Nt, new, getIdent, getAttr, getBinding, hasBinding)
 import Ast.TermTy (TermTyClass(..))
 import Ast.Code (Code)
-import qualified Ast.Prod as P (Prod, getNode, isDefined, getProdsByIdent, getArity)
+import qualified Ast.Prod as P (Prod, getNode, isDefined, getProdsByIdent)
 
 import Env.Env (ElemClass(..), ElemType(EDef))
 
@@ -129,9 +129,9 @@ getDefForProd defs p | isNonTerm p
 		(defs)
 getDefForProd _ _ = Nothing
 
--- | dEqualsNode. Compare a definition with a node.
-dEqualsNode :: Definition -> Node -> Bool
-dEqualsNode (Def { nt = nt1}) n 
+-- | equalsNode. Compare a definition with a node.
+equalsNode :: Definition -> Node -> Bool
+equalsNode (Def { nt = nt1}) n 
 	= case getTy n of
 		Just ty -> if isNonTerm ty 
 					then (((getId ty) == (Nt.getIdent nt1)) && (attrEqualInOut (Nt.getAttr nt1) (getAttr ty)))
@@ -144,7 +144,7 @@ isNodeDefined [] _ = False
 isNodeDefined defs n
 	= isJust 
 		(find 
-			(\d -> (dEqualsNode d n) || (P.isDefined (prods d) n)) 
+			(\d -> (equalsNode d n) || (P.isDefined (prods d) n)) 
 			(defs))
 
 -- | Check all productions which are NonTerm productions
@@ -170,47 +170,14 @@ mergeDefs defs def
 		Nothing -> Right (def:defs)
 		Just p -> Left (P.getNode (head (P.getProdsByIdent prods (P.getNode p))), P.getNode p)
 
-
--- | getNodeTypes. Return the parameter and result type of a node.
---		Example:  'reg = ADD (reg, reg)' -> Result Type: reg; Parameter Types: [reg, reg]
---				  'reg' -> Result Type: reg; Parameter Types: []
-getNodeTypes :: [Definition] -> Node -> Maybe (Nt.Nt, [Nt.Nt])
-getNodeTypes [] _ = Nothing
-getNodeTypes defs n | isNonTerm n
-	= case getNodeReturnType defs n of
-		Just ty -> Just (ty, [])
-		otherwise -> Nothing
-getNodeTypes defs@(d:ds) n
-	= case (find (\p -> n == P.getNode p) (getProds d)) of
-		Just p -> 
-				if (P.getArity p > 0) 
-					then case dGetNodesReturnTypes defs (getChildren (P.getNode p)) of
-							Just types -> Just (getNonTerm d, types)
-							otherwise -> Nothing
-					else Just (getNonTerm d, [])
-		otherwise -> 
-				getNodeTypes ds n
-
 -- | getNodeReturnType.
 getNodeReturnType :: [Definition] -> Node -> Maybe Nt.Nt
 getNodeReturnType [] _ = Nothing
 getNodeReturnType defs n | isNonTerm n
-	= case (find (\def -> dEqualsNode def n) (defs)) of
+	= case (find (\def -> equalsNode def n) (defs)) of
 		Just d -> Just (getNonTerm d)
 		otherwise -> Nothing
 getNodeReturnType (d:ds) n
 	= if (P.isDefined (getProds d) n)
 		then Just (getNonTerm d)
 		else getNodeReturnType ds n
-
--- | dGetNodesReturnTypes.
-dGetNodesReturnTypes :: [Definition] -> [Node] -> Maybe [Nt.Nt]
-dGetNodesReturnTypes [] _ = Nothing
-dGetNodesReturnTypes _ [] = Nothing
-dGetNodesReturnTypes defs nodes
-	= let retTypes = map (\n -> getNodeReturnType defs n)(nodes) in
-	let justTypes = catMaybes retTypes in
-	if (length retTypes == length justTypes)
-		then Just justTypes
-		else Nothing
-

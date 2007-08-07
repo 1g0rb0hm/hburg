@@ -17,7 +17,6 @@ Lexer
 CSA
 ----------------------------------------------------
 
- * implement type checking of production patterns (see @TODO note in Csa.hs)
  * in Java we can only have one out Attribute, so be sure
    to check this when parsing!
 
@@ -27,18 +26,29 @@ TILING
  * Throw assertion error in tile() instead of: 
 	'System.err.println("ERROR: Encountered undefined node: " + n.kind() );'
 
+
+CODE GENERATION
+----------------------------------------------------
+
+ * Provide more cues as comments in the generated code
+	in order to aid the while pin pointing bugs in semantic
+	actions to actually generated code.
+
 Grammar
 ----------------------------------------------------
 
  * How should we indicate start productions? There
    are several possibilities:
 
-	- Do it as in Coco/R where the ident used after
+	- Do it as in Coco/R where the identifier used after
 	  the "COMPILER" keyword is re-used in the productions
 	  to indicate the start symbol
 
-	- Do it as CUP Parser Generator for Java http://www.cs.princeton.edu/~appel/modern/java/CUP/
+	- Do it as the CUP Parser Generator for Java 
+	  (see http://www.cs.princeton.edu/~appel/modern/java/CUP/)
 	  does it:
 	  'start with program;'
  
 	-> Status Quo: the first production is used as the start symbol.
+		PROS: No new keywords must be defined.
+		CONS: Rule order is matters for the first production.

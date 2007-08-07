@@ -7,8 +7,8 @@
 --
 --
 -- Given operators and definitions extracted from the tree pattern matching
--- language specification, this module calculates all the necessary parameters
--- which are necessary in order to easily emit target code for the dynamic programming
+-- language specification, this module calculates all parameters which are
+-- necessary in order to easily emit target code for the dynamic programming
 -- stage of our code generator, namely the tiling phase.
 --
 -----------------------------------------------------------------------------
@@ -53,21 +53,22 @@ import qualified Data.Map as M
 
 type Arity = Int
 
--- Set of operators having links
+-- | LinkSet. Set of operators having links
 type LinkSet = (S.Set Operator)
 
--- Map of operators keyed by their arity
+-- | OperatorsPerArity. Map of operators keyed by their arity
 type OperatorsPerArity
 	= (M.Map 
 		Arity				-- key: arity of operator
 		(S.Set Operator))	-- operators
 
--- Map of productions keyed by their arity
+-- | ProductionsPerArity. Map of productions keyed by their arity
 type ProductionsPerArity
 	= (M.Map
 		Arity				-- key: arity of the node
 		[Prod])				-- value: the production itself
 
+-- | Tiling.
 data Tiling
 	= Tiling
 		[Closure]			-- list of closures for this tiling
@@ -226,7 +227,7 @@ computeLinkSet :: D.Definition -> [D.Definition] -> S.Set Operator
 computeLinkSet def defs
 	= let (ops, workset) = divideUpProdTypes (D.getProds def) in
 	S.fold
-		(\ndef old -> S.union (computeLinkSet ndef defs)  old)
+		(\ndef set' -> S.union (computeLinkSet ndef defs)  set')
 		(ops)
 		(workset)
 	where

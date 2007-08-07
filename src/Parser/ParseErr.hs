@@ -11,10 +11,11 @@
 -----------------------------------------------------------------------------
 
 module Parser.ParseErr (
-	parseErrDupBind,
-	parseErrRedefinition,
-	parseErrTok,
-	parseErrElem,
+		parseErrDupBind,
+		parseErrRedefinition,
+		parseErrTok,
+		parseErrElem,
+		typeError,
 	) where
 
 import Parser.Lexer(Token)
@@ -24,6 +25,11 @@ import Env.Env(ElemClass(..), Elem, envElem)
 --
 -- Parse & CSA: Error functions placeholder
 --
+
+typeError :: Elem -> Int -> String -> String
+typeError e i msg
+	= "\nType error at [line:" ++ show (elemL e) ++
+		" col:" ++ show (elemC e) ++ "] parameter " ++ show i ++ " of " ++ msg ++ "\n"
 
 parseErrRedefinition :: String -> Node -> Node -> String
 parseErrRedefinition str n1 n2
@@ -46,7 +52,7 @@ parseErrElem :: Elem -> String -> String
 parseErrElem e msg
 	= "\nParse error at [line:" ++ show (elemL e) ++ 
 		" col:" ++ show (elemC e) ++ "]: " ++ msg ++ "\n"
-		
+
 parseErrTok :: Token -> String -> String
 parseErrTok tok msg 
 	= "\nParse error at [line:" ++ show (elemL (envElem tok)) ++ 

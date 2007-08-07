@@ -151,7 +151,7 @@ instance TermTyClass Node where
 	getBinding n = getBinding (ty n)
 
 
--- | Smart constructor used for building a Node
+-- | new. Smart constructor used for building a Node
 new :: TermTy -> C.Code -> C.Code -> Node -> C.Code -> Node -> C.Code -> Node
 new ty1 c1 c2 child1 c3 link1 c4
 	= N {
@@ -175,24 +175,27 @@ hasLink (Nil) = False
 hasLink (N { link = Nil }) = False
 hasLink _ = True
 
--- | Compare Nodes based on identifiers
+-- | equalIdents. Compare Nodes based on identifiers
 equalIdents :: Node -> Node -> Bool
 equalIdents (Nil) (Nil) = True
 equalIdents (N { ty = ty1 }) (N { ty = ty2 }) = getId ty1 == getId ty2
 equalIdents _ _ = False
 
 
--- | Shows a node like a function 'name (child1, child2, etc.)'
+-- | showAsFunction. Shows a node like a function 'name (child1, child2, etc.)'
 showAsFunction :: Node -> String
 showAsFunction (Nil) = ""
 showAsFunction n | hasChildren n
-	= elemShow n ++ " (" ++ showParams 1 (replicate (length (getChildren n)) "p") ++ ")"
-	where
-		showParams :: Int -> [String] -> String
-		showParams _ [] = " "
-		showParams count (x:[]) = x ++ show count
-		showParams count (x:xs) 
-			= x ++ (show count) ++ ", " ++ showParams (succ count) xs
+	= elemShow n ++ " (" ++
+	foldr
+		(\child str -> 
+			(\x -> if ((length x) > 0) then (str ++ ", ") else "") (str) ++
+			if (isTerm child)
+				then show (getId child) ++ "(...)"
+				else show (getId child))
+		""
+		(getChildren n) ++
+	")"
 showAsFunction n = elemShow n
 
 --
@@ -286,7 +289,7 @@ mapPreOrder2 f g n
 
 -- | mapPreOrder3. Note: The root node is NOT processed! Processing
 --		starts from roots children
-mapPreOrder3 ::(Int -> Node -> [a]) ->		-- path accumulation function
+mapPreOrder3 :: (Int -> Node -> [a]) ->		-- path accumulation function
 				([a] -> Node -> [b]) ->		-- do this before recursing in pre order
 				([a] -> Node -> [b]) ->		-- do this after returning from pre order recursion
 				Node ->						-- current node
@@ -314,5 +317,3 @@ mapPreOrder3 path pre post n
 			let postcode = post curpath n in
 			let between = concat [ accumMap path pre post index curpath node  | (index, node) <- children ] in
 			[(curpath, precode, n)] ++ between ++ [(curpath, postcode, n)]
-
-

@@ -49,7 +49,7 @@ rules
 		| SIDEFFECT(jump)
 		  [ stmt ]
 		  : 1
-		| SIDEFFECTP(reg <:out r1:> ,jump)
+		| SIDEFFECTP(reg <: out String r1:> ,jump)
 		  [ stmt ]
 		  : 1
 		| assign
@@ -58,57 +58,57 @@ rules
 		  : 0
 		| jump
 		  : 0
-		| reg <:r1:> -- ERROR
+		| reg <: String r1:> -- ERROR
 		  : 0
 		| NOP
 		  [ stmt ] 
 		  : 1    
-		| TBL(reg <:out r:> r1, lab <:out r:>l1)
+		| TBL(reg <:out String  r:> r1, lab <:out String  r:>l1)
 		  [ stmt ]
 		  : 0
 	.
 
 	assign = 
-		STORE(reg <:out r:> r1, reg <:out r:> r2)
+		STORE(reg <:out String  r:> r1, reg <:out String  r:> r2)
 		  [ stmt ]
 		  : 2
-		| STOREA(ADD(reg <:out r:> r, reg <:out r:> r),reg <:out r:> r) -- ERROR
+		| STOREA(ADD(reg <:out String  r:> r, reg <:out String  r:> r),reg <:out String  r:> r) -- ERROR
 		  [ stmt ]
 		  : 4
 		| STOREA(ADDX	-- ERROR
-					(reg <:out r:> r1,con <:out r:>n1),reg <:out r:> r2)
+					(reg <:out String  r:> r1,con <:out String  r:>n1),reg <:out String r:> r2)
 		  [ stmt ]
 		  : 3
-		| STOREA(ADD(con <:out r:>n1,reg <:out r:> n1), -- ERROR
-				reg <:out r:> r2)
+		| STOREA(ADD(con <:out String  r:>n1,reg <:out String  r:> n1), -- ERROR
+				reg <:out String  r:> r2)
 		  [ stmt ]
 		  : 3
-		| CSTORE(reg <:out r:> r1, reg <:out r:> r2)
+		| CSTORE(reg <:out String  r:> r1, reg <:out String  r:> r2)
 		  [ stmt ]
 		  : 2
-        | CSTOREA cs1 (ADD a1 (!reg <:out r:> r1, 
-						reg <: r:> r2 -- ERROR
-					), reg <:out r:> r3)
+        | CSTOREA cs1 (ADD a1 (reg <:out String  r:> r1, 
+						reg <: String  r:> r2 -- ERROR
+					), reg <:out String  r:> r3)
 		  [ stmt s1 ]
 		  : 4
-		| CSTOREA(ADD  !(reg <:out r:> r1,con <:out r:>n1), reg <:out r:> r2)
+		| CSTOREA(ADD (reg <:out String  r:> r1,con <:out String  r:>n1), reg <:out String  r:> r2)
 		  [ stmt ]
 		  : 3
-		| CSTOREA(!ADD (con <:out r:>n1,reg <:out r:> r1), reg <:out r:> r2)
+		| CSTOREA(ADD (con <:out String  r:>n1,reg <:out String  r:> r1), reg <:out String  r:> r2)
 		  [ stmt ]
 		  : 3
 	.
 
-	branch = CBR(reg <:out r:> r1, stmt s)
+	branch = CBR(reg <:out  String  r:> r1, stmt s)
 			 [ stmt ]
 			 : 2 
 			.
 
 	jump = 
-		JUMP(reg <:out r:> r1)
+		JUMP(reg <:out String  r:> r1)
 		[ stmt ]
 		: 1
-		| JUMPI(lab <:out r:>l1)
+		| JUMPI(lab <:out String  r:>l1)
 		  [ stmt ]
 		  : 1
 	.
@@ -133,7 +133,7 @@ rules
 
 	reg <:out String result:> (: String result = null; :)
 	  =
-		lab <:out r:> l1 
+		lab <:out String  r:> l1 
 				(:
 					result = nreg();
 					String instr = label(l1) + "  li " + result + "," + r;
@@ -146,7 +146,7 @@ rules
 				:)
 		  : 0
 		| NUM : 0  -- ERROR
-		| con <:out r:> n1
+		| con <:out String  r:> n1
 				(:
 					result = nreg();
 					String instr = label(n1) + "  li " + result + "," + n1.name;
@@ -164,176 +164,176 @@ rules
 						if (f1.label != null)
 							l.add(label(f1));
 					:)
-				(reg <:out r1:>, jump)
+				(reg <:out String  r1:>, jump)
 		  [ stmt ]
 		  : 1
-		| I2I(reg <:out r1:>)
+		| I2I(reg <:out String  r1:>)
 				(:
-					l.add("# @XXX: UNIMPLEMENTED I2I(reg <:out r:> r1)");
+					l.add("# @XXX: UNIMPLEMENTED I2I(reg <:out String r:> r1)");
 				:)
 		  [ stmt ]
 		  : 1
-		| C2C(reg <:out r1:>)
+		| C2C(reg <:out String  r1:>)
 				(:
-					l.add("# @XXX: UNIMPLEMENTED C2C(reg <:out r:> r1)");
+					l.add("# @XXX: UNIMPLEMENTED C2C(reg <:out String r:> r1)");
 				:)
 		  [ stmt ]
 		  : 1
-		| C2I(reg <:out r1:>)
+		| C2I(reg <:out String  r1:>)
 				(:
-					l.add("# @XXX: UNIMPLEMENTED C2I(reg <:out r:> r1)");
+					l.add("# @XXX: UNIMPLEMENTED C2I(reg <:out String r:> r1)");
 				:)
 		  [ stmt ]
 		  : 1
-		| I2C(reg <:out r1:>)
+		| I2C(reg <:out String  r1:>)
 				(:
-					l.add("# @XXX: UNIMPLEMENTED I2C(reg <:out r:> r1)");
+					l.add("# @XXX: UNIMPLEMENTED I2C(reg <:out String r:> r1)");
 				:)
 		  [ stmt ]
 		  : 1
-		| LOAD(reg <:out r1:>) 
+		| LOAD(reg <:out  String r1:>) 
 				(:
 					result = nreg();
 					l.add(label(n) + "  lw " + result + "," + r1);
 				:)
 		  [ stmt ]
 		  : 1
-		| LOADA(ADD(reg <:out r:> r1 ,con <:out r:>n1)) 
+		| LOADA(ADD(reg <:out String r:> r1 ,con <:out String  r:>n1)) 
 				(:
 					result = nreg();
 					l.add(label(n) + "  lw " + result + "," + ar1);
 				:)
 		  [ stmt ]
 		  : 1
-		| LOADA(ADD(con <:out r:> n1, reg <:out r:> r2))
+		| LOADA(ADD(con <:out String  r:> n1, reg <:out String  r:> r2))
 		  [ stmt ]
 		  : 1
-		| LOADA(ADD(reg <:out r:> r2,lab <:out r:>l1))
+		| LOADA(ADD(reg <:out String  r:> r2,lab <:out String  r:>l1))
 		  [ stmt ]
 		  : 1
-		| LOADA(ADD(lab <:out r:>l1,reg <:out r:> r1))
-		  [ stmt ]
-		  : 1
-
-		| CLOAD(reg <:out r:> r1)
-		  [ stmt ]
-		  : 1
-		| CLOADA(ADD(reg <:out r:> r1,reg <:out r:> r2))
-		  [ stmt ]
-		  : 1
-		| CLOADA(ADD(reg <:out r:> r1,con <:out r:>n1))
-		  [ stmt ]
-		  : 1
-		| CLOADA(ADD(con <:out r:>n1,reg <:out r:> r2))
-		  [ stmt ]
-		  : 1
-		| ADD(reg <:out r:> r1,reg <:out r:> r2)
-		  [ stmt ]
-		  : 1
-		| ADD(reg <:out r:> r1,con <:out r:>n1)
-		  [ stmt ]
-		  : 1
-		| ADD(con <:out r:>n1,reg <:out r:> r1)
-		  [ stmt ]
-		  : 1
-		| ADD(lab <:out r:>l1,reg <:out r:> r1)
-		  [ stmt ]
-		  : 1
-		| ADD(reg <:out r:> r1,lab <:out r:>l1)
-		  [ stmt ]
-		  : 1
-		| SUB(reg <:out r:> r1,reg <:out r:> r2)
-		  [ stmt ]
-		  : 1
-		| SUB(reg <:out r:> r1,con <:out r:>n1)
-		  [ stmt ]
-		  : 1
-		| SUB(con <:out r:>n1,reg <:out r:> r1)
-		  [ stmt ]
-		  : 1
-		| MULT(reg <:out r:> r1,reg <:out r:> r2)
-		  [ stmt ]
-		  : 1
-		| MULT(reg <:out r:> r1,con <:out r:>n1)
-		  [ stmt ]
-		  : 1
-		| MULT(con <:out r:>n1,reg <:out r:> r1)
-		  [ stmt ]
-		  : 1
-		| DIV(reg <:out r:> r1,reg <:out r:> r2)
-		  [ stmt ]
-		  : 1
-		| DIV(reg <:out r:> r1,con <:out r:>n1)
-		  [ stmt ]
-		  : 1
-		| DIV(con <:out r:>n1,reg <:out r:> r1)
-		  [ stmt ]
-		  : 1
-		| MOD(reg <:out r:> r1,reg <:out r:> r2)
-		  [ stmt ]
-		  : 1
-		| MOD(reg <:out r:> r1,con <:out r:>n1)
-		  [ stmt ]
-		  : 1
-		| MOD(con <:out r:>n1,reg <:out r:> r1)
-		  [ stmt ]
-		  : 1
-		| LSHIFT(reg <:out r:> r1,reg <:out r:> r2)
-		  [ stmt ]
-		  : 1
-		| LSHIFT(reg <:out r:> r1,con <:out r:>n1)
-		  [ stmt ]
-		  : 1
-		| LSHIFT(con <:out r:>n1,reg <:out r:> r1)
+		| LOADA(ADD(lab <:out String  r:>l1,reg <:out String r:> r1))
 		  [ stmt ]
 		  : 1
 
-		| RSHIFT(reg <:out r:> r1,reg <:out r:> r2)
+		| CLOAD(reg <:out String r:> r1)
 		  [ stmt ]
 		  : 1
-		| RSHIFT(reg <:out r:> r1,con <:out r:>n1)
+		| CLOADA(ADD(reg <:out String r:> r1,reg <:out String r:> r2))
 		  [ stmt ]
 		  : 1
-		| RSHIFT(con <:out r:>n1,reg <:out r:> r1)
+		| CLOADA(ADD(reg <:out String r:> r1,con <:out String r:>n1))
 		  [ stmt ]
 		  : 1
-		| AND(reg <:out r:> r1,reg <:out r:> r2)
-		  : 1
-		| AND(reg <:out r:> r1,con <:out r:>n1)
-		  : 1
-		| AND(con <:out r:>n1,reg <:out r:> r1)
-		  : 1
-		| OR(reg <:out r:> r1,reg <:out r:> r2)
-		  : 1
-		| OR(reg <:out r:> r1,con <:out r:>n1)
-		  : 1
-		| OR(con <:out r:>n1,reg <:out r:> r1)
-		  : 1
-		| XOR(reg <:out r:> r1,reg <:out r:> r2)
-		  : 1
-		| XOR(reg <:out r:> r1,con <:out r:>n1)
-		  : 1
-		| XOR(con <:out r:>n1,reg <:out r:> r1)
-		  : 1
-		| CMP_LE(reg <:out r:> r1,reg <:out r:> r2)
+		| CLOADA(ADD(con <:out String r:>n1,reg <:out String r:> r2))
 		  [ stmt ]
 		  : 1
-		| CMP_LT(reg <:out r:> r1,reg <:out r:> r2)
+		| ADD(reg <:out String r:> r1,reg <:out String r:> r2)
 		  [ stmt ]
 		  : 1
-		| CMP_EQ(reg <:out r:> r1,reg <:out r:> r2)
+		| ADD(reg <:out String r:> r1,con <:out String r:>n1)
 		  [ stmt ]
 		  : 1
-		| CMP_NE(reg <:out r:> r1,reg <:out r:> r2)
+		| ADD(con <:out String r:>n1,reg <:out String r:> r1)
 		  [ stmt ]
 		  : 1
-		| CMP_GE(reg <:out r:> r1,reg <:out r:> r2)
+		| ADD(lab <:out String r:>l1,reg <:out String r:> r1)
 		  [ stmt ]
 		  : 1
-		| CMP_GT(reg <:out r:> r1,reg <:out r:> r2)
+		| ADD(reg <:out String r:> r1,lab <:out String r:>l1)
 		  [ stmt ]
 		  : 1
-		| RETURN(reg <:out r:>  )
+		| SUB(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| SUB(reg <:out String r:> r1,con <:out String r:>n1)
+		  [ stmt ]
+		  : 1
+		| SUB(con <:out String r:>n1,reg <:out String r:> r1)
+		  [ stmt ]
+		  : 1
+		| MULT(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| MULT(reg <:out String r:> r1,con <:out String r:>n1)
+		  [ stmt ]
+		  : 1
+		| MULT(con <:out String r:>n1,reg <:out String r:> r1)
+		  [ stmt ]
+		  : 1
+		| DIV(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| DIV(reg <:out String r:> r1,con <:out String r:>n1)
+		  [ stmt ]
+		  : 1
+		| DIV(con <:out String r:>n1,reg <:out String r:> r1)
+		  [ stmt ]
+		  : 1
+		| MOD(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| MOD(reg <:out String r:> r1,con <:out String r:>n1)
+		  [ stmt ]
+		  : 1
+		| MOD(con <:out String r:>n1,reg <:out String r:> r1)
+		  [ stmt ]
+		  : 1
+		| LSHIFT(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| LSHIFT(reg <:out String r:> r1,con <:out String r:>n1)
+		  [ stmt ]
+		  : 1
+		| LSHIFT(con <:out String r:>n1,reg <:out String r:> r1)
+		  [ stmt ]
+		  : 1
+
+		| RSHIFT(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| RSHIFT(reg <:out String r:> r1,con <:out String r:>n1)
+		  [ stmt ]
+		  : 1
+		| RSHIFT(con <:out String r:>n1,reg <:out String r:> r1)
+		  [ stmt ]
+		  : 1
+		| AND(reg <:out String r:> r1,reg <:out String r:> r2)
+		  : 1
+		| AND(reg <:out String r:> r1,con <:out String r:>n1)
+		  : 1
+		| AND(con <:out String r:>n1,reg <:out String r:> r1)
+		  : 1
+		| OR(reg <:out String r:> r1,reg <:out String r:> r2)
+		  : 1
+		| OR(reg <:out String r:> r1,con <:out String r:>n1)
+		  : 1
+		| OR(con <:out String r:>n1,reg <:out String r:> r1)
+		  : 1
+		| XOR(reg <:out String r:> r1,reg <:out String r:> r2)
+		  : 1
+		| XOR(reg <:out String r:> r1,con <:out String r:>n1)
+		  : 1
+		| XOR(con <:out String r:>n1,reg <:out String r:> r1)
+		  : 1
+		| CMP_LE(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_LT(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_EQ(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_NE(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_GE(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| CMP_GT(reg <:out String r:> r1,reg <:out String r:> r2)
+		  [ stmt ]
+		  : 1
+		| RETURN(reg <:out String r:>  )
 		  [ stmt ]
 		  : 1
 	.

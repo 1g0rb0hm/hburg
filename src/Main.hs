@@ -44,7 +44,7 @@ main = getArgs >>= \args -> codeGen args
 
 usageHeader :: String -> String
 usageHeader prog 
-	= "Usage: " ++ prog ++ " file\n"
+	= "Usage: " ++ prog ++ " [OPTION...] file\n"
 
 --
 -- Various ways how we may exit
@@ -91,14 +91,14 @@ argInfo :: [OptDescr CLIFlags]
 argInfo 
 	= [Option [ '?' ] ["help"] (NoArg OptHelp)
 			"display this help and exit"
-		, Option [ 'd' ] [] (NoArg OptDebug)
+		, Option [ 'd' ] ["debug"] (NoArg OptDebug)
 			"display debugging output after parsing"
 		, Option [ 'c' ] ["classname"] (ReqArg OptOutputClass "Class")
 			"code generator Java class name (default: Codegen)"
 		, Option [ 'p' ] ["package"] (ReqArg OptOutputPackage "Package")
-			"Java package name"
+			"Java package name (e.g. comp.gen)"
 		, Option [ 't' ] ["type"] (ReqArg OptNodeKindType "Type")
-			"Java datatype which discriminates nodes (default: NodeKind)"
+			"Java datatype which discriminates IR nodes (default: NodeKind)"
 		]
 
 --
