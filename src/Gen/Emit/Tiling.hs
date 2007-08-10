@@ -13,15 +13,12 @@
 -----------------------------------------------------------------------------
 
 module Gen.Emit.Tiling (
-        -- * Introduction
-        -- $intro
+        -- * Types
         Tiling,Closure,Arity,
         LinkSet,OperatorsPerArity,ProductionsPerArity,
-        -- *  Construction
-        -- $construction
+        -- * Construction
         new,
-        -- *  Operations on labels
-        -- $labels operations
+        -- * Functions
         getClosures,
         hasClosures,
         getProductionsPerArity,
