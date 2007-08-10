@@ -1,12 +1,12 @@
 Design Issues
 ----------------------------------------------------
  * Create SourceCode class and make every JConstructor,
-	JMethod, JVariable etc. an instance of it. That way there
-	is a unified way to add comments to any piece of emitted
-	source code.
+    JMethod, JVariable etc. an instance of it. That way there
+    is a unified way to add comments to any piece of emitted
+    source code.
 
-	class SourceCode a where
-		sourceAddComment :: (Show b) => a -> b -> a
+    class SourceCode a where
+        sourceAddComment :: (Show b) => a -> b -> a
 
 Lexer
 ----------------------------------------------------
@@ -24,15 +24,15 @@ TILING
 ----------------------------------------------------
 
  * Throw assertion error in tile() instead of: 
-	'System.err.println("ERROR: Encountered undefined node: " + n.kind() );'
+    'System.err.println("ERROR: Encountered undefined node: " + n.kind() );'
 
 
 CODE GENERATION
 ----------------------------------------------------
 
  * Provide more cues as comments in the generated code
-	in order to aid the while pin pointing bugs in semantic
-	actions to actually generated code.
+    in order to aid the while pin pointing bugs in semantic
+    actions to actually generated code.
 
 Grammar
 ----------------------------------------------------
@@ -40,15 +40,24 @@ Grammar
  * How should we indicate start productions? There
    are several possibilities:
 
-	- Do it as in Coco/R where the identifier used after
-	  the "COMPILER" keyword is re-used in the productions
-	  to indicate the start symbol
+    - Do it as in Coco/R where the identifier used after
+      the "COMPILER" keyword is re-used in the productions
+      to indicate the start symbol
 
-	- Do it as the CUP Parser Generator for Java 
-	  (see http://www.cs.princeton.edu/~appel/modern/java/CUP/)
-	  does it:
-	  'start with program;'
- 
-	-> Status Quo: the first production is used as the start symbol.
-		PROS: No new keywords must be defined.
-		CONS: Rule order is matters for the first production.
+    - Do it as the CUP Parser Generator for Java 
+      (see http://www.cs.princeton.edu/~appel/modern/java/CUP/)
+      does it:
+      'start with program;'
+
+    -> Status Quo: the first production is used as the start symbol.
+        PROS: No new keywords must be defined.
+        CONS: Rule order is matters for the first production.
+
+Testing
+----------------------------------------------------
+
+ * The only testing we do is to run a few grammars through
+    hburg when running the test Cabal 'target'. That is obviously
+    not enough. We should either use HUnit or Quickcheck in
+    some sensible way to make sure that the correct parse errors
+    and type errors are found and reported.

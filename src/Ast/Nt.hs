@@ -1,27 +1,22 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Nt
--- Copyright   :  Copyright (c) 2007 Igor Böhm - Bytelabs.org. All rights reserved.
+-- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
--- Author      :  Igor Böhm  <igor@bytelabs.org>
+-- Author      :  Igor Boehm  <igor@bytelabs.org>
 --
 --
 -- Representation of a non terminal in our tree pattern matching grammar.
--- 
---
 -----------------------------------------------------------------------------
 
 module Ast.Nt (
-		-- * Introduction
-		-- $intro
-		Nt,
-        -- *  Construction
-        -- $construction
-		new,
-        -- *  Operations on attributes
-        -- $attribute operations
-		getIdent, getAttr, getBinding, hasBinding,
-	) where
+        -- * Types
+        Nt,
+        -- * Construction
+        new,
+        -- * Functions
+        getIdent, getAttr, getBinding, hasBinding,
+    ) where
 
 import Debug (Debug(..))
 
@@ -32,64 +27,63 @@ import qualified Ast.Bind as B (Binding, hasBinding)
 import Ast.Attr(Attr, attrIsOut)
 
 import Env.Env(ElemClass(..),ElemType(ENonTerm))
-
 ------------------------------------------------------------------------------------
 
--- | NonTerminal Definition
+-- | Non Terminal Type
 data Nt 
-	= Nt 
-		Id.Ident	-- Id identifying this non terminal (e.g. reg, stmt)
-		B.Binding 	-- binding for this non terminal (e.g. reg r1)
-		[Attr]		-- list of attributes for this non terminal
+    = Nt 
+        Id.Ident    -- ^ Id identifying this non terminal (e.g. reg, stmt)
+        B.Binding   -- ^ binding for this non terminal (e.g. reg r1)
+        [Attr]      -- ^ list of attributes for this non terminal
 
 instance Eq Nt where
-	(==) (Nt i1 _ at1) (Nt i2 _ at2) = ((i1 == i2) && (at1 == at2))
+    (==) (Nt i1 _ at1) (Nt i2 _ at2) = ((i1 == i2) && (at1 == at2))
 
 instance Ord Nt where
-	compare nt1@(Nt i1 _ at1) nt2@(Nt i2 _ at2) 
-		= if (nt1 == nt2)
-			then EQ
-			else 
-				if (i1 /= i2)
-					then 
-						if (length (show i1) < length (show i2))
-							then LT
-							else GT
-					else 
-						if (length (show at1) < length (show at2))
-							then LT
-							else GT
+    compare nt1@(Nt i1 _ at1) nt2@(Nt i2 _ at2) 
+        = if (nt1 == nt2)
+            then EQ
+            else 
+                if (i1 /= i2)
+                    then 
+                        if (length (show i1) < length (show i2))
+                            then LT
+                            else GT
+                    else 
+                        if (length (show at1) < length (show at2))
+                            then LT
+                            else GT
 
 instance Show Nt where
-	show (Nt i b []) 
-		= "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]"
-	show (Nt i b atts)
-		= "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]<:" ++  
-		(stringFoldr 
-			(\x y -> x ++ ", " ++ y)
-			(map (\z -> show z) atts))  ++ ":>"
+    show (Nt i b []) 
+        = "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]"
+    show (Nt i b atts)
+        = "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]<:" ++  
+        (stringFoldr 
+            (\x y -> x ++ ", " ++ y)
+            (map (\z -> show z) atts))  ++ ":>"
 
 instance Debug Nt where
-	debug (Nt i b []) 
-		= "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]"
-	debug (Nt i b atts)
-		= "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]<:" ++  
-		(stringFoldr 
-			(\x y -> x ++ ", " ++ y)
-			(map (\z -> debug z) atts))  ++ ":>"
+    debug (Nt i b []) 
+        = "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]"
+    debug (Nt i b atts)
+        = "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]<:" ++  
+        (stringFoldr 
+            (\x y -> x ++ ", " ++ y)
+            (map (\z -> debug z) atts))  ++ ":>"
 
 -- | A Non Terminal is also an Elem since we need to be able to type check it
 instance ElemClass Nt where
-	elemShow (Nt i _ []) = show i
-	elemShow (Nt i _ atts) = show i ++ "<:" ++ 
-		(stringFoldr
-		 	(\x y -> x ++ " param, " ++ y ++ " param")
-			(map (\z -> show (attrIsOut z)) atts)) ++ ":>"
-	elemType _ = ENonTerm
-	elemL (Nt i _ _) = elemL i
-	elemC (Nt i _ _) = elemC i
+    elemShow (Nt i _ []) = show i
+    elemShow (Nt i _ atts) = show i ++ "<:" ++ 
+        (stringFoldr
+             (\x y -> x ++ " param, " ++ y ++ " param")
+            (map (\z -> show (attrIsOut z)) atts)) ++ ":>"
+    elemType _ = ENonTerm
+    elemL (Nt i _ _) = elemL i
+    elemC (Nt i _ _) = elemC i
 
--- | Smart Constructor
+-- | Construct a non terminal
 new :: Id.Ident -> B.Binding -> [Attr] -> Nt
 new i b attr = Nt i b attr
 
