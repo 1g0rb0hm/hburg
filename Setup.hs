@@ -1,18 +1,31 @@
 import Distribution.Simple
 import Distribution.PackageDescription (PackageDescription)
 import Distribution.Simple.LocalBuildInfo (LocalBuildInfo, buildDir)
-import System.Exit
-import System.Process
-import Directory
+import System.Exit (ExitCode(ExitSuccess), exitWith, exitFailure)
+import System.Process (waitForProcess, runCommand)
+import Directory (removeFile)
+import IO (stderr,hPutStrLn)
+import qualified Control.Exception as E (catch)
 
+main :: IO ()
 main = defaultMainWithHooks $ defaultUserHooks { runTests = tests }
 
-good = ["01-deep.tpg","02-grammar.tpg","03-grammar.tpg","04-grammar.tpg", "05-grammar.tpg"]
-bad = ["err-dupbindings.tpg","err-many-many-errors.tpg","err-manyundefined.tpg",
-        "err-selfredef.tpg","err-termredef.tpg","err-typerror1.tpg","err-typerror2.tpg",
-        "err-typerror3.tpg","err-useundefined.tpg","err-varyingparams.tpg"]
-clean = ["test/Codegen.java","test/MapEntry.java","test/Nt.java","test/Node.java",
-        "test/RuleEnum.java"]
+-- Valid test grammars
+good :: [String]
+good = ["01-grammar.tpg","02-grammar.tpg",
+        "03-grammar.tpg","04-grammar.tpg",
+        "05-grammar.tpg", "06-grammar.tpg"]
+-- Invalid test grammars
+bad :: [String]
+bad = ["err-dupbindings.tpg","err-many-many-errors.tpg",
+        "err-manyundefined.tpg","err-selfredef.tpg",
+        "err-termredef.tpg","err-typerror1.tpg",
+        "err-typerror2.tpg","err-typerror3.tpg",
+        "err-useundefined.tpg","err-varyingparams.tpg"]
+-- Files which should be cleaned up after test run
+clean :: [String]
+clean = ["test/Codegen.java","test/MapEntry.java",
+        "test/NT.java","test/Node.java","test/RuleEnum.java"]
 
 -- | Feed the code generator with valid and erroneous grammars and check its
 --  return code. So on 'valid' grammars we check for 'ExitSuccess' and on 'invalid'
@@ -20,12 +33,12 @@ clean = ["test/Codegen.java","test/MapEntry.java","test/Nt.java","test/Node.java
 tests :: Args -> Bool -> PackageDescription -> LocalBuildInfo -> IO ExitCode
 tests _ _ _ lbi
     = let hburg = (buildDir lbi) ++ "/hburg/hburg" in
-    let rungood 
+    let rungood
             = runit
                 (cmd hburg good "") 
                 (\ex -> "TEST " ++ (if (ex == ExitSuccess) then "SUCCESFUL" else "FAILED!!"))
         in
-    let runbad 
+    let runbad
             = runit
                 (cmd hburg bad "errors/")
                 (\ex -> "TEST " ++ (if (ex /= ExitSuccess) then "SUCCESFUL" else "FAILED!!"))
@@ -50,17 +63,21 @@ tests _ _ _ lbi
         runit :: [String] -> (ExitCode -> String) -> IO [ExitCode]
         runit xs f
             = mapM
-                (\t ->
-                    do  putStrLn (replicate 70 '-')
+                (\t -> let delim = replicate 70 '-' in
+                    do  putStrLn delim
                         putStrLn ("TEST: '"++ t ++"'\n")
-                        x <- waitForProcess =<< runCommand t
+                        x <- (waitForProcess =<< runCommand t)
                         putStrLn (f x)
-                        putStrLn (replicate 70 '-')
+                        putStrLn delim
                         return x)
                 (xs)
 
         cleanup :: IO [()]
         cleanup
             = mapM
-                (\f -> removeFile f)
+                (\f -> E.catch (removeFile f)
+                        (\e -> 
+                            hPutStrLn
+                                stderr
+                                ("Error cleaning up HBURG generated file '"++ f ++ "' - " ++ show e)))
                 (clean)

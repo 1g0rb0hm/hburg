@@ -31,8 +31,8 @@ CODE GENERATION
 ----------------------------------------------------
 
  * Provide more cues as comments in the generated code
-    in order to aid the while pin pointing bugs in semantic
-    actions to actually generated code.
+    in order to aid the user while pin pointing bugs in
+    semantic actions to actually generated code.
 
 Grammar
 ----------------------------------------------------

@@ -125,7 +125,7 @@ getNodeKindType cli
 -- Run code generator and parser
 --
 
--- | codeGen. Evaluate arguments and kick of scanner and parser
+-- | Evaluate arguments and kick of scanner and parser
 codeGen :: [String] -> IO ()
 codeGen args
     = case getOpt Permute argInfo (constArgs ++ args) of
@@ -166,7 +166,7 @@ codeGen args
                 die (concat errors ++
                      usageInfo (usageHeader prog) argInfo)
 
--- | runParse. Runs the Lexer and Parser
+-- | Runs the Lexer and Parser
 runParse :: String -> Either
                         (String, String)
                         (Include, Declaration, [Operator], [Definition], String)
@@ -186,7 +186,7 @@ runParse input =
             ParseFail s ->
                     Left (s, "")
 
--- | outputClass. Output generated class into a file
+-- | Output generated class into a file
 outputClass :: E.EmitClass a => [a] -> IO [()]
 outputClass classes
     = mapM
