@@ -25,11 +25,11 @@ type Constructor = String
 
 data JVariable 
     = MkJVariable
-        JModifier   -- ^ private|public|protected modifier
-        Bool        -- ^ is it static?
-        Type        -- ^ variable type
-        String      -- ^ variable identifier
-        Constructor -- ^ how to construct the variable (e.g. new EnumSet.of(blablabla))
+        JModifier   -- private|public|protected modifier
+        Bool        -- is it static?
+        Type        -- variable type
+        String      -- variable identifier
+        Constructor -- how to construct the variable (e.g. new EnumSet.of(blablabla))
     deriving (Eq)
 
 instance Show JVariable where

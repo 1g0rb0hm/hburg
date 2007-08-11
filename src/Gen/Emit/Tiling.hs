@@ -54,22 +54,22 @@ type LinkSet = (S.Set Operator)
 -- | OperatorsPerArity. Map of operators keyed by their arity
 type OperatorsPerArity
     = (M.Map 
-        Arity               -- ^ key: arity of operator
-        (S.Set Operator))   -- ^ operators
+        Arity               -- key: arity of operator
+        (S.Set Operator))   -- operators
 
 -- | ProductionsPerArity. Map of productions keyed by their arity
 type ProductionsPerArity
     = (M.Map
-        Arity               -- ^ key: arity of the node
-        [Prod])             -- ^ value: the production itself
+        Arity               -- key: arity of the node
+        [Prod])             -- value: the production itself
 
 -- | Tiling.
 data Tiling
     = Tiling
-        [Closure]           -- ^ list of closures for this tiling
-        OperatorsPerArity   -- ^ holds all operators keyed by the arity of the production (used to calc. EnumSets)
-        LinkSet             -- ^ the link set
-        ProductionsPerArity -- ^ holds all productions with the label they produced, and are keyed by the arity of the production
+        [Closure]           -- list of closures for this tiling
+        OperatorsPerArity   -- holds all operators keyed by the arity of the production (used to calc. EnumSets)
+        LinkSet             -- the link set
+        ProductionsPerArity -- holds all productions with the label they produced, and are keyed by the arity of the production
 
 -- Triple necessary for emission of closures
 data Closure

@@ -28,11 +28,11 @@ type Body = String
 -- | JConstructor type
 data JConstructor 
     = MkConstructor
-        Comment.JComment    -- ^ comment
-        JModifier           -- ^ private|public|protected modifier
-        String              -- ^ constructor identifier
-        [Parameter]         -- ^ constructor parameters
-        Body                -- ^ constructor body
+        Comment.JComment    -- comment
+        JModifier           -- private|public|protected modifier
+        String              -- constructor identifier
+        [Parameter]         -- constructor parameters
+        Body                -- constructor body
 
 instance Eq JConstructor where
     (==) (MkConstructor _ _ i1 params1 _) (MkConstructor _ _ i2 params2 _) 

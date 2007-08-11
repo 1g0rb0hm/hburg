@@ -30,11 +30,11 @@ import Env.Env(ElemClass(..),ElemType(ENonTerm))
 ------------------------------------------------------------------------------------
 
 -- | Non Terminal Type
-data Nt 
-    = Nt 
-        Id.Ident    -- ^ Id identifying this non terminal (e.g. reg, stmt)
-        B.Binding   -- ^ binding for this non terminal (e.g. reg r1)
-        [Attr]      -- ^ list of attributes for this non terminal
+data Nt
+    = Nt
+        Id.Ident    -- Id identifying this non terminal (e.g. reg, stmt)
+        B.Binding   -- binding for this non terminal (e.g. reg r1)
+        [Attr]      -- list of attributes for this non terminal
 
 instance Eq Nt where
     (==) (Nt i1 _ at1) (Nt i2 _ at2) = ((i1 == i2) && (at1 == at2))

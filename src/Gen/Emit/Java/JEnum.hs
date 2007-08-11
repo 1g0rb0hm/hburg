@@ -10,11 +10,9 @@
 -----------------------------------------------------------------------------
 
 module Gen.Emit.Java.JEnum (
-        -- * Introduction
-        -- $intro
+        -- * Types
         JEnum,
-        -- *  Construction
-        -- $construction
+        -- * Construction
         new,
     ) where
 
@@ -25,9 +23,9 @@ import Gen.Emit.Java.JModifier(JModifier)
 
 data JEnum
     = MkEnum
-        JModifier   -- ^ public|private|protected modifier
-        String      -- ^ enumeration identifier
-        [String]    -- ^ enumeration elements
+        JModifier   -- public|private|protected modifier
+        String      -- enumeration identifier
+        [String]    -- enumeration elements
     deriving (Eq)
 
 instance Show JEnum where

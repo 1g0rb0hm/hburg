@@ -12,10 +12,8 @@
 
 module Ast.Decl (
         -- * Introduction
-        -- $intro
         Declaration,
-        -- *  Construction
-        -- $construction
+        -- * Construction
         new,
     ) where
 

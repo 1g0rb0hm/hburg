@@ -1,0 +1,737 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8"
+><TITLE
+>Gen.Emit.Tiling</TITLE
+><LINK HREF="haddock.css" REL="stylesheet" TYPE="text/css"
+><SCRIPT SRC="haddock.js" TYPE="text/javascript"
+></SCRIPT
+></HEAD
+><BODY
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="topbar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><IMG SRC="haskell_icon.gif" WIDTH="16" HEIGHT="16" ALT=" "
+></TD
+><TD CLASS="title"
+>hburg</TD
+><TD CLASS="topbut"
+><A HREF="index.html"
+>Contents</A
+></TD
+><TD CLASS="topbut"
+><A HREF="doc-index.html"
+>Index</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="modulebar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><FONT SIZE="6"
+>Gen.Emit.Tiling</FONT
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="section4"
+><B
+>Contents</B
+></TD
+></TR
+><TR
+><TD
+><DL
+><DT
+><A HREF="#1"
+>Types
+</A
+></DT
+><DT
+><A HREF="#2"
+>Construction
+</A
+></DT
+><DT
+><A HREF="#3"
+>Functions
+</A
+></DT
+></DL
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Description</TD
+></TR
+><TR
+><TD CLASS="doc"
+><P
+>Author      :  Igor Boehm  <A HREF="igor@bytelabs.org"
+>igor@bytelabs.org</A
+>
+</P
+><P
+>Given operators and definitions extracted from the tree pattern matching
+ language specification, this module calculates all parameters which are
+ necessary in order to easily emit target code for the dynamic programming
+ stage of our code generator, namely the tiling phase.
+</P
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Synopsis</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3ATiling"
+>Tiling</A
+> </TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3AClosure"
+>Closure</A
+> </TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A HREF="#t%3AArity"
+>Arity</A
+> = Int</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A HREF="#t%3ALinkSet"
+>LinkSet</A
+> = Set <A HREF="Ast-Op.html#t%3AOperator"
+>Operator</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A HREF="#t%3AOperatorsPerArity"
+>OperatorsPerArity</A
+> = Map <A HREF="Gen-Emit-Tiling.html#t%3AArity"
+>Arity</A
+> (Set <A HREF="Ast-Op.html#t%3AOperator"
+>Operator</A
+>)</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A HREF="#t%3AProductionsPerArity"
+>ProductionsPerArity</A
+> = Map <A HREF="Gen-Emit-Tiling.html#t%3AArity"
+>Arity</A
+> [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3Anew"
+>new</A
+> :: [<A HREF="Ast-Op.html#t%3AOperator"
+>Operator</A
+>] -&gt; [<A HREF="Ast-Def.html#t%3ADefinition"
+>Definition</A
+>] -&gt; <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetClosures"
+>getClosures</A
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; [<A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AhasClosures"
+>hasClosures</A
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; Bool</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetProductionsPerArity"
+>getProductionsPerArity</A
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; <A HREF="Gen-Emit-Tiling.html#t%3AProductionsPerArity"
+>ProductionsPerArity</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetOperatorsPerArity"
+>getOperatorsPerArity</A
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; <A HREF="Gen-Emit-Tiling.html#t%3AOperatorsPerArity"
+>OperatorsPerArity</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetLinkSet"
+>getLinkSet</A
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; <A HREF="Gen-Emit-Tiling.html#t%3ALinkSet"
+>LinkSet</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetProdsForArity"
+>getProdsForArity</A
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; <A HREF="Gen-Emit-Tiling.html#t%3AArity"
+>Arity</A
+> -&gt; [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AclosureGetFromLabel"
+>closureGetFromLabel</A
+> :: <A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+> -&gt; <A HREF="Gen-Emit-Label.html#t%3ALabel"
+>Label</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AclosureGetRuleLabel"
+>closureGetRuleLabel</A
+> :: <A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+> -&gt; <A HREF="Gen-Emit-Label.html#t%3ALabel"
+>Label</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AclosureGetToLabel"
+>closureGetToLabel</A
+> :: <A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+> -&gt; <A HREF="Gen-Emit-Label.html#t%3ALabel"
+>Label</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="1"
+>Types
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3ATiling"
+></A
+><B
+>Tiling</B
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="ndoc"
+>Tiling.
+</TD
+></TR
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:Tiling')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:Tiling" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+>Show <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3AClosure"
+></A
+><B
+>Closure</B
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:Closure')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:Closure" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+>Eq <A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Show <A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A NAME="t%3AArity"
+></A
+><B
+>Arity</B
+> = Int</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A NAME="t%3ALinkSet"
+></A
+><B
+>LinkSet</B
+> = Set <A HREF="Ast-Op.html#t%3AOperator"
+>Operator</A
+></TD
+></TR
+><TR
+><TD CLASS="doc"
+>LinkSet. Set of operators having links
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A NAME="t%3AOperatorsPerArity"
+></A
+><B
+>OperatorsPerArity</B
+> = Map <A HREF="Gen-Emit-Tiling.html#t%3AArity"
+>Arity</A
+> (Set <A HREF="Ast-Op.html#t%3AOperator"
+>Operator</A
+>)</TD
+></TR
+><TR
+><TD CLASS="doc"
+>OperatorsPerArity. Map of operators keyed by their arity
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A NAME="t%3AProductionsPerArity"
+></A
+><B
+>ProductionsPerArity</B
+> = Map <A HREF="Gen-Emit-Tiling.html#t%3AArity"
+>Arity</A
+> [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>]</TD
+></TR
+><TR
+><TD CLASS="doc"
+>ProductionsPerArity. Map of productions keyed by their arity
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="2"
+>Construction
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3Anew"
+></A
+><B
+>new</B
+> :: [<A HREF="Ast-Op.html#t%3AOperator"
+>Operator</A
+>] -&gt; [<A HREF="Ast-Def.html#t%3ADefinition"
+>Definition</A
+>] -&gt; <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+></TD
+></TR
+><TR
+><TD CLASS="doc"
+>Constructs a Tiling from Operators and Definitions. This function unwraps definitions and extracts
+      all the necessary information in order to produce the Dynamic Programming
+      part of our code generator, namely the tiling. It starts off with an
+      initially almost empty Tiling and as the definitions are processed
+      as much information as possible is gathered to avoid repeated traversals
+      of the definition list.
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="3"
+>Functions
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetClosures"
+></A
+><B
+>getClosures</B
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; [<A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AhasClosures"
+></A
+><B
+>hasClosures</B
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; Bool</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetProductionsPerArity"
+></A
+><B
+>getProductionsPerArity</B
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; <A HREF="Gen-Emit-Tiling.html#t%3AProductionsPerArity"
+>ProductionsPerArity</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetOperatorsPerArity"
+></A
+><B
+>getOperatorsPerArity</B
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; <A HREF="Gen-Emit-Tiling.html#t%3AOperatorsPerArity"
+>OperatorsPerArity</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetLinkSet"
+></A
+><B
+>getLinkSet</B
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; <A HREF="Gen-Emit-Tiling.html#t%3ALinkSet"
+>LinkSet</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetProdsForArity"
+></A
+><B
+>getProdsForArity</B
+> :: <A HREF="Gen-Emit-Tiling.html#t%3ATiling"
+>Tiling</A
+> -&gt; <A HREF="Gen-Emit-Tiling.html#t%3AArity"
+>Arity</A
+> -&gt; [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AclosureGetFromLabel"
+></A
+><B
+>closureGetFromLabel</B
+> :: <A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+> -&gt; <A HREF="Gen-Emit-Label.html#t%3ALabel"
+>Label</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AclosureGetRuleLabel"
+></A
+><B
+>closureGetRuleLabel</B
+> :: <A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+> -&gt; <A HREF="Gen-Emit-Label.html#t%3ALabel"
+>Label</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AclosureGetToLabel"
+></A
+><B
+>closureGetToLabel</B
+> :: <A HREF="Gen-Emit-Tiling.html#t%3AClosure"
+>Closure</A
+> -&gt; <A HREF="Gen-Emit-Label.html#t%3ALabel"
+>Label</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="botbar"
+>Produced by <A HREF="http://www.haskell.org/haddock/"
+>Haddock</A
+> version 0.8</TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

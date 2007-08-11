@@ -1,0 +1,706 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8"
+><TITLE
+>Ast.Attr</TITLE
+><LINK HREF="haddock.css" REL="stylesheet" TYPE="text/css"
+><SCRIPT SRC="haddock.js" TYPE="text/javascript"
+></SCRIPT
+></HEAD
+><BODY
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="topbar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><IMG SRC="haskell_icon.gif" WIDTH="16" HEIGHT="16" ALT=" "
+></TD
+><TD CLASS="title"
+>hburg</TD
+><TD CLASS="topbut"
+><A HREF="index.html"
+>Contents</A
+></TD
+><TD CLASS="topbut"
+><A HREF="doc-index.html"
+>Index</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="modulebar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><FONT SIZE="6"
+>Ast.Attr</FONT
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="section4"
+><B
+>Contents</B
+></TD
+></TR
+><TR
+><TD
+><DL
+><DT
+><A HREF="#1"
+>Introduction
+</A
+></DT
+><DT
+><A HREF="#2"
+>Construction
+</A
+></DT
+><DT
+><A HREF="#3"
+>Functions
+</A
+></DT
+></DL
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Description</TD
+></TR
+><TR
+><TD CLASS="doc"
+><P
+>Author      :  Igor Boehm  <A HREF="igor@bytelabs.org"
+>igor@bytelabs.org</A
+>
+</P
+><P
+>This module includes the necessary abstractions in order to allow
+ for an attribute grammar formalism in our tree pattern language.
+ It represents an attribute with its operations:
+    * e.g.:  nt <A HREF=": (in|out) Type ident :"
+>: (in|out) Type ident :</A
+>
+</P
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Synopsis</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3AAttr"
+>Attr</A
+> </TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3ATy"
+>Ty</A
+> </TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3AAttrTy"
+>AttrTy</A
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+>= <A HREF="#v%3AInAttr"
+>InAttr</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>| <A HREF="#v%3AOutAttr"
+>OutAttr</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3Anew"
+>new</A
+> :: <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+> -&gt; <A HREF="Ast-Attr.html#t%3AAttrTy"
+>AttrTy</A
+> -&gt; <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+> -&gt; <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3Aty"
+>ty</A
+> :: <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+> -&gt; <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AemptyTy"
+>emptyTy</A
+> :: <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AattrTy"
+>attrTy</A
+> :: <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+> -&gt; <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AattrId"
+>attrId</A
+> :: <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+> -&gt; <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AattrIsOut"
+>attrIsOut</A
+> :: <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+> -&gt; Bool</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AattrGetIn"
+>attrGetIn</A
+> :: [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AattrGetOut"
+>attrGetOut</A
+> :: [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AattrEqualInOut"
+>attrEqualInOut</A
+> :: [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; Bool</TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="1"
+>Introduction
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3AAttr"
+></A
+><B
+>Attr</B
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="ndoc"
+>Attribute datatype
+</TD
+></TR
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:Attr')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:Attr" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><A HREF="Debug.html#t%3ADebug"
+>Debug</A
+> <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Eq <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Show <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3ATy"
+></A
+><B
+>Ty</B
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="ndoc"
+>Types in the host language (e.g. Jave, C#, etc.)
+</TD
+></TR
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:Ty')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:Ty" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+>Eq <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Show <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3AAttrTy"
+></A
+><B
+>AttrTy</B
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="ndoc"
+>Specifies whether the attribute is an input or an output attribute
+</TD
+></TR
+><TR
+><TD CLASS="section4"
+>Constructors</TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="arg"
+><A NAME="v%3AInAttr"
+></A
+><B
+>InAttr</B
+></TD
+><TD CLASS="rdoc"
+></TD
+></TR
+><TR
+><TD CLASS="arg"
+><A NAME="v%3AOutAttr"
+></A
+><B
+>OutAttr</B
+></TD
+><TD CLASS="rdoc"
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:AttrTy')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:AttrTy" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+>Eq <A HREF="Ast-Attr.html#t%3AAttrTy"
+>AttrTy</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Show <A HREF="Ast-Attr.html#t%3AAttrTy"
+>AttrTy</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="2"
+>Construction
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3Anew"
+></A
+><B
+>new</B
+> :: <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+> -&gt; <A HREF="Ast-Attr.html#t%3AAttrTy"
+>AttrTy</A
+> -&gt; <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+> -&gt; <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+></TD
+></TR
+><TR
+><TD CLASS="doc"
+>Create new attribute
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3Aty"
+></A
+><B
+>ty</B
+> :: <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+> -&gt; <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+></TD
+></TR
+><TR
+><TD CLASS="doc"
+>Create attribute type
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AemptyTy"
+></A
+><B
+>emptyTy</B
+> :: <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+></TD
+></TR
+><TR
+><TD CLASS="doc"
+>Create empty attribute type
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="3"
+>Functions
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AattrTy"
+></A
+><B
+>attrTy</B
+> :: <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+> -&gt; <A HREF="Ast-Attr.html#t%3ATy"
+>Ty</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AattrId"
+></A
+><B
+>attrId</B
+> :: <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+> -&gt; <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AattrIsOut"
+></A
+><B
+>attrIsOut</B
+> :: <A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+> -&gt; Bool</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AattrGetIn"
+></A
+><B
+>attrGetIn</B
+> :: [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AattrGetOut"
+></A
+><B
+>attrGetOut</B
+> :: [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AattrEqualInOut"
+></A
+><B
+>attrEqualInOut</B
+> :: [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; Bool</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="botbar"
+>Produced by <A HREF="http://www.haskell.org/haddock/"
+>Haddock</A
+> version 0.8</TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

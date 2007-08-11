@@ -1,0 +1,691 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8"
+><TITLE
+>Ast.Prod</TITLE
+><LINK HREF="haddock.css" REL="stylesheet" TYPE="text/css"
+><SCRIPT SRC="haddock.js" TYPE="text/javascript"
+></SCRIPT
+></HEAD
+><BODY
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="topbar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><IMG SRC="haskell_icon.gif" WIDTH="16" HEIGHT="16" ALT=" "
+></TD
+><TD CLASS="title"
+>hburg</TD
+><TD CLASS="topbut"
+><A HREF="index.html"
+>Contents</A
+></TD
+><TD CLASS="topbut"
+><A HREF="doc-index.html"
+>Index</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="modulebar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><FONT SIZE="6"
+>Ast.Prod</FONT
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="section4"
+><B
+>Contents</B
+></TD
+></TR
+><TR
+><TD
+><DL
+><DT
+><A HREF="#1"
+>Types
+</A
+></DT
+><DT
+><A HREF="#2"
+>Construction
+</A
+></DT
+><DT
+><A HREF="#3"
+>Functions
+</A
+></DT
+></DL
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Description</TD
+></TR
+><TR
+><TD CLASS="doc"
+><P
+>Author      :  Igor Boehm  <A HREF="igor@bytelabs.org"
+>igor@bytelabs.org</A
+>
+</P
+><P
+>Each definition consists of one or more productions. This module provides
+ the necessary abstractions to deal with productions:
+        * e.g.:  def = prod1
+                        | prod2
+                        | ...
+                        | prodN
+</P
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Synopsis</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A HREF="#t%3ACost"
+>Cost</A
+> = Int</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3AProd"
+>Prod</A
+> </TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3Aprod"
+>prod</A
+> :: <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+> -&gt; <A HREF="Ast-Prod.html#t%3ACost"
+>Cost</A
+> -&gt; <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetName"
+>getName</A
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; String</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetProdsByIdent"
+>getProdsByIdent</A
+> :: [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>] -&gt; <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+> -&gt; [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetArity"
+>getArity</A
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; Int</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetNode"
+>getNode</A
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetCost"
+>getCost</A
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; <A HREF="Ast-Prod.html#t%3ACost"
+>Cost</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetRuleLabel"
+>getRuleLabel</A
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; RuleLabel</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetResultLabel"
+>getResultLabel</A
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; ResultLabel</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AsetRuleLabel"
+>setRuleLabel</A
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; RuleLabel -&gt; <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AsetResultLabel"
+>setResultLabel</A
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; ResultLabel -&gt; <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AtoOp"
+>toOp</A
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; <A HREF="Ast-Op.html#t%3AOperator"
+>Operator</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AisDefined"
+>isDefined</A
+> :: [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>] -&gt; <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+> -&gt; Bool</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AmergeProds"
+>mergeProds</A
+> :: [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>] -&gt; <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; Either (<A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+>, <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+>) [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>]</TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="1"
+>Types
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>type</SPAN
+> <A NAME="t%3ACost"
+></A
+><B
+>Cost</B
+> = Int</TD
+></TR
+><TR
+><TD CLASS="doc"
+>Cost for a production
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3AProd"
+></A
+><B
+>Prod</B
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="ndoc"
+>Production type
+</TD
+></TR
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:Prod')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:Prod" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><A HREF="Debug.html#t%3ADebug"
+>Debug</A
+> <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Eq <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Show <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="Ast-TermTy.html#t%3ATermTyClass"
+>TermTyClass</A
+> <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="2"
+>Construction
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3Aprod"
+></A
+><B
+>prod</B
+> :: <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+> -&gt; <A HREF="Ast-Prod.html#t%3ACost"
+>Cost</A
+> -&gt; <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+><TR
+><TD CLASS="doc"
+>Constructor for building a production
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="3"
+>Functions
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetName"
+></A
+><B
+>getName</B
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; String</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetProdsByIdent"
+></A
+><B
+>getProdsByIdent</B
+> :: [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>] -&gt; <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+> -&gt; [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>]</TD
+></TR
+><TR
+><TD CLASS="doc"
+>Retrieves all productions which have the same identifier
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetArity"
+></A
+><B
+>getArity</B
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; Int</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetNode"
+></A
+><B
+>getNode</B
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetCost"
+></A
+><B
+>getCost</B
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; <A HREF="Ast-Prod.html#t%3ACost"
+>Cost</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetRuleLabel"
+></A
+><B
+>getRuleLabel</B
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; RuleLabel</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetResultLabel"
+></A
+><B
+>getResultLabel</B
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; ResultLabel</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AsetRuleLabel"
+></A
+><B
+>setRuleLabel</B
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; RuleLabel -&gt; <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AsetResultLabel"
+></A
+><B
+>setResultLabel</B
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; ResultLabel -&gt; <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AtoOp"
+></A
+><B
+>toOp</B
+> :: <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; <A HREF="Ast-Op.html#t%3AOperator"
+>Operator</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AisDefined"
+></A
+><B
+>isDefined</B
+> :: [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>] -&gt; <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+> -&gt; Bool</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AmergeProds"
+></A
+><B
+>mergeProds</B
+> :: [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>] -&gt; <A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+> -&gt; Either (<A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+>, <A HREF="Ast-Node.html#t%3ANode"
+>Node</A
+>) [<A HREF="Ast-Prod.html#t%3AProd"
+>Prod</A
+>]</TD
+></TR
+><TR
+><TD CLASS="doc"
+>Merges productions iff productions with the same name, have the same amount of parameters
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="botbar"
+>Produced by <A HREF="http://www.haskell.org/haddock/"
+>Haddock</A
+> version 0.8</TD
+></TR
+></TABLE
+></BODY
+></HTML
+>

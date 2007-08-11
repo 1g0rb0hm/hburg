@@ -32,8 +32,8 @@ import Env.Env(ElemClass(..),ElemType(ETerm))
 -- | Terminal Definition
 data T
     = T 
-        Id.Ident    -- ^ Id identifying this terminal (e.g. ADD, SUB, etc.)
-        B.Binding   -- ^ binding for this terminsl (e.g. ADD a1)
+        Id.Ident    -- Id identifying this terminal (e.g. ADD, SUB, etc.)
+        B.Binding   -- binding for this terminsl (e.g. ADD a1)
 
 instance Show T where
     show (T i b) 

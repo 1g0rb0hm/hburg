@@ -275,11 +275,11 @@ mapPreOrder2 f g n
 
 
 -- | Note: The root node is NOT processed! Processing starts from roots children.
-mapPreOrder3 :: (Int -> Node -> [a]) ->        -- ^ path accumulation function
-                ([a] -> Node -> [b]) ->        -- ^ do this before recursing in pre order
-                ([a] -> Node -> [b]) ->        -- ^ do this after returning from pre order recursion
-                Node ->                        -- ^ current node
-                [([a], [b], Node)]             -- ^ return type
+mapPreOrder3 :: (Int -> Node -> [a])        -- ^ path accumulation function
+                -> ([a] -> Node -> [b])     -- ^ do this before recursing in pre order
+                -> ([a] -> Node -> [b])     -- ^ do this after returning from pre order recursion
+                -> Node                     -- ^ current node
+                -> [([a], [b], Node)]       -- ^ return type
 mapPreOrder3 _ _ _ (Nil) = []
 mapPreOrder3 _ _ _ (N { child = Nil }) = []
 mapPreOrder3 path pre post n

@@ -1,0 +1,411 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--Rendered using the Haskell Html Library v0.2-->
+<HTML
+><HEAD
+><META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8"
+><TITLE
+>Ast.Nt</TITLE
+><LINK HREF="haddock.css" REL="stylesheet" TYPE="text/css"
+><SCRIPT SRC="haddock.js" TYPE="text/javascript"
+></SCRIPT
+></HEAD
+><BODY
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="topbar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><IMG SRC="haskell_icon.gif" WIDTH="16" HEIGHT="16" ALT=" "
+></TD
+><TD CLASS="title"
+>hburg</TD
+><TD CLASS="topbut"
+><A HREF="index.html"
+>Contents</A
+></TD
+><TD CLASS="topbut"
+><A HREF="doc-index.html"
+>Index</A
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="modulebar"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD
+><FONT SIZE="6"
+>Ast.Nt</FONT
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="section4"
+><B
+>Contents</B
+></TD
+></TR
+><TR
+><TD
+><DL
+><DT
+><A HREF="#1"
+>Types
+</A
+></DT
+><DT
+><A HREF="#2"
+>Construction
+</A
+></DT
+><DT
+><A HREF="#3"
+>Functions
+</A
+></DT
+></DL
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Description</TD
+></TR
+><TR
+><TD CLASS="doc"
+><P
+>Author      :  Igor Boehm  <A HREF="igor@bytelabs.org"
+>igor@bytelabs.org</A
+>
+</P
+><P
+>Representation of a non terminal in our tree pattern matching grammar.
+</P
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+>Synopsis</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A HREF="#t%3ANt"
+>Nt</A
+> </TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3Anew"
+>new</A
+> :: <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+> -&gt; <A HREF="Ast-Bind.html#t%3ABinding"
+>Binding</A
+> -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetIdent"
+>getIdent</A
+> :: <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+> -&gt; <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetAttr"
+>getAttr</A
+> :: <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+> -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AgetBinding"
+>getBinding</A
+> :: <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+> -&gt; <A HREF="Ast-Bind.html#t%3ABinding"
+>Binding</A
+></TD
+></TR
+><TR
+><TD CLASS="s8"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="#v%3AhasBinding"
+>hasBinding</A
+> :: <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+> -&gt; Bool</TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="1"
+>Types
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><SPAN CLASS="keyword"
+>data</SPAN
+> <A NAME="t%3ANt"
+></A
+><B
+>Nt</B
+> </TD
+></TR
+><TR
+><TD CLASS="body"
+><TABLE CLASS="vanilla" CELLSPACING="0" CELLPADDING="0"
+><TR
+><TD CLASS="ndoc"
+>Non Terminal Type
+</TD
+></TR
+><TR
+><TD CLASS="section4"
+><IMG SRC="minus.gif" CLASS="coll" ONCLICK="toggle(this,'i:Nt')" ALT="show/hide"
+> Instances</TD
+></TR
+><TR
+><TD CLASS="body"
+><DIV ID="i:Nt" STYLE="display:block;"
+><TABLE CLASS="vanilla" CELLSPACING="1" CELLPADDING="0"
+><TR
+><TD CLASS="decl"
+><A HREF="Debug.html#t%3ADebug"
+>Debug</A
+> <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A HREF="Env-Elem.html#t%3AElemClass"
+>ElemClass</A
+> <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Eq <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Ord <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+>Show <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+></TD
+></TR
+></TABLE
+></DIV
+></TD
+></TR
+></TABLE
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="2"
+>Construction
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3Anew"
+></A
+><B
+>new</B
+> :: <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+> -&gt; <A HREF="Ast-Bind.html#t%3ABinding"
+>Binding</A
+> -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>] -&gt; <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+></TD
+></TR
+><TR
+><TD CLASS="doc"
+>Construct a non terminal
+</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="section1"
+><A NAME="3"
+>Functions
+</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetIdent"
+></A
+><B
+>getIdent</B
+> :: <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+> -&gt; <A HREF="Ast-Ident.html#t%3AIdent"
+>Ident</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetAttr"
+></A
+><B
+>getAttr</B
+> :: <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+> -&gt; [<A HREF="Ast-Attr.html#t%3AAttr"
+>Attr</A
+>]</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AgetBinding"
+></A
+><B
+>getBinding</B
+> :: <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+> -&gt; <A HREF="Ast-Bind.html#t%3ABinding"
+>Binding</A
+></TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="decl"
+><A NAME="v%3AhasBinding"
+></A
+><B
+>hasBinding</B
+> :: <A HREF="Ast-Nt.html#t%3ANt"
+>Nt</A
+> -&gt; Bool</TD
+></TR
+><TR
+><TD CLASS="s15"
+></TD
+></TR
+><TR
+><TD CLASS="botbar"
+>Produced by <A HREF="http://www.haskell.org/haddock/"
+>Haddock</A
+> version 0.8</TD
+></TR
+></TABLE
+></BODY
+></HTML
+>
