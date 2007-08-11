@@ -24,8 +24,8 @@ Description:
       from a specification, ready to be plugged into a back-end
       compiler infrastructure. Currently Java Code is being generated.
     .
-    See "http://www.bytelabs.org/hburg.html" for an example on how
-    to integrate the generated code into a compiler).
+    See "Homepage" for an example on how to integrate the generated
+    code into a compiler.
 Stability:      Experimental
 build-depends:  base, haskell98, filepath
 extra-source-files:
