@@ -4,8 +4,7 @@ operators		-- Operators (our Node Kinds)
 	CONST
 rules			-- Production Rules
 	test = CONST (test, test) : 1
-		| CONST (test) : 0.		-- Error case: You can not define a Terminal with varying params unless 
-								-- compiling with -fallow-varying-params
+		| CONST (test) : 0.		-- Error case: You can not define a Terminal with varying params 
 end
 
 
