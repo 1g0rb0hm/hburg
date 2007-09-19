@@ -27,7 +27,7 @@ import Util (stringToUpper)
 import Ast.Nt (Nt, getIdent)
 import Ast.TermTy (TermTy, TermTyClass(..))
 import Ast.Def (Definition)
-import Ast.Prod (Prod, getName)
+import Ast.Prod (Production, getName)
 ------------------------------------------------------------------------------------
 
 type Label = String
@@ -46,7 +46,7 @@ defToEnumLabel :: Definition -> Label
 defToEnumLabel d = "NT_" ++ stringToUpper (show (getId d))
 
 -- | Generate label for Production
-prodToEnumLabel :: Definition -> Prod -> Suffix -> Label
+prodToEnumLabel :: Definition -> Production -> Suffix -> Label
 prodToEnumLabel def prod suffix
     = "R_" ++ 
         stringToUpper (show (getId def)) ++ 

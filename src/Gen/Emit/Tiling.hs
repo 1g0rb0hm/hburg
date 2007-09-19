@@ -36,7 +36,7 @@ import Ast.Op (Operator)
 import Ast.TermTy (TermTyClass(..))
 import Ast.Node (getTy, hasLink)
 import qualified Ast.Def as D (Definition, getClosures, getProds, getDefForProd)
-import Ast.Prod (Prod, getArity, getNode, toOp, getRuleLabel, getResultLabel)
+import Ast.Prod (Production, getArity, getNode, toOp, getRuleLabel, getResultLabel)
 
 import Env.Elem (ElemClass(elemId))
 
@@ -61,7 +61,7 @@ type OperatorsPerArity
 type ProductionsPerArity
     = (M.Map
         Arity               -- key: arity of the node
-        [Prod])             -- value: the production itself
+        [Production])             -- value: the production itself
 
 -- | Tiling.
 data Tiling
@@ -109,7 +109,7 @@ getOperatorsPerArity (Tiling _ opset _ _) = opset
 getLinkSet :: Tiling -> LinkSet
 getLinkSet (Tiling _ _ lset _) = lset
 
-getProdsForArity :: Tiling -> Arity -> [Prod]
+getProdsForArity :: Tiling -> Arity -> [Production]
 getProdsForArity (Tiling _ _ _ funs) key
     = if (M.member key funs)
         then funs M.! key
@@ -146,7 +146,7 @@ new ops defs
             = mapDefs ds env (mapProds (D.getProds d) otiling)
             where
                 -- Map over all productions
-                mapProds :: [Prod] -> Tiling -> Tiling
+                mapProds :: [Production] -> Tiling -> Tiling
                 mapProds [] tiling = tiling
                 mapProds (p:ps) (Tiling cl opmap lset funmap)
                     = -- Retrieve TermTy
@@ -221,7 +221,7 @@ computeLinkSet def defs
         (ops)
         (workset)
     where
-        divideUpProdTypes :: [Prod] -> (S.Set Operator, S.Set D.Definition)
+        divideUpProdTypes :: [Production] -> (S.Set Operator, S.Set D.Definition)
         divideUpProdTypes prods 
             = foldr 
                 (\prod (ops, ds) ->

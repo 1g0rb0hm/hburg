@@ -29,7 +29,7 @@ import qualified Ast.Nt as Nt (new)
 import qualified Ast.T as T (new)
 import Ast.TermTy (TermTy, TermTyClass(..), term, nonTerm)
 import qualified Ast.Node as N (Node, NodeClass(..), new, setLink, addLinkBlockCode)
-import Ast.Prod (Prod, prod, mergeProds)
+import Ast.Prod (Production, prod, mergeProds)
 import Ast.Cost as Cost (Cost, static, dynamic)
 
 import Csa.Csa (updateEnv, checkEnv, checkDef)
@@ -181,7 +181,7 @@ D :: { (Def.Definition, Env) }
 --
 -- Productions
 --
-Prods :: { [ Prod ]  }
+Prods :: { [ Production ]  }
     : Prod
         { [ $1 ] }
     | Prods '|' Prod
@@ -197,7 +197,7 @@ Prods :: { [ Prod ]  }
                         ($3:$1)
         }
 
-Prod :: { Prod }
+Prod :: { Production }
     : Sem T Sem ':' Cost
         {   prod (N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode C.empty) $5 }
     | Sem T Sem '[' Sem Nt Sem ']' Sem ':' Cost

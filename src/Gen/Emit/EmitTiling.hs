@@ -21,7 +21,7 @@ import Ast.TermTy (TermTyClass(..))
 import qualified Ast.Node as N (mapChildren, mapPreOrder2, getName)
 import Ast.Op (Operator, opSem)
 import Ast.Def (Definition, getNodeReturnType)
-import Ast.Prod (Prod, getName, getCost, getNode, getRuleLabel, getResultLabel, getArity)
+import Ast.Prod (Production, getName, getCost, getNode, getRuleLabel, getResultLabel, getArity)
 
 import qualified Gen.Emit.Tiling as T (Tiling, Arity,
     new, getClosures, getProductionsPerArity,
@@ -202,7 +202,7 @@ genLabelSetMethods defs tiling
         (M.keys funmap)
     where
         -- | Generate method which labels Nodes with a certain arity
-        genLabelSetMethod :: T.Arity -> [Prod] -> Method.JMethod
+        genLabelSetMethod :: T.Arity -> [Production] -> Method.JMethod
         genLabelSetMethod arity prods
             = let m = Method.new Private True "void" (genLabelMethodName arity) [Parameter.new "Node" "n"] funBody in
             Method.setComment m (Comment.new [genLabelMethodName arity ++ "():" , "  Label nodes with arity " ++ show arity])
@@ -233,7 +233,7 @@ genLabelSetMethods defs tiling
                         (genProdMap prods)
 
                 -- | Generate map holding productions keyed by arity for faster lookup
-                genProdMap :: [Prod] -> M.Map String [Prod]
+                genProdMap :: [Production] -> M.Map String [Production]
                 genProdMap prods
                     = foldr
                         (\p m ->
@@ -245,14 +245,14 @@ genLabelSetMethods defs tiling
                         prods
 
                 -- | simpleCase.
-                simpleCase :: Prod -> String
+                simpleCase :: Production -> String
                 simpleCase p 
                     = "\n\t\tcase " ++ getName p ++ ": {\n" ++
                     (costAndLabel p "\t\t\t") ++ "\n\t\t\tbreak;" ++
                     "\n\t\t}"
 
                 -- | complexCase.
-                complexCase :: [Prod] -> String
+                complexCase :: [Production] -> String
                 complexCase prods
                     = "\n\t\tcase " ++ getName (head prods) ++ ": {" ++
                     concatMap
@@ -266,7 +266,7 @@ genLabelSetMethods defs tiling
                     "\n\t\t}"
 
                 -- | Create "cost = ...;" and "label(...)" calls.
-                costAndLabel :: Prod -> String -> String
+                costAndLabel :: Production -> String -> String
                 costAndLabel p indent
                     = let childCalls 
                             = N.mapChildren
@@ -289,7 +289,7 @@ genLabelSetMethods defs tiling
                 -- | Produce code which is used within an 'if' to evaluate if a certain node should be labeled.
                 --        Example:
                 --          * if (n.child1().kind() = ADD && n.child1().left().is(NT_REG) ...)
-                iff :: Prod -> String
+                iff :: Production -> String
                 iff p = let childCalls
                                 = N.mapPreOrder2
                                     (\pos n -> "." ++ childCallLabel pos ++ "()")

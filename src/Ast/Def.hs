@@ -38,18 +38,18 @@ import Ast.Node (Node, getTy)
 import qualified Ast.Nt as Nt (Nt, new, getIdent, getAttr, getBinding, hasBinding)
 import Ast.TermTy (TermTyClass(..))
 import Ast.Code (Code)
-import qualified Ast.Prod as P (Prod, getNode, isDefined, getProdsByIdent)
+import qualified Ast.Prod as P (Production, getNode, isDefined, getProdsByIdent)
 
 import Env.Env (ElemClass(..), ElemType(EDef))
 ------------------------------------------------------------------------------------
 
-type Closure = [P.Prod]
+type Closure = [P.Production]
 
 -- | Non terminal definition type
 data Definition 
-    = Def {nt       :: Nt.Nt,   -- ^ the non terminal being defined
-           code     :: Code,    -- ^ associated semantic action
-           prods    :: [P.Prod] -- ^ a definition consists of productions
+    = Def {nt       :: Nt.Nt,           -- ^ the non terminal being defined
+           code     :: Code,            -- ^ associated semantic action
+           prods    :: [P.Production]   -- ^ a definition consists of productions
         }
 
 instance Eq Definition where
@@ -89,7 +89,7 @@ instance TermTyClass Definition where
     getBinding d = Nt.getBinding (nt d)
 
 -- | Construct a non terminal
-new :: Id.Ident -> [Attr] -> Code -> [P.Prod] -> Definition
+new :: Id.Ident -> [Attr] -> Code -> [P.Production] -> Definition
 new i attrs c ps
     = Def {nt = (Nt.new i B.empty attrs),
            code = c,
@@ -106,14 +106,14 @@ getCode d = code d
 getClosures :: Definition -> Closure
 getClosures d = calcClosures (prods d)
 
-getProds :: Definition -> [P.Prod]
+getProds :: Definition -> [P.Production]
 getProds d = prods d
 
-setProds :: Definition -> [P.Prod] -> Definition
+setProds :: Definition -> [P.Production] -> Definition
 setProds d ps = d { prods = ps }
 
 -- | Get definition for an NonTerm Prod.
-getDefForProd :: [Definition] -> P.Prod -> Maybe Definition
+getDefForProd :: [Definition] -> P.Production -> Maybe Definition
 getDefForProd defs p | isNonTerm p
     = find 
         (\d ->  (getId d) == (getId p))
@@ -141,7 +141,7 @@ isNodeDefined defs n
             (defs))
 
 -- | Check all productions which are NonTerm productions
-calcClosures :: [P.Prod] -> [P.Prod]
+calcClosures :: [P.Production] -> [P.Production]
 calcClosures [] = []
 calcClosures prods 
     = filter

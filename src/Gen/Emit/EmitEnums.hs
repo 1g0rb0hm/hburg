@@ -21,7 +21,7 @@ module Gen.Emit.EmitEnums (
 
 import Ast.Def (Definition, getProds, setProds)
 
-import Ast.Prod (Prod, setRuleLabel, setResultLabel)
+import Ast.Prod (Production, setRuleLabel, setResultLabel)
 
 import Gen.Emit.Label (Label, prodToEnumLabel, defToEnumLabel)
 
@@ -61,7 +61,7 @@ genRuleEnums defs
         in
     (ndefs, Enum.new Public "RuleEnum" (concat labels))
     where
-        labelProds :: Definition -> [Prod] -> Int -> [(Prod, Label)]
+        labelProds :: Definition -> [Production] -> Int -> [(Production, Label)]
         labelProds d [] _ = []
         labelProds d (p:ps) num
             = let label = prodToEnumLabel d p (show num) in

@@ -16,7 +16,7 @@
 
 module Ast.Prod (
         -- * Types
-        Prod,
+        Production,
         -- * Construction
         prod,
         -- * Functions
@@ -45,23 +45,23 @@ type RuleLabel = String
 type ResultLabel = String
 
 -- | Production type
-data Prod
+data Production
     = Prod {node        :: N.Node,      -- ^ root node for this production
             cost        :: Cost,        -- ^ cost of this production
             rulelab     :: RuleLabel,   -- ^ rule label
             resultlab   :: ResultLabel  -- ^ result label
         }
 
-instance Eq Prod where
+instance Eq Production where
     (==) p1 p2 = ((node p1 == node p2) && (cost p1 == cost p1))
 
-instance Show Prod where
+instance Show Production where
     show p = "Prod[" ++ show (cost p) ++ "]:\n  " ++ show (node p)
 
-instance Debug Prod where
+instance Debug Production where
     debug p = "Prod[" ++ show (cost p) ++ "]:\n  " ++ show (node p)
 
-instance TermTyClass Prod where
+instance TermTyClass Production where
     getId p = getId (node p)
 
     isTerm p = isTerm (node p)
@@ -76,47 +76,47 @@ instance TermTyClass Prod where
     getBinding p = getBinding (node p)
 
 -- | Constructor for building a production
-prod :: N.Node -> Cost -> Prod
+prod :: N.Node -> Cost -> Production
 prod n c = Prod {node = n,
                  cost = c,
                  rulelab = "",
                  resultlab = ""
             }
 
-getNode :: Prod -> N.Node
+getNode :: Production -> N.Node
 getNode p = node p
 
-getName :: Prod -> String
+getName :: Production -> String
 getName p = N.getName (getNode p)
 
-toOp :: Prod -> Operator
+toOp :: Production -> Operator
 toOp p | isTerm p = op (getId p)
 toOp _ = error "\nERROR: toOp() called with NonTerm as argument!\ns"
 
-getCost :: Prod -> Cost
+getCost :: Production -> Cost
 getCost p = cost p
 
-getRuleLabel :: Prod -> RuleLabel
+getRuleLabel :: Production -> RuleLabel
 getRuleLabel p = rulelab p
 
-setRuleLabel :: Prod -> RuleLabel -> Prod
+setRuleLabel :: Production -> RuleLabel -> Production
 setRuleLabel p rl = p { rulelab = rl }
 
-setResultLabel :: Prod -> ResultLabel -> Prod
+setResultLabel :: Production -> ResultLabel -> Production
 setResultLabel p rl = p { resultlab = rl }
 
-getResultLabel :: Prod -> ResultLabel
+getResultLabel :: Production -> ResultLabel
 getResultLabel p = resultlab p
 
-getArity :: Prod -> Int
+getArity :: Production -> Int
 getArity p = length (N.getChildren (node p))
 
-isDefined :: [Prod] -> N.Node -> Bool
+isDefined :: [Production] -> N.Node -> Bool
 isDefined [] _ = False
 isDefined prods n =  n `elem` (map (\p -> node p) prods)
 
 -- | Retrieves all productions which have the same identifier
-getProdsByIdent :: [Prod] -> N.Node -> [Prod]
+getProdsByIdent :: [Production] -> N.Node -> [Production]
 getProdsByIdent [] _ = []
 getProdsByIdent prods n
     = filter 
@@ -124,7 +124,7 @@ getProdsByIdent prods n
         (prods)
 
 -- | Merges productions iff productions with the same name, have the same amount of parameters
-mergeProds :: [Prod] -> Prod -> Either (N.Node, N.Node) [Prod]
+mergeProds :: [Production] -> Production -> Either (N.Node, N.Node) [Production]
 mergeProds [] _ = Right []
 mergeProds prods p@(Prod {node = new})
     = let errprod = find
