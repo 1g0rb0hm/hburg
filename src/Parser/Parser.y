@@ -363,8 +363,9 @@ As :: { [A.Attr] }
     : A         { [ $1 ] }
     | As ',' A  { $1 ++ [ $3 ] }
 A :: { A.Attr }
-    : attrident { A.new (Id.toIdent $1) A.InAttr A.emptyTy }
-    | Ad        { $1 }
+    : attrident     { A.new (Id.toIdent $1) A.InAttr A.emptyTy }
+    | out attrident { A.new (Id.toIdent $2) A.OutAttr A.emptyTy }
+    | Ad            { $1 }
 
 --
 -- Attribute Definitions
