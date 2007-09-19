@@ -23,7 +23,7 @@ import Ast.Op (Operator, opSem)
 import Ast.Def (Definition, getNodeReturnType)
 import Ast.Prod (Production, getName, getCost, getNode, getRuleLabel, getResultLabel, getArity)
 
-import qualified Gen.Emit.Tiling as T (Tiling, Arity,
+import qualified Gen.Tile as T (Tiling, Arity,
     new, getClosures, getProductionsPerArity,
     getOperatorsPerArity, getLinkSet,
     closureGetFromLabel, closureGetToLabel,

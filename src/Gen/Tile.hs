@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Tiling
+-- Module      :  Tile
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -12,7 +12,7 @@
 -- stage of our code generator, namely the tiling phase.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.Tiling (
+module Gen.Tile (
         -- * Types
         Tiling,Closure,Arity,
         LinkSet,OperatorsPerArity,ProductionsPerArity,

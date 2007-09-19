@@ -71,6 +71,7 @@ other-modules:
     Csa.Csa
     Env.Elem
     Env.Env
+    Gen.Tile
     Gen.Emit
     Gen.Emit.EmitClass
     Gen.Emit.EmitEnums
@@ -80,7 +81,6 @@ other-modules:
     Gen.Emit.EmitTiling
     Gen.Emit.JavaClass
     Gen.Emit.Label
-    Gen.Emit.Tiling
     Gen.Emit.Java.Java
     Gen.Emit.Java.JComment
     Gen.Emit.Java.JConstructor
