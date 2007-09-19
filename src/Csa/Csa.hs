@@ -25,7 +25,7 @@ import qualified List as L (find)
 import qualified Data.Set as S
 import qualified Data.Map as M
 
-import Ast.TermTy (TermTy, TermTyClass(..))
+import Ast.Term (Term, TermClass(..))
 
 import qualified Ast.Ident as Id (Ident)
 import qualified Ast.Node as N (Node, NodeClass(..), getLink, showAsFunction, mapPreOrder)
@@ -44,7 +44,7 @@ type IdSet = S.Set Id.Ident
 -- | A type entry represents an entry in a Symbol Table
 data TypeEntry
     = Entry {node   :: N.Node,  -- ^ AST node where first definition was encountered
-            returns :: IdSet,   -- ^ set of Id's a TermTy produces, possibly through chain rules
+            returns :: IdSet,   -- ^ set of Id's a Term produces, possibly through chain rules
             params  :: [IdSet]} -- ^ parameter list where the elements are Sets of Id's a T expects
 
 -- | Mapping of Identifiers to TypeEntries (a.k.a. Symbol Table)
@@ -59,8 +59,8 @@ tentry n rs ps = Entry {node = n,
                         returns = rs,
                         params = ps}
 
--- | Compute map from TermTy's (or rather their Id's) to TypeEntries where a 
---      TypeEntry represents the return and parameter types of TermTy's.
+-- | Compute map from Term's (or rather their Id's) to TypeEntries where a 
+--      TypeEntry represents the return and parameter types of Term's.
 computeTypeMap :: [D.Definition] -> TypeMap
 computeTypeMap ds
     = let tmap = -- 1. Calculate 'return' types (a.k.a. set Nt's which a T or Nt produces)
@@ -96,7 +96,7 @@ computeTypeMap ds
         in
     M.map -- 2. Calculate parameter types of T's (parameter types are calculated based on return types)
         (\ent ->
-            if (isTerm (node ent))
+            if (isTerminal (node ent))
                 then -- Only T's can have parameters (a.k.a. patterns)
                     let paramList
                             = map
@@ -125,9 +125,9 @@ computeTypeMap ds
                 Nothing -> S.insert (getId d) set
 
 
--- | If Binding for TermTy is not in the Env return 'Right' with
+-- | If Binding for Term is not in the Env return 'Right' with
 --    updated Env, otherwise return 'Left' indicating the two culprits
-updateEnv :: TermTy -> Env -> Either (Elem, Elem) Env
+updateEnv :: Term -> Env -> Either (Elem, Elem) Env
 updateEnv ty env
     = if (hasBinding ty)
         then mergeEnvs env (newEnv (envElem (B.getIdent (getBinding ty))))
@@ -144,7 +144,7 @@ checkDef d
     = let clash 
             = L.find
                 (\p -> ((getId p) == (getId d))) 
-                (filter (\p -> isNonTerm p) (D.getProds d)) 
+                (filter (\p -> isNonTerminal p) (D.getProds d))
         in
     case clash of
         Nothing -> Nothing
@@ -209,7 +209,7 @@ checkEnv defs env
 typeCheck :: N.Node -> TypeMap -> Maybe String
 typeCheck n _ | (N.isNil n) = Nothing
 typeCheck n tymap
-    = if (isTerm n) -- Only T's are of interest for type checking.
+    = if (isTerminal n) -- Only T's are of interest for type checking.
         then
             let ent = tymap M.! (getId n) in
             -- Check return type of child nodes

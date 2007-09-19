@@ -18,10 +18,10 @@ module Gen.Emit.Eval (
 import Maybe (fromJust, isJust)
 
 import Ast.Attr (attrGetIn, attrGetOut, attrId, attrTy)
-import Ast.TermTy (TermTy, TermTyClass(..))
+import Ast.Term (Term, TermClass(..))
 import qualified Ast.Code as C (Code, isEmpty)
 import Ast.Node (Node, mapPreOrder3, getSem1, getSem2, getSem3, getSem4,
-        getSem5, getSem6, getTy, hasLink, getLink)
+        getSem5, getSem6, getTerm, hasLink, getLink)
 import Ast.Prod (getRuleLabel, getNode)
 import Ast.Def (Definition, getProds, getCode)
 import Ast.Decl (Declaration)
@@ -157,14 +157,14 @@ genEvalMethods defs
                         -- | genPreCode.
                         genPreCode :: String -> Node -> String
                         genPreCode path n
-                            = let ty = getTy n in
+                            = let ty = getTerm n in
                             -- First Semantic action 
                             wrapUserCode "\t\t\t" (getSem1 n) ++
-                            -- Emit Eval and Binding TermTy
+                            -- Emit Eval and Binding Term
                             (if (isJust ty)
                                 then
                                     -- If this is a Nt emit a function call to respective eval method
-                                    (if (isNonTerm (fromJust ty))
+                                    (if (isNonTerminal (fromJust ty))
                                         then
                                             let ret = (genFunRetVal (fromJust ty)) in
                                             "\t\t\t" ++ 
@@ -185,7 +185,7 @@ genEvalMethods defs
                         -- | genPostCode.
                         genPostCode :: String -> Node -> String
                         genPostCode path n
-                            = let ty = (getTy (getLink n)) in
+                            = let ty = (getTerm (getLink n)) in
                             -- Third semantic action
                             wrapUserCode "\t\t\t" (getSem3 n) ++
                             -- Emit code for link evaluation
@@ -206,7 +206,7 @@ genEvalMethods defs
                             wrapUserCode "\t\t\t" (getSem4 n)
 
                         -- | genBinding.
-                        genBinding :: TermTy -> String -> String
+                        genBinding :: Term -> String -> String
                         genBinding ty path | hasBinding ty
                             = "Node " ++ (show (getBinding ty)) ++ " = n" ++ path ++ ";\n"
                         genBinding _ _ = ""
@@ -214,8 +214,8 @@ genEvalMethods defs
                         -- | Given a NonTerm, this function gives the the return value as a
                         --  definition (e.g. List<String> list) in the form of a tuple where
                         --   fst is the type and snd is the identifier.
-                        genFunRetVal :: TermTy -> Maybe (String, String)
-                        genFunRetVal ty | (isNonTerm ty)
+                        genFunRetVal :: Term -> Maybe (String, String)
+                        genFunRetVal ty | (isNonTerminal ty)
                             = let outattr 
                                     = map
                                         (\a -> (show (attrTy a), show (attrId a))) 
@@ -227,8 +227,8 @@ genEvalMethods defs
                         genFunRetVal _ = Nothing
 
                         -- | genFunCall.
-                        genFunCall :: TermTy -> String ->  String
-                        genFunCall ty path | (isNonTerm ty)
+                        genFunCall :: Term -> String ->  String
+                        genFunCall ty path | (isNonTerminal ty)
                             = let inattrs 
                                     = concatMap 
                                         (\a -> ", " ++ show (attrId a)) 

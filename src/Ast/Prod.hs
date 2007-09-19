@@ -33,7 +33,7 @@ import List (find)
 import Debug (Debug(..))
 
 import Ast.Op (Operator, op)
-import Ast.TermTy (TermTyClass(..))
+import Ast.Term (TermClass(..))
 import Ast.Cost (Cost)
 import qualified Ast.Node as N (Node, NodeClass(getChildren), equalIdents, getName)
 -----------------------------------------------------------------------------
@@ -46,10 +46,10 @@ type ResultLabel = String
 
 -- | Production type
 data Production
-    = Prod {node        :: N.Node,      -- ^ root node for this production
-            cost        :: Cost,        -- ^ cost of this production
-            rulelab     :: RuleLabel,   -- ^ rule label
-            resultlab   :: ResultLabel  -- ^ result label
+    = Prod {node    :: N.Node,      -- ^ root node for this production
+            cost    :: Cost,        -- ^ cost of this production
+            rule    :: RuleLabel,   -- ^ rule label
+            result  :: ResultLabel  -- ^ result label
         }
 
 instance Eq Production where
@@ -61,14 +61,14 @@ instance Show Production where
 instance Debug Production where
     debug p = "Prod[" ++ show (cost p) ++ "]:\n  " ++ show (node p)
 
-instance TermTyClass Production where
+instance TermClass Production where
     getId p = getId (node p)
 
-    isTerm p = isTerm (node p)
-    isNonTerm p = isNonTerm (node p)
+    isTerminal p = isTerminal (node p)
+    isNonTerminal p = isNonTerminal (node p)
 
-    getTerm p = getTerm (node p)
-    getNonTerm p = getNonTerm (node p)
+    getTerminal p = getTerminal (node p)
+    getNonTerminal p = getNonTerminal (node p)
 
     getAttr p = getAttr (node p)
 
@@ -79,8 +79,8 @@ instance TermTyClass Production where
 prod :: N.Node -> Cost -> Production
 prod n c = Prod {node = n,
                  cost = c,
-                 rulelab = "",
-                 resultlab = ""
+                 rule = "",
+                 result = ""
             }
 
 getNode :: Production -> N.Node
@@ -90,23 +90,23 @@ getName :: Production -> String
 getName p = N.getName (getNode p)
 
 toOp :: Production -> Operator
-toOp p | isTerm p = op (getId p)
+toOp p | isTerminal p = op (getId p)
 toOp _ = error "\nERROR: toOp() called with NonTerm as argument!\ns"
 
 getCost :: Production -> Cost
 getCost p = cost p
 
 getRuleLabel :: Production -> RuleLabel
-getRuleLabel p = rulelab p
+getRuleLabel p = rule p
 
 setRuleLabel :: Production -> RuleLabel -> Production
-setRuleLabel p rl = p { rulelab = rl }
+setRuleLabel p rl = p { rule = rl }
 
 setResultLabel :: Production -> ResultLabel -> Production
-setResultLabel p rl = p { resultlab = rl }
+setResultLabel p rl = p { result = rl }
 
 getResultLabel :: Production -> ResultLabel
-getResultLabel p = resultlab p
+getResultLabel p = result p
 
 getArity :: Production -> Int
 getArity p = length (N.getChildren (node p))

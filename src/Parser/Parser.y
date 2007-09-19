@@ -27,7 +27,7 @@ import qualified Ast.Decl as D (Declaration, new)
 import qualified Ast.Def as Def (Definition, new, mergeDefs)
 import qualified Ast.Nt as Nt (new)
 import qualified Ast.T as T (new)
-import Ast.TermTy (TermTy, TermTyClass(..), term, nonTerm)
+import Ast.Term (Term, TermClass(..), terminal, nonTerminal)
 import qualified Ast.Node as N (Node, NodeClass(..), new, setLink, addLinkBlockCode)
 import Ast.Prod (Production, prod, mergeProds)
 import Ast.Cost as Cost (Cost, static, dynamic)
@@ -336,17 +336,17 @@ PatSeq :: { (N.Node, Env) }
 --
 -- Non Terminals
 --
-Nt :: { TermTy }
-    : ident                     { nonTerm (Nt.new (Id.toIdent $1) B.empty []) }
-    | ident ident               { nonTerm (Nt.new (Id.toIdent $1) (B.new (Id.toIdent $2)) []) }
-    | ident '<' As '>'          { nonTerm (Nt.new (Id.toIdent $1) B.empty $3) }
-    | ident '<' As '>' ident    { nonTerm (Nt.new (Id.toIdent $1) (B.new (Id.toIdent $5)) $3) }
+Nt :: { Term }
+    : ident                     { nonTerminal (Nt.new (Id.toIdent $1) B.empty []) }
+    | ident ident               { nonTerminal (Nt.new (Id.toIdent $1) (B.new (Id.toIdent $2)) []) }
+    | ident '<' As '>'          { nonTerminal (Nt.new (Id.toIdent $1) B.empty $3) }
+    | ident '<' As '>' ident    { nonTerminal (Nt.new (Id.toIdent $1) (B.new (Id.toIdent $5)) $3) }
 --
 -- Terminals
 --
-T :: { TermTy }
-    : term          { term (T.new (Id.toIdent $1) B.empty)  }
-    | term ident    { term (T.new (Id.toIdent $1) (B.new (Id.toIdent $2))) }
+T :: { Term }
+    : term          { terminal (T.new (Id.toIdent $1) B.empty)  }
+    | term ident    { terminal (T.new (Id.toIdent $1) (B.new (Id.toIdent $2))) }
 
 -------------------------------------------------------------------
 

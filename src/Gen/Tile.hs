@@ -33,8 +33,8 @@ module Gen.Tile (
 import Maybe (fromJust)
 
 import Ast.Op (Operator)
-import Ast.TermTy (TermTyClass(..))
-import Ast.Node (getTy, hasLink)
+import Ast.Term (TermClass(..))
+import Ast.Node (getTerm, hasLink)
 import qualified Ast.Def as D (Definition, getClosures, getProds, getDefForProd)
 import Ast.Prod (Production, getArity, getNode, toOp, getRuleLabel, getResultLabel)
 
@@ -149,12 +149,12 @@ new ops defs
                 mapProds :: [Production] -> Tiling -> Tiling
                 mapProds [] tiling = tiling
                 mapProds (p:ps) (Tiling cl opmap lset funmap)
-                    = -- Retrieve TermTy
-                    let tTy = case (getTy (getNode p)) of
+                    = -- Retrieve Term
+                    let tTy = case (getTerm (getNode p)) of
                                 Just ty -> ty
-                                Nothing -> error "\nERROR: Encountered Node without TermTy during Tiling!\n"
+                                Nothing -> error "\nERROR: Encountered Node without Term during Tiling!\n"
                         in
-                    if (isTerm tTy)
+                    if (isTerminal tTy)
                         -- If node is a Terminal (e.g. ADD) we need to do some work!
                         then
                             -- 1. Get arity of node since this is the key for our maps
@@ -225,7 +225,7 @@ computeLinkSet def defs
         divideUpProdTypes prods 
             = foldr 
                 (\prod (ops, ds) ->
-                    if (isTerm prod)
+                    if (isTerminal prod)
                         then (S.insert (toOp prod) ops, ds)
                         else (ops, S.insert (fromJust (D.getDefForProd defs prod)) ds))
                 (S.empty, S.empty) 
@@ -238,7 +238,7 @@ computeClosure (d:defs)
     = let prods = D.getClosures d in
     (map
         (\p ->
-            case getTy (getNode p) of
+            case getTerm (getNode p) of
                 Just ty -> 
                     -- Construct necessary closure with correct labels
                     Closure 

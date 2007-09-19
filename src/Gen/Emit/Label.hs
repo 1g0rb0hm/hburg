@@ -25,7 +25,7 @@ module Gen.Emit.Label (
 import Util (stringToUpper)
 
 import Ast.Nt (Nt, getIdent)
-import Ast.TermTy (TermTy, TermTyClass(..))
+import Ast.Term (Term, TermClass(..))
 import Ast.Def (Definition)
 import Ast.Prod (Production, getName)
 ------------------------------------------------------------------------------------
@@ -33,8 +33,8 @@ import Ast.Prod (Production, getName)
 type Label = String
 type Suffix = String
 
--- | Generate label for TermTy
-tTyToEnumLabel :: TermTy -> Label
+-- | Generate label for Term
+tTyToEnumLabel :: Term -> Label
 tTyToEnumLabel t = "NT_" ++ stringToUpper (show (getId t))
 
 -- | Generate label for Nt
@@ -62,7 +62,7 @@ childCallLabel pos = "child" ++ (show pos)
 defToEvalLabel :: Definition -> Label
 defToEvalLabel d = "eval_" ++ (show (getId d))
 
--- | Generate label for evaluation methods given a TermTy
-tTyToEvalLabel :: TermTy -> Label
+-- | Generate label for evaluation methods given a Term
+tTyToEvalLabel :: Term -> Label
 tTyToEvalLabel ty = "eval_" ++ (show (getId ty))
 

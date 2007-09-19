@@ -31,7 +31,7 @@ import Env.Env(ElemClass(..),ElemType(ETerm))
 
 -- | Terminal Definition
 data T
-    = T 
+    = T
         Id.Ident    -- Id identifying this terminal (e.g. ADD, SUB, etc.)
         B.Binding   -- binding for this terminsl (e.g. ADD a1)
 

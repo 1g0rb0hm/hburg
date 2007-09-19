@@ -17,7 +17,7 @@ module Gen.Emit.Tiling (
 
 import List (sort)
 
-import Ast.TermTy (TermTyClass(..))
+import Ast.Term (TermClass(..))
 import qualified Ast.Node as N (mapChildren, mapPreOrder2, getName)
 import Ast.Op (Operator, opSem)
 import Ast.Def (Definition, getNodeReturnType)
@@ -300,7 +300,7 @@ genLabelSetMethods defs tiling
                         (\new old -> new ++ " && " ++ old)
                         (map
                             (\(call, n) ->
-                                if (isTerm n)
+                                if (isTerminal n)
                                     then "n" ++ call ++ ".kind() == " ++ N.getName n
                                     else "n" ++ call ++ ".is(" ++ 
                                             (case getNodeReturnType defs n of

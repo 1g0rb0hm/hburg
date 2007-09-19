@@ -1,23 +1,22 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  TermTy
+-- Module      :  Term
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
--- License     :  BSD-style (see the file LICENSE) 
+-- License     :  BSD-style (see the file LICENSE)
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
 --
 --
 -- This module provides the necessary abstractions to deal with terminals
--- and non terminals in a uniform and generic way. Thus a TermTy can either
--- be a terminal of type T or a non terminal of type Nt.
+-- and non-terminals in a uniform and generic way.
 -----------------------------------------------------------------------------
 
-module Ast.TermTy (
+module Ast.Term (
         -- * Classes
-        TermTyClass(..),
+        TermClass(..),
         -- * Types
-        TermTy,
+        Term,
         -- * Construction
-        term, nonTerm,
+        terminal, nonTerminal,
     ) where
 
 import Debug(Debug(..))
@@ -32,14 +31,14 @@ import Env.Env(ElemClass(..))
 -----------------------------------------------------------------------------
 
 -- | All terminals and non terminals are instances of this class
-class TermTyClass a where
+class TermClass a where
     getId :: a -> Id.Ident
 
-    isTerm :: a -> Bool
-    isNonTerm :: a -> Bool
+    isTerminal :: a -> Bool
+    isNonTerminal :: a -> Bool
 
-    getTerm :: a -> T.T
-    getNonTerm :: a -> Nt.Nt
+    getTerminal :: a -> T.T
+    getNonTerminal :: a -> Nt.Nt
 
     hasAttr :: a -> Bool
     hasAttr a =
@@ -57,69 +56,69 @@ class TermTyClass a where
             then (getBinding a1 == getBinding a2)
             else False
 
--- | TermTy Type
-data TermTy
-    = Term T.T
-    | NonTerm Nt.Nt
+-- | Term data type
+data Term
+    = Terminal T.T  -- ^ terminal T is a Term
+    | NonTerm Nt.Nt -- ^ non terminal Nt is a Term
 
-instance Eq TermTy where
-    (==) (Term t1) (Term t2) = t1 == t2
+instance Eq Term where
+    (==) (Terminal t1) (Terminal t2) = t1 == t2
     (==) (NonTerm nt1) (NonTerm nt2) = nt1 == nt2
     (==) _ _ = False
 
-instance Ord TermTy where
-    compare (Term t1) (Term t2) = compare t1 t2
+instance Ord Term where
+    compare (Terminal t1) (Terminal t2) = compare t1 t2
     compare (NonTerm nt1) (NonTerm nt2) = compare nt1 nt2
-    compare (Term _) (NonTerm _) = LT
-    compare (NonTerm _) (Term _) = GT
+    compare (Terminal _) (NonTerm _) = LT
+    compare (NonTerm _) (Terminal _) = GT
 
-instance ElemClass TermTy where
-    elemShow (Term t) = elemShow t
+instance ElemClass Term where
+    elemShow (Terminal t) = elemShow t
     elemShow (NonTerm nt) = elemShow nt
-    elemType (Term t) = elemType t
+    elemType (Terminal t) = elemType t
     elemType (NonTerm nt) = elemType nt
-    elemC (Term t) = elemC t
+    elemC (Terminal t) = elemC t
     elemC (NonTerm nt) = elemC nt
-    elemL (Term t) = elemL t
+    elemL (Terminal t) = elemL t
     elemL (NonTerm nt) = elemL nt
 
-instance Show TermTy where
-    show (Term t) = show t
+instance Show Term where
+    show (Terminal t) = show t
     show (NonTerm nt) = show nt
 
-instance Debug TermTy where
-    debug (Term t) = debug t
+instance Debug Term where
+    debug (Terminal t) = debug t
     debug (NonTerm nt) = debug nt
 
-instance TermTyClass TermTy where
-    getId (Term t) = T.getIdent t
+instance TermClass Term where
+    getId (Terminal t) = T.getIdent t
     getId (NonTerm nt) = Nt.getIdent nt
     
-    isTerm (Term _) = True
-    isTerm _ = False
+    isTerminal (Terminal _) = True
+    isTerminal _ = False
 
-    isNonTerm (NonTerm _) = True
-    isNonTerm _ = False
-        
-    getTerm (Term t) = t
-    getTerm _ = error "\nERROR: getTerm() called with NonTerm parameter!\n"
-    
-    getNonTerm (NonTerm t) = t
-    getNonTerm _ = error "\nERROR: getNonTerm() called with Term parameter!\n"
+    isNonTerminal (NonTerm _) = True
+    isNonTerminal _ = False
 
-    getAttr (Term _) = []
+    getTerminal (Terminal t) = t
+    getTerminal _ = error "\nERROR: getTerminal() called with NonTerm parameter!\n"
+
+    getNonTerminal (NonTerm t) = t
+    getNonTerminal _ = error "\nERROR: getNonTerminal() called with Term parameter!\n"
+
+    getAttr (Terminal _) = []
     getAttr (NonTerm nt) = Nt.getAttr nt
-    
-    hasBinding (Term t) = T.hasBinding t
+
+    hasBinding (Terminal t) = T.hasBinding t
     hasBinding (NonTerm nt) = Nt.hasBinding nt
 
-    getBinding (Term t) = T.getBinding t
+    getBinding (Terminal t) = T.getBinding t
     getBinding (NonTerm nt) = Nt.getBinding nt
 
--- | Construct TermTy out of T
-term :: T.T -> TermTy
-term t = Term t
+-- | Construct Term out of T
+terminal :: T.T -> Term
+terminal t = Terminal t
 
--- | Construct TermTy out o f Nt
-nonTerm :: Nt.Nt -> TermTy
-nonTerm nt = NonTerm nt
+-- | Construct Term out o f Nt
+nonTerminal :: Nt.Nt -> Term
+nonTerminal nt = NonTerm nt

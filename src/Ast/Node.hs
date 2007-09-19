@@ -19,7 +19,7 @@ module Ast.Node (
         new,
         -- * Functions
         addLinkBlockCode, setLink,
-        getName, getTy, getIdent, getLink,
+        getName, getTerm, getIdent, getLink,
         getSem1, getSem2, getSem3, getSem4, getSem5, getSem6,
         equalIdents,hasLink,
         showAsFunction,
@@ -30,7 +30,7 @@ module Ast.Node (
 
 
 import qualified Ast.Ident as Id (Ident)
-import Ast.TermTy (TermTy, TermTyClass(..))
+import Ast.Term (Term, TermClass(..))
 import qualified Ast.Code as C (Code, empty)
 
 import Env.Env(ElemClass(..), ElemType(EUnknown))
@@ -53,55 +53,57 @@ class NodeClass a where
 data Node 
     = Nil
     | N {
-        ty      :: TermTy,  -- ^ node kind or type of node (e.g.: reg, ADD, SUB, stmt, etc.)
-        code1   :: C.Code,
-        code2   :: C.Code,
+        term    :: Term,    -- ^ node kind or type of node (e.g.: reg, ADD, SUB, stmt, etc.)
         child   :: Node,    -- ^ link to first child node
-        code3   :: C.Code,
         sibling :: Node,    -- ^ points to sibling
-        code4   :: C.Code,
-        code5   :: C.Code,  -- ^ code before link but within link block
-        link    :: Node,    -- ^ pointer to link node
-        code6   :: C.Code   -- ^ code after link but within link block
+        link    :: Node,    -- ^ points to link node
+        -- semantic actions
+        code1   :: C.Code,  -- ^ code before the Term
+        code2   :: C.Code,  -- ^ code after the Term and before any sub pattern
+        code3   :: C.Code,  -- ^ code after subpattern of this Term
+        code4   :: C.Code,  -- ^ code at the very end of this Term
+        -- semantic actions in link block '[' ']'
+        lcode1  :: C.Code,  -- ^ code within link block and before link
+        lcode2  :: C.Code   -- ^ code within link block and after link
     }
     deriving (Ord)
 
 instance Eq Node where
-    -- Two nodes are equal if they share the same TermTy and if they have
+    -- Two nodes are equal if they share the same Term and if they have
     -- the same amount of child nodes (a.k.a. same amount of parameters)
-    (==) n1@(N {ty = ty1}) n2@(N {ty = ty2})
-        = ((ty1 == ty2) && (length (getChildren n1) == length (getChildren n2)))
+    (==) n1@(N {term = t1}) n2@(N {term = t2})
+        = ((t1 == t2) && (length (getChildren n1) == length (getChildren n2)))
     (==) (Nil) (Nil) = True
     (==) _ _ = False
 
 instance Show Node where
     show (Nil) = "Nil"
     show n@(N { link = (Nil) })
-        = show (ty n) ++ ": " ++ 
+        = show (term n) ++ ": " ++
         (displayChildren (child n) "   ")
     show n
-        = show (ty n) ++ ":" ++ " link->" ++ show (ty (link n)) ++
+        = show (term n) ++ ":" ++ " link->" ++ show (term (link n)) ++
         (displayChildren (child n) "   ")
 
 displayChildren :: Node -> String -> String
 displayChildren (Nil) gap = ")"
 displayChildren n gap
-    = "\n" ++ gap ++ "(" ++ show (ty n) ++
+    = "\n" ++ gap ++ "(" ++ show (term n) ++
       (displayChildren (child n) (gap ++ "  ")) ++
       (displayChildren (sibling n) gap)
 
 instance ElemClass Node where
     elemShow Nil = "Nil"
-    elemShow n = elemShow (ty n)
+    elemShow n = elemShow (term n)
     
     elemType Nil = EUnknown
-    elemType n = elemType (ty n)
+    elemType n = elemType (term n)
     
     elemL Nil = -1
-    elemL n = elemL (ty n)
+    elemL n = elemL (term n)
     
     elemC Nil = -1
-    elemC n = elemC (ty n)
+    elemC n = elemC (term n)
 
 instance NodeClass Node where
     isNil (Nil) = True
@@ -125,45 +127,47 @@ instance NodeClass Node where
     addSibling n@(N { sibling = Nil }) sib = n { sibling = sib }
     addSibling n sib1 = n { sibling = addSibling (sibling n) sib1 }
 
-instance TermTyClass Node where
-    getId n = getId (ty n)
+instance TermClass Node where
+    getId n = getId (term n)
     
-    isTerm (Nil) = False
-    isTerm n = isTerm (ty n)
+    isTerminal (Nil) = False
+    isTerminal n = isTerminal (term n)
     
-    isNonTerm (Nil) = False
-    isNonTerm n = isNonTerm (ty n)
+    isNonTerminal (Nil) = False
+    isNonTerminal n = isNonTerminal (term n)
     
-    getTerm n = getTerm (ty n)
-    getNonTerm n = getNonTerm (ty n)
+    getTerminal n = getTerminal (term n)
+    getNonTerminal n = getNonTerminal (term n)
     
     getAttr (Nil) = []
-    getAttr n = getAttr (ty n)
+    getAttr n = getAttr (term n)
     
     hasBinding (Nil) = False
-    hasBinding n = hasBinding (ty n)
-    getBinding n = getBinding (ty n)
+    hasBinding n = hasBinding (term n)
+    getBinding n = getBinding (term n)
 
 
 -- | Constructor for building a Node
-new :: TermTy -> C.Code -> C.Code -> Node -> C.Code -> Node -> C.Code -> Node
-new ty1 c1 c2 child1 c3 link1 c4
+new :: Term -> C.Code -> C.Code -> Node -> C.Code -> Node -> C.Code -> Node
+new t c1 c2 child' c3 link' c4
     = N {
-        ty = ty1,
+        term = t,
+        child = child',
+        sibling = link',
+        link = Nil,
+        -- semantic actions
         code1 = c1,
         code2 = c2,
-        child = child1,
         code3 = c3,
-        sibling = link1,
         code4 = c4,
-        code5 = C.empty,
-        link = Nil,
-        code6 = C.empty
+        -- semantic actions in link block
+        lcode1 = C.empty,
+        lcode2 = C.empty
     }
 
 -- | Adds semantic action contained in link block
 addLinkBlockCode :: Node -> C.Code -> C.Code -> Node
-addLinkBlockCode n c5 c6 = (n { code5 = c5 }) { code6 = c6 }
+addLinkBlockCode n c1 c2 = (n { lcode1 = c1 }) { lcode2 = c2 }
 
 hasLink :: Node -> Bool
 hasLink (Nil) = False
@@ -173,7 +177,7 @@ hasLink _ = True
 -- | Compare Nodes based on identifiers
 equalIdents :: Node -> Node -> Bool
 equalIdents (Nil) (Nil) = True
-equalIdents (N { ty = ty1 }) (N { ty = ty2 }) = getId ty1 == getId ty2
+equalIdents (N { term = t1 }) (N { term = t2 }) = getId t1 == getId t2
 equalIdents _ _ = False
 
 
@@ -185,7 +189,7 @@ showAsFunction n | hasChildren n
     foldr
         (\child str -> 
             (\x -> if ((length x) > 0) then (str ++ ", ") else "") (str) ++
-            if (isTerm child)
+            if (isTerminal child)
                 then show (getId child) ++ "(...)"
                 else show (getId child))
         ""
@@ -195,15 +199,15 @@ showAsFunction n = elemShow n
 
 getName :: Node -> String
 getName (Nil) = ""
-getName n = show (getId (ty n))
+getName n = show (getId (term n))
 
 getIdent :: Node -> Maybe Id.Ident
 getIdent (Nil) = Nothing
-getIdent n = Just (getId (ty n))
+getIdent n = Just (getId (term n))
 
-getTy :: Node -> Maybe TermTy
-getTy (Nil) = Nothing
-getTy n = Just (ty n)
+getTerm :: Node -> Maybe Term
+getTerm (Nil) = Nothing
+getTerm n = Just (term n)
 
 getLink :: Node -> Node
 getLink (Nil) = Nil
@@ -227,15 +231,15 @@ getSem4 n = code4 n
 
 getSem5 :: Node -> C.Code
 getSem5 (Nil) = C.empty
-getSem5 n = code5 n
+getSem5 n = lcode1 n
 
 getSem6 :: Node -> C.Code
 getSem6 (Nil) = C.empty
-getSem6 n = code6 n
+getSem6 n = lcode2 n
 
 setLink :: Node -> Node -> Node
 setLink (Nil) _ = Nil
-setLink n lnk = n { link = lnk }
+setLink n link' = n { link = link' }
 
 --
 -- Higher order AST traversal functions

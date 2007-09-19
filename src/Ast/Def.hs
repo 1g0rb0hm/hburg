@@ -34,9 +34,9 @@ import Debug (Debug(..))
 import qualified Ast.Ident as Id (Ident)
 import Ast.Attr (Attr, attrEqualInOut)
 import qualified Ast.Bind as B (empty)
-import Ast.Node (Node, getTy)
+import Ast.Node (Node, getTerm)
 import qualified Ast.Nt as Nt (Nt, new, getIdent, getAttr, getBinding, hasBinding)
-import Ast.TermTy (TermTyClass(..))
+import Ast.Term (TermClass(..))
 import Ast.Code (Code)
 import qualified Ast.Prod as P (Production, getNode, isDefined, getProdsByIdent)
 
@@ -46,7 +46,7 @@ import Env.Env (ElemClass(..), ElemType(EDef))
 type Closure = [P.Production]
 
 -- | Non terminal definition type
-data Definition 
+data Definition
     = Def {nt       :: Nt.Nt,           -- ^ the non terminal being defined
            code     :: Code,            -- ^ associated semantic action
            prods    :: [P.Production]   -- ^ a definition consists of productions
@@ -74,14 +74,14 @@ instance Show Definition where
             "\n\n " ++
             (concatMap (\p -> show p ++ "\n\n ") (prods d))
 
-instance TermTyClass Definition where
+instance TermClass Definition where
     getId d = Nt.getIdent(nt d)
 
-    isTerm _ = False
-    isNonTerm _ = True
+    isTerminal _ = False
+    isNonTerminal _ = True
 
-    getTerm _ = error "\nERROR: getTerm() called with non Term parameter!\n"
-    getNonTerm d = nt d
+    getTerminal _ = error "\nERROR: getTerminal() called with non Term parameter!\n"
+    getNonTerminal d = nt d
 
     getAttr d = Nt.getAttr (nt d)
 
@@ -114,7 +114,7 @@ setProds d ps = d { prods = ps }
 
 -- | Get definition for an NonTerm Prod.
 getDefForProd :: [Definition] -> P.Production -> Maybe Definition
-getDefForProd defs p | isNonTerm p
+getDefForProd defs p | isNonTerminal p
     = find 
         (\d ->  (getId d) == (getId p))
         (defs)
@@ -123,9 +123,9 @@ getDefForProd _ _ = Nothing
 -- | Compare a definition with a node.
 equalsNode :: Definition -> Node -> Bool
 equalsNode (Def { nt = nt1}) n 
-    = case getTy n of
+    = case getTerm n of
         Just ty -> 
-            if (isNonTerm ty)
+            if (isNonTerminal ty)
                 then (((getId ty) == (Nt.getIdent nt1)) &&
                         (attrEqualInOut (Nt.getAttr nt1) (getAttr ty)))
                 else False
@@ -145,8 +145,8 @@ calcClosures :: [P.Production] -> [P.Production]
 calcClosures [] = []
 calcClosures prods 
     = filter
-        (\p -> case (getTy (P.getNode p)) of
-                (Just ty) -> isNonTerm ty
+        (\p -> case (getTerm (P.getNode p)) of
+                (Just ty) -> isNonTerminal ty
                 Nothing -> False) 
         (prods)
 
@@ -168,11 +168,11 @@ mergeDefs defs def
 --      is calculated.
 getNodeReturnType :: [Definition] -> Node -> Maybe Nt.Nt
 getNodeReturnType [] _ = Nothing
-getNodeReturnType defs n | isNonTerm n
+getNodeReturnType defs n | isNonTerminal n
     = case (find (\def -> equalsNode def n) (defs)) of
-        Just d -> Just (getNonTerm d)
+        Just d -> Just (getNonTerminal d)
         otherwise -> Nothing
 getNodeReturnType (d:ds) n
     = if (P.isDefined (getProds d) n)
-        then Just (getNonTerm d)
+        then Just (getNonTerminal d)
         else getNodeReturnType ds n

@@ -67,7 +67,7 @@ other-modules:
     Ast.Op
     Ast.Prod
     Ast.T
-    Ast.TermTy
+    Ast.Term
     Csa.Csa
     Env.Elem
     Env.Env
