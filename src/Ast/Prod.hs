@@ -16,7 +16,7 @@
 
 module Ast.Prod (
         -- * Types
-        Cost,Prod,
+        Prod,
         -- * Construction
         prod,
         -- * Functions
@@ -34,11 +34,9 @@ import Debug (Debug(..))
 
 import Ast.Op (Operator, op)
 import Ast.TermTy (TermTyClass(..))
+import Ast.Cost (Cost)
 import qualified Ast.Node as N (Node, NodeClass(getChildren), equalIdents, getName)
 -----------------------------------------------------------------------------
-
--- | Cost for a production
-type Cost = Int
 
 -- | Rule label for this production (e.g. R_REG_ASSIGN_0) - assigned during code generation phase
 type RuleLabel = String

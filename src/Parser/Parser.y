@@ -30,6 +30,7 @@ import qualified Ast.T as T (new)
 import Ast.TermTy (TermTy, TermTyClass(..), term, nonTerm)
 import qualified Ast.Node as N (Node, NodeClass(..), new, setLink, addLinkBlockCode)
 import Ast.Prod (Prod, prod, mergeProds)
+import Ast.Cost as Cost (Cost, static, dynamic)
 
 import Csa.Csa (updateEnv, checkEnv, checkDef)
 
@@ -75,10 +76,13 @@ import Parser.ParseErr (parseErrDupBind, parseErrTok, parseErrRedefinition)
 G :: { (Incl.Include, D.Declaration, [Operator], [Def.Definition], String) }
     : generator
         Incl
-        declarations Sem
-        operators Ops
-        rules Ds
-    end
+      declarations
+        Sem
+      operators
+        Ops
+      rules
+        Ds
+      end
         {%
             let incl = $2 in            -- Includes
             let decl = D.new $4 in      -- Declarations
@@ -194,20 +198,13 @@ Prods :: { [ Prod ]  }
         }
 
 Prod :: { Prod }
-    : Sem T Sem ':' cost
-        {
-            prod
-                (N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode C.empty)
-                (stringToInt (show (Id.toIdent $5)))
-        }
-    | Sem T Sem '[' Sem Nt Sem ']' Sem ':' cost
+    : Sem T Sem ':' Cost
+        {   prod (N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode C.empty) $5 }
+    | Sem T Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
             let link = (N.new $6 C.empty C.empty N.emptyNode C.empty N.emptyNode C.empty) in
             let n = (N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode $9) in
-            let p = prod
-                        (N.setLink (N.addLinkBlockCode n $5 $7) link)
-                        (stringToInt (show (Id.toIdent $11)))
-                in
+            let p = prod (N.setLink (N.addLinkBlockCode n $5 $7) link) $11 in
             -- CSA: check duplicate bindings for T and Nt
             if (equalBindings $2 $6)
                 then errP (parseErrDupBind "Binding"
@@ -216,22 +213,22 @@ Prod :: { Prod }
                             (p)
                 else returnP p
         }
-    | Sem T Sem Pat Sem ':' cost
+    | Sem T Sem Pat Sem ':' Cost
         {%
             let (ns, env) = $4 in
             let n = N.new $2 $1 $3 ns $5 N.emptyNode C.empty in
-            let p = prod n (stringToInt (show (Id.toIdent $7))) in
+            let p = prod n $7 in
             -- CSA: check duplicate bindings
             case (updateEnv $2 env) of
                 Right _ -> returnP p
                 Left (el1 , el2) -> errP (parseErrDupBind "Binding" el1 el2) (p)
         }
-    | Sem T Sem Pat Sem '[' Sem Nt Sem ']' Sem ':' cost
+    | Sem T Sem Pat Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
             let link = N.new $8 C.empty C.empty N.emptyNode C.empty N.emptyNode C.empty in
             let (child, env) = $4 in
             let n = N.setLink (N.addLinkBlockCode (N.new $2 $1 $3 child $5 N.emptyNode $11) $7 $9) link in
-            let p = prod n (stringToInt (show (Id.toIdent $13))) in
+            let p = prod n $13 in
             -- CSA: check duplicate bindings
             -- 1: Check binding clashes for T in Env
             case (updateEnv $2 env) of
@@ -242,16 +239,13 @@ Prod :: { Prod }
                             Left (el1 , el2) -> errP (parseErrDupBind "Binding" el2 el1) (p)
                             Right _ -> returnP p
         }
-    | Sem Nt Sem ':' cost
-        { prod (N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode C.empty) (stringToInt (show (Id.toIdent $5)) ) }
-    | Sem Nt Sem '[' Sem Nt Sem ']' Sem ':' cost
+    | Sem Nt Sem ':' Cost
+        { prod (N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode C.empty) $5 }
+    | Sem Nt Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
             let link = (N.new $6 C.empty C.empty N.emptyNode C.empty N.emptyNode C.empty) in
             let n = N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode $9 in
-            let p = prod 
-                        (N.setLink (N.addLinkBlockCode n $5 $7) link)
-                        (stringToInt (show (Id.toIdent $11)) )
-                in
+            let p = prod (N.setLink (N.addLinkBlockCode n $5 $7) link) $11 in
             -- CSA: check duplicate bindings for Nt and Nt
             if (equalBindings $2 $6)
                 then errP (parseErrDupBind "Binding"
@@ -379,6 +373,12 @@ Ad :: { A.Attr }
     | out attrident attrident    { A.new (Id.toIdent $3) A.OutAttr (A.ty (Id.toIdent $2))}
 
 -------------------------------------------------------------------
+--
+-- Cost definition
+--
+Cost :: { Cost.Cost }
+    : cost      { Cost.static (stringToInt (show (Id.toIdent $1))) }
+    | Sem       { Cost.dynamic $1 }
 
 --
 -- Semantic action
