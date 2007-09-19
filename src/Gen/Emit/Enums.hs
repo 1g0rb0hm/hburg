@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  EmitEnums
+-- Module      :  Enums
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -13,7 +13,7 @@
 --
 -----------------------------------------------------------------------------
 
-module Gen.Emit.EmitEnums (
+module Gen.Emit.Enums (
         -- * Functions
         genEnums,
     ) where
@@ -25,10 +25,10 @@ import Ast.Prod (Production, setRuleLabel, setResultLabel)
 
 import Gen.Emit.Label (Label, prodToEnumLabel, defToEnumLabel)
 
-import Gen.Emit.JavaClass (JavaClass(..))
-import Gen.Emit.Java.Java (Java, java)
-import qualified Gen.Emit.Java.JEnum as Enum (JEnum, new)
-import Gen.Emit.Java.JModifier (JModifier(..))
+import Gen.Emit.Class (JavaClass(..))
+import Gen.Emit.Java.Class (Java, java)
+import qualified Gen.Emit.Java.Enum as Enum (Enum, new)
+import Gen.Emit.Java.Modifier (Modifier(..))
 -----------------------------------------------------------------------------
 
 type Package = String
@@ -44,12 +44,12 @@ genEnums pkg defs
 
 
 -- | Generates Java Enumeration for NT's
-genNtEnums :: [Definition] -> Enum.JEnum
+genNtEnums :: [Definition] -> Enum.Enum
 genNtEnums defs
     = Enum.new Public "NT" (map (\d -> defToEnumLabel d) defs)
 
 -- | Generates Java Enumeration for rules and store srule labels with productions.
-genRuleEnums :: [Definition] -> ([Definition], Enum.JEnum)
+genRuleEnums :: [Definition] -> ([Definition], Enum.Enum)
 genRuleEnums defs
     = let (ndefs, labels)
             = unzip

@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  EmitTiling
+-- Module      :  Tiling
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -10,7 +10,7 @@
 -- Java node interface.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.EmitTiling (
+module Gen.Emit.Tiling (
         -- * Functions
         genTiling,
     ) where
@@ -31,14 +31,14 @@ import qualified Gen.Tile as T (Tiling, Arity,
 
 import Gen.Emit.Label (ntToEnumLabel, childCallLabel)
 
-import Gen.Emit.JavaClass (JavaClass(..))
-import Gen.Emit.EmitNodeIf (genNodeInterface)
-import Gen.Emit.Java.Java (Java, java)
-import qualified Gen.Emit.Java.JComment as Comment (new)
-import qualified Gen.Emit.Java.JMethod as Method (JMethod, new, setComment)
-import Gen.Emit.Java.JModifier (JModifier(..))
-import qualified Gen.Emit.Java.JVariable as Variable (JVariable, new)
-import qualified Gen.Emit.Java.JParameter as Parameter (new, newFromList)
+import Gen.Emit.Class (JavaClass(..))
+import Gen.Emit.NodeIface (genNodeInterface)
+import Gen.Emit.Java.Class (Java, java)
+import qualified Gen.Emit.Java.Comment as Comment (new)
+import qualified Gen.Emit.Java.Method as Method (Method, new, setComment)
+import Gen.Emit.Java.Modifier (Modifier(..))
+import qualified Gen.Emit.Java.Variable as Variable (Variable, new)
+import qualified Gen.Emit.Java.Parameter as Parameter (new, newFromList)
 
 import qualified Data.Set as S
 import qualified Data.Map as M
@@ -87,7 +87,7 @@ genLabelMethodName arity = "label_" ++ (show arity)
 
 -- | Produce EnumSet variables.
 --      * Example: private static EnumSet unarySet = EnumSet.of(FUN,FUNAP,SIDEFFECT)
-genEnumSetVars :: T.Tiling -> ([Variable.JVariable], [Int])
+genEnumSetVars :: T.Tiling -> ([Variable.Variable], [Int])
 genEnumSetVars tile
     = let opsets = T.getOperatorsPerArity tile in
     let linkset = T.getLinkSet tile in
@@ -100,7 +100,7 @@ genEnumSetVars tile
         else ((genVar "linkSet" linkset):vars, sets)
     where
         -- | genVar.
-        genVar :: String -> S.Set Operator -> Variable.JVariable
+        genVar :: String -> S.Set Operator -> Variable.Variable
         genVar name opset
             = Variable.new Private True "EnumSet"  name
                     ("EnumSet.of(" ++ (transformOpSet opset) ++ ")")
@@ -116,7 +116,7 @@ genEnumSetVars tile
                 opset)
 
 -- | Generates label method.
-genLabelMethod :: T.Tiling -> Method.JMethod
+genLabelMethod :: T.Tiling -> Method.Method
 genLabelMethod tiling
     = let params = Parameter.newFromList [("Node","n"), ("NT","nt"), ("int","c"), ("RuleEnum","r")] in
     let m = Method.new Private True "void" "label" params funBody in
@@ -134,7 +134,7 @@ genLabelMethod tiling
             "\t}"
 
 -- | Generate closure method.
-genClosureMethod :: T.Tiling -> Method.JMethod
+genClosureMethod :: T.Tiling -> Method.Method
 genClosureMethod t
     = let params = Parameter.newFromList [("Node","n"), ("NT","nt"), ("RuleEnum","r")] in
     let m = Method.new Private True "void" "closure" params funBody in
@@ -152,7 +152,7 @@ genClosureMethod t
                 | c <- closures ] ++ "\t}"
 
 -- | Generates tile method as in [Cooper p.566]
-genTileMethod :: T.Tiling -> [Int] -> Method.JMethod
+genTileMethod :: T.Tiling -> [Int] -> Method.Method
 genTileMethod tiling sets
     = let m = Method.new Public True "void" "tile" [Parameter.new "Node" "n"] funBody in 
     Method.setComment m (Comment.new ["tile():" , "   Tile the AST as in [Cooper p.566]"])
@@ -194,7 +194,7 @@ genTileMethod tiling sets
             "{\n\t\tSystem.err.println(\"ERROR: Encountered undefined node: \" + n.kind() );\n\t}\n"
 
 -- | Generate methods which do the actual labelling of AST nodes.
-genLabelSetMethods :: [Definition] -> T.Tiling -> [Method.JMethod]
+genLabelSetMethods :: [Definition] -> T.Tiling -> [Method.Method]
 genLabelSetMethods defs tiling
     = let funmap = T.getProductionsPerArity tiling in
     map -- Iterate over all arities and generate methods
@@ -202,7 +202,7 @@ genLabelSetMethods defs tiling
         (M.keys funmap)
     where
         -- | Generate method which labels Nodes with a certain arity
-        genLabelSetMethod :: T.Arity -> [Production] -> Method.JMethod
+        genLabelSetMethod :: T.Arity -> [Production] -> Method.Method
         genLabelSetMethod arity prods
             = let m = Method.new Private True "void" (genLabelMethodName arity) [Parameter.new "Node" "n"] funBody in
             Method.setComment m (Comment.new [genLabelMethodName arity ++ "():" , "  Label nodes with arity " ++ show arity])

@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  EmitMapEntry
+-- Module      :  MapEntry
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -18,16 +18,16 @@
 -- Thus a MapEntry serves as a Tuple holding cost und rule number.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.EmitMapEntry (
+module Gen.Emit.MapEntry (
         -- * Functions
         genMapEntry,
     ) where
 
-import Gen.Emit.JavaClass (JavaClass(..))
-import Gen.Emit.Java.Java (Java, java)
-import Gen.Emit.Java.JModifier (JModifier(..))
-import qualified Gen.Emit.Java.JVariable as Variable (new)
-import qualified Gen.Emit.Java.JConstructor as Constructor (new)
+import Gen.Emit.Class (JavaClass(..))
+import Gen.Emit.Java.Class (Java, java)
+import Gen.Emit.Java.Modifier (Modifier(..))
+import qualified Gen.Emit.Java.Variable as Variable (new)
+import qualified Gen.Emit.Java.Constructor as Constructor (new)
 -----------------------------------------------------------------------------
 
 type Package = String

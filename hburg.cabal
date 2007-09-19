@@ -73,22 +73,22 @@ other-modules:
     Env.Env
     Gen.Tile
     Gen.Emit
-    Gen.Emit.EmitClass
-    Gen.Emit.EmitEnums
-    Gen.Emit.EmitEval
-    Gen.Emit.EmitMapEntry
-    Gen.Emit.EmitNodeIf
-    Gen.Emit.EmitTiling
-    Gen.Emit.JavaClass
+    Gen.Backend
+    Gen.Emit.Enums
+    Gen.Emit.Eval
+    Gen.Emit.MapEntry
+    Gen.Emit.NodeIface
+    Gen.Emit.Tiling
+    Gen.Emit.Class
     Gen.Emit.Label
-    Gen.Emit.Java.Java
-    Gen.Emit.Java.JComment
-    Gen.Emit.Java.JConstructor
-    Gen.Emit.Java.JEnum
-    Gen.Emit.Java.JMethod
-    Gen.Emit.Java.JModifier
-    Gen.Emit.Java.JParameter
-    Gen.Emit.Java.JVariable
+    Gen.Emit.Java.Class
+    Gen.Emit.Java.Comment
+    Gen.Emit.Java.Constructor
+    Gen.Emit.Java.Enum
+    Gen.Emit.Java.Method
+    Gen.Emit.Java.Modifier
+    Gen.Emit.Java.Parameter
+    Gen.Emit.Java.Variable
     Parser.Lexer
     Parser.Parser
     Parser.ParseErr

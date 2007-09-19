@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  JavaClass
+-- Module      :  Class
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -14,21 +14,23 @@
 --    * <http://java.sun.com/docs/books/tutorial/java/javaOO/nested.html>
 -----------------------------------------------------------------------------
 
-module Gen.Emit.JavaClass (
+module Gen.Emit.Class (
         -- * Classes
         JavaClass(..)
     ) where
 
-import Gen.Emit.EmitClass (EmitClass)
-import Gen.Emit.Java.JEnum (JEnum)
-import Gen.Emit.Java.JMethod (JMethod)
-import Gen.Emit.Java.JVariable (JVariable)
-import Gen.Emit.Java.JConstructor (JConstructor)
-import Gen.Emit.Java.JModifier (JModifier)
-import Gen.Emit.Java.JComment (JComment)
+import Prelude hiding (Enum)
+
+import Gen.Emit (Emit)
+import qualified Gen.Emit.Java.Enum as E (Enum)
+import Gen.Emit.Java.Method (Method)
+import Gen.Emit.Java.Variable (Variable)
+import Gen.Emit.Java.Constructor (Constructor)
+import Gen.Emit.Java.Modifier (Modifier)
+import Gen.Emit.Java.Comment (Comment)
 -----------------------------------------------------------------------------
 
-class (EmitClass a) => JavaClass a where
+class (Emit a) => JavaClass a where
     -- | set package name in which this class resides
     jSetPackage :: a -> String -> a
     -- | retrieve class package name
@@ -38,9 +40,9 @@ class (EmitClass a) => JavaClass a where
     -- | get imports for this class
     jGetImports :: a->  [String]
     -- | get class comments
-    jGetComments :: a -> JComment
+    jGetComments :: a -> Comment
     -- | get class comments
-    jSetComments :: a -> JComment -> a
+    jSetComments :: a -> Comment -> a
     -- | set class name
     jSetClassName :: a -> String -> a
     -- | get class name
@@ -50,21 +52,21 @@ class (EmitClass a) => JavaClass a where
     -- | get static initializer block
     jGetStaticInitializer :: a -> String
     -- | set constructors
-    jSetConstructors :: a -> [JConstructor] -> a
+    jSetConstructors :: a -> [Constructor] -> a
     -- | get constructors
-    jGetConstructors :: a -> [JConstructor]
+    jGetConstructors :: a -> [Constructor]
     -- | set class variables
-    jSetVariables :: a -> [JVariable] -> a
+    jSetVariables :: a -> [Variable] -> a
     -- | get class variables
-    jGetVariables :: a -> [JVariable]
+    jGetVariables :: a -> [Variable]
     -- | set methods
-    jSetMethods :: a -> [JMethod] -> a
+    jSetMethods :: a -> [Method] -> a
     -- | get methods
-    jGetMethods :: a -> [JMethod]
+    jGetMethods :: a -> [Method]
     -- | set class modifier
-    jSetModifier :: a -> JModifier -> a
+    jSetModifier :: a -> Modifier -> a
     -- | get class modifier
-    jGetModifier :: a -> JModifier
+    jGetModifier :: a -> Modifier
     -- | is the class a static class
     jIsStatic :: a -> Bool
     jSetStatic :: a -> Bool -> a
@@ -80,9 +82,9 @@ class (EmitClass a) => JavaClass a where
     -- | get nested classes from this class
     jGetNestedClasses :: a -> [a]
     -- | add enumeration classes to this class
-    jSetEnumClasses :: a -> [JEnum] -> a
+    jSetEnumClasses :: a -> [E.Enum] -> a
     -- | get enumeration classes from this class
-    jGetEnumClasses :: a -> [JEnum]
+    jGetEnumClasses :: a -> [E.Enum]
     -- | add additional class to this class: 
     --      * A Java file can have one and only one public Java class.
     --          But the file can contain additional non public classes.

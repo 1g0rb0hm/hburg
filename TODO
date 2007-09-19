@@ -1,7 +1,7 @@
 Design Issues
 ----------------------------------------------------
- * Create SourceCode class and make every JConstructor,
-    JMethod, JVariable etc. an instance of it. That way there
+ * Create SourceCode class and make every Constructor,
+    Method, Variable etc. an instance of it. That way there
     is a unified way to add comments to any piece of emitted
     source code.
 

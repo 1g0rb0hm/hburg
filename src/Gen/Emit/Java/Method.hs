@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  JMethod
+-- Module      :  Method
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -9,9 +9,9 @@
 -- Java method.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.Java.JMethod (
+module Gen.Emit.Java.Method (
         -- * Types
-        JMethod,
+        Method,
         -- * Construction
         new,
         -- * Functions
@@ -22,33 +22,33 @@ module Gen.Emit.Java.JMethod (
 
 import Util (stringFoldr)
 
-import Gen.Emit.Java.JModifier (JModifier)
-import qualified Gen.Emit.Java.JComment as Comment (JComment, new)
-import Gen.Emit.Java.JParameter (JParameter)
+import Gen.Emit.Java.Modifier (Modifier)
+import qualified Gen.Emit.Java.Comment as Comment (Comment, new)
+import Gen.Emit.Java.Parameter (Parameter)
 ------------------------------------------------------------------------------------
 
 type Type = String
 type Body = String
 
-data JMethod
+data Method
     = Method {
-        comment     :: Comment.JComment,-- ^ method comments
-        modifier    :: JModifier,       -- ^ public|private|protected modifiers
+        comment     :: Comment.Comment,-- ^ method comments
+        modifier    :: Modifier,       -- ^ public|private|protected modifiers
         isStatic    :: Bool,
         isIface     :: Bool,
         retTy       :: Type,            -- ^ method return type
         name        :: String,          -- ^ method Identifier
-        params      :: [JParameter],    -- ^ method parameters
+        params      :: [Parameter],    -- ^ method parameters
         body        :: Body             -- ^ method body
     }
 
-instance Eq JMethod where
+instance Eq Method where
     (==)
         (Method {retTy = ty1, name = i1, params = params1}) 
         (Method {retTy = ty2, name = i2, params = params2}) 
             = (((ty1 == ty2) && (i2 == i2)) && (params1 == params2))
 
-instance Show JMethod where
+instance Show Method where
     -- Interface definition.
     show m | (isIface m)
         = genMethodSig m ++ ";"
@@ -59,8 +59,8 @@ instance Show JMethod where
         (body m) ++                            -- method body
         "\n} // END METHOD " ++ (name m) ++ "()"
 
--- | Constructor for building a JMethod.
-new :: JModifier -> Bool -> Type -> String -> [JParameter] -> Body -> JMethod
+-- | Constructor for building a Method.
+new :: Modifier -> Bool -> Type -> String -> [Parameter] -> Body -> Method
 new m static ty str ps b
     = Method {
         comment = Comment.new [],
@@ -73,23 +73,23 @@ new m static ty str ps b
         body = b
     }
 
-setComment :: JMethod -> Comment.JComment -> JMethod
+setComment :: Method -> Comment.Comment -> Method
 setComment m c = m { comment = c }
 
-getName :: JMethod -> String
+getName :: Method -> String
 getName m = name m
 
-getRetTy :: JMethod -> Type
+getRetTy :: Method -> Type
 getRetTy m = retTy m
 
-getParams :: JMethod -> [JParameter]
+getParams :: Method -> [Parameter]
 getParams m = params m
 
-setIfaceDef :: JMethod -> Bool -> JMethod
+setIfaceDef :: Method -> Bool -> Method
 setIfaceDef m bool = m { isIface = bool }
 
 -- | genMethodSig. Generate method signature.
-genMethodSig :: JMethod -> String
+genMethodSig :: Method -> String
 genMethodSig m
     = -- Method comments
     show (comment m) ++ "\n" ++

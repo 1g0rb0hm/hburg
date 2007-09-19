@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  JParameter
+-- Module      :  Parameter
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -9,9 +9,9 @@
 -- Java parameter type.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.Java.JParameter (
+module Gen.Emit.Java.Parameter (
         -- * Types
-        JParameter,
+        Parameter,
         -- * Construction
         new, newFromList,
         -- * Functions
@@ -23,24 +23,24 @@ module Gen.Emit.Java.JParameter (
 type Type = String
 type Ident = String
 
-data JParameter
+data Parameter
     = Parameter (Type, Ident)
     deriving (Eq)
 
-instance Show JParameter where
+instance Show Parameter where
     show (Parameter (ty,i)) | ty == "" = i
     show (Parameter (ty,i)) | i == "" = ty
     show (Parameter (ty,i)) = ty ++ " " ++ i
     
--- | Constructor for building a new JParameter
-new :: Type -> Ident -> JParameter
+-- | Constructor for building a new Parameter
+new :: Type -> Ident -> Parameter
 new ty ident = Parameter (ty, ident)
 
-newFromList :: [(Type, Ident)] -> [JParameter]
+newFromList :: [(Type, Ident)] -> [Parameter]
 newFromList ps = map (\(ty, i) -> new ty i) (ps)
 
-getIdent :: JParameter -> Ident
+getIdent :: Parameter -> Ident
 getIdent (Parameter p) = snd p
 
-getType :: JParameter -> Type
+getType :: Parameter -> Type
 getType (Parameter p) = fst p

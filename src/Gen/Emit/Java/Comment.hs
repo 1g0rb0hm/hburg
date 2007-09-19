@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  JComment
+-- Module      :  Comment
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -9,9 +9,9 @@
 -- Java comments.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.Java.JComment (
+module Gen.Emit.Java.Comment (
         -- * Types
-        JComment,
+        Comment,
         -- * Construction
         new,
     ) where
@@ -19,11 +19,11 @@ module Gen.Emit.Java.JComment (
 import Util (stringFoldr)
 ------------------------------------------------------------------------------------
 
-data JComment
+data Comment
     = MkJCommment
         [String]    -- Comments
 
-instance Show JComment where
+instance Show Comment where
     show (MkJCommment []) = ""
     show (MkJCommment (x:[])) = "// " ++ x
     show (MkJCommment xs)
@@ -33,5 +33,5 @@ instance Show JComment where
             xs) ++ "\n */"
 
 -- | Constructor for building a comment
-new :: [String] -> JComment
+new :: [String] -> Comment
 new comments = MkJCommment comments

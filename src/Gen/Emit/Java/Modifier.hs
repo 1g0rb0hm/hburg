@@ -1,24 +1,31 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  EmitClass
+-- Module      :  Modifier
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
 --
 --
--- Every class should know how to emit itself and where it belongs.
+-- Java modifiers.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.EmitClass (
-        -- * Classes
-        EmitClass(..),
+module Gen.Emit.Java.Modifier (
+        -- * Types
+        Modifier(..),
     ) where
 
-import System.FilePath.Posix (FilePath)
 ------------------------------------------------------------------------------------
 
--- | Whatever is an instance of Emit must obviously be able to emit itself
---    and to tell where it wants to emit itself
-class EmitClass a where
-    emit :: a -> String
-    emitTo :: a -> FilePath
+-- | Java modifier types
+data Modifier
+    = Private
+    | Public
+    | Protected
+    | NoModifier
+    deriving (Eq)
+
+instance Show Modifier where
+    show (Protected) = "protected"
+    show (Public) = "public"
+    show (Private) = "private"
+    show (NoModifier) = ""

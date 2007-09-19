@@ -28,8 +28,8 @@ import Ast.Decl (Declaration)
 import Ast.Def (Definition)
 import Ast.Op (Operator)
 
-import Gen.Emit (emit)
-import qualified Gen.Emit.EmitClass as E
+import qualified Gen.Backend as B (emit)
+import qualified Gen.Emit as E (Emit(..))
 
 ------------------------------------------------------------------------------------
 
@@ -144,7 +144,7 @@ codeGen args
             case runParse content of
                 -- If the result or the parser is Right we emit code for it
                 Right (incl, decl, ops, defs, parseDebug) ->
-                    let clazz = emit outclass outpkg ntype incl decl ops defs in
+                    let clazz = B.emit outclass outpkg ntype incl decl ops defs in
                     if (OptDebug `elem` cli)
                         then 
                             do
@@ -187,7 +187,7 @@ runParse input =
                     Left (s, "")
 
 -- | Output generated class into a file
-outputClass :: E.EmitClass a => [a] -> IO [()]
+outputClass :: E.Emit a => [a] -> IO [()]
 outputClass classes
     = mapM
         (\clazz -> writeFile (E.emitTo clazz) (E.emit clazz))

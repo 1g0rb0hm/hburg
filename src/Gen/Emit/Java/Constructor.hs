@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  JConstructor
+-- Module      :  Constructor
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -9,37 +9,37 @@
 -- Java constructor.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.Java.JConstructor (
+module Gen.Emit.Java.Constructor (
         -- * Types
-        JConstructor,
+        Constructor,
         -- * Construction
         new,
     ) where
 
 import Util (stringFoldr)
 
-import Gen.Emit.Java.JModifier (JModifier)
-import qualified Gen.Emit.Java.JComment as Comment (JComment, new)
+import Gen.Emit.Java.Modifier (Modifier)
+import qualified Gen.Emit.Java.Comment as Comment (Comment, new)
 ------------------------------------------------------------------------------------
 
 type Parameter = String
 type Body = String
 
--- | JConstructor type
-data JConstructor 
+-- | Constructor type
+data Constructor 
     = MkConstructor
-        Comment.JComment    -- comment
-        JModifier           -- private|public|protected modifier
+        Comment.Comment    -- comment
+        Modifier           -- private|public|protected modifier
         String              -- constructor identifier
         [Parameter]         -- constructor parameters
         Body                -- constructor body
 
-instance Eq JConstructor where
+instance Eq Constructor where
     (==) (MkConstructor _ _ i1 params1 _) (MkConstructor _ _ i2 params2 _) 
         = ((i2 == i2) && (params1 == params2))
 
 
-instance Show JConstructor where
+instance Show Constructor where
     show (MkConstructor comments m ident params body)
         = -- Comments
         show comments ++ "\n" ++
@@ -51,6 +51,6 @@ instance Show JConstructor where
             params) ++ ") {\n" ++
         body ++ "\n} // END CONSTRUCTOR " ++ ident ++ "()"
 
--- | Constructor for building a JConstructor
-new :: JModifier -> String -> [Parameter] -> Body -> JConstructor
+-- | Constructor for building a Constructor
+new :: Modifier -> String -> [Parameter] -> Body -> Constructor
 new m str params body = MkConstructor (Comment.new []) m str params body

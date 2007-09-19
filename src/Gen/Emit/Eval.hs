@@ -1,15 +1,16 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  EmitEval
+-- Module      :  Eval
 -- Copyright   :  Copyright (c) 2007 Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE)
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
 --
 --
--- TODO: Write short summary
+-- This module generates target code executing user supplied semantic actions
+-- in the second top-down pass over the intermediate representation.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.EmitEval (
+module Gen.Emit.Eval (
         -- * Functions
         genEval,
     ) where
@@ -27,11 +28,11 @@ import Ast.Decl (Declaration)
 
 import Gen.Emit.Label (defToEvalLabel, defToEnumLabel, childCallLabel, tTyToEvalLabel)
 
-import Gen.Emit.JavaClass (JavaClass(..))
-import Gen.Emit.Java.Java (Java, java)
-import Gen.Emit.Java.JModifier (JModifier(..))
-import qualified Gen.Emit.Java.JMethod as Method (JMethod, new)
-import qualified Gen.Emit.Java.JParameter as Parameter (JParameter, new)
+import Gen.Emit.Class (JavaClass(..))
+import Gen.Emit.Java.Class (Java, java)
+import Gen.Emit.Java.Modifier (Modifier(..))
+import qualified Gen.Emit.Java.Method as Method (Method, new)
+import qualified Gen.Emit.Java.Parameter as Parameter (Parameter, new)
 -----------------------------------------------------------------------------
 
 
@@ -68,14 +69,14 @@ returnStmt d
         list -> concatMap (\x -> "return " ++ show (attrId x) ++ ";\n") list
 
 -- | Calculates parameters for each evaluation method.
-genParameters :: Definition -> [Parameter.JParameter]
+genParameters :: Definition -> [Parameter.Parameter]
 genParameters d
     = case attrGetIn (getAttr d) of
         [] -> []
         list -> map (\x -> Parameter.new (show (attrTy x)) (show (attrId x))) (list)
 
 -- | Generates all evaluation methods which emit code supplied by the user in semantic actions.
-genEvalMethods :: [Definition] -> [Method.JMethod]
+genEvalMethods :: [Definition] -> [Method.Method]
 genEvalMethods defs
     = map
         (\d ->

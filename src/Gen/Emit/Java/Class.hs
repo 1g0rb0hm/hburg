@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Java
+-- Module      :  Class
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -10,7 +10,7 @@
 -- represents a Java class (e.g. regular class, interface, enumration)
 -----------------------------------------------------------------------------
 
-module Gen.Emit.Java.Java (
+module Gen.Emit.Java.Class (
         -- * Types
         Java,
         -- * Construction
@@ -21,14 +21,14 @@ import Util (stringFoldr)
 
 import System.FilePath.Posix (pathSeparator)
 
-import Gen.Emit.EmitClass (EmitClass(..))
-import Gen.Emit.JavaClass (JavaClass(..))
-import Gen.Emit.Java.JEnum (JEnum)
-import qualified Gen.Emit.Java.JMethod as Method (JMethod, setIfaceDef)
-import Gen.Emit.Java.JVariable (JVariable)
-import Gen.Emit.Java.JConstructor (JConstructor)
-import Gen.Emit.Java.JModifier (JModifier(..))
-import qualified Gen.Emit.Java.JComment as Comment (JComment, new)
+import Gen.Emit (Emit(emit,emitTo))
+import Gen.Emit.Class (JavaClass(..))
+import Gen.Emit.Java.Enum as E (Enum)
+import qualified Gen.Emit.Java.Method as Method (Method, setIfaceDef)
+import Gen.Emit.Java.Variable (Variable)
+import Gen.Emit.Java.Constructor (Constructor)
+import Gen.Emit.Java.Modifier (Modifier(..))
+import qualified Gen.Emit.Java.Comment as Comment (Comment, new)
 -----------------------------------------------------------------------------
 
 type Package = String
@@ -44,17 +44,17 @@ data Java
     = Class {
         package         :: Package,             -- ^ package in which this Java file resides
         imports         :: [Import],            -- ^ java import statements
-        enumerations    :: [JEnum],             -- ^ defined enumerations
-        modifier        :: JModifier,           -- ^ private|public|protected modifier
+        enumerations    :: [E.Enum],             -- ^ defined enumerations
+        modifier        :: Modifier,           -- ^ private|public|protected modifier
         isStatic        :: Bool,
         isFinal         :: Bool,
         isIface         :: Bool,
-        comments        :: Comment.JComment,    -- ^ class comments
+        comments        :: Comment.Comment,    -- ^ class comments
         name            :: Name,                -- ^ class name
-        constructors    :: [JConstructor],      -- ^ constructors
+        constructors    :: [Constructor],      -- ^ constructors
         staticInit      :: StaticInit,          -- ^ static initializer block
-        variables       :: [JVariable],         -- ^ java variables
-        methods         :: [Method.JMethod],    -- ^ java methods
+        variables       :: [Variable],         -- ^ java variables
+        methods         :: [Method.Method],    -- ^ java methods
         nestedClasses   :: [NestedClass],       -- ^ nested classes
         moreClasses     :: [AdditionalClass],   -- ^ additional classes
         userCode        :: UserCode             -- ^ user code as defined in the 'declerations' section
@@ -133,7 +133,7 @@ instance JavaClass Java where
             then "// @USER CODE START\n" ++ uc ++ "\n// @USER CODE END\n"
             else uc
 
-instance EmitClass Java where
+instance Emit Java where
     emit clazz = show clazz
     emitTo clazz
         = let dir

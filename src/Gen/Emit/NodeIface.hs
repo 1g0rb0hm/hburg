@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  EmitNodeIf
+-- Module      :  NodeIface
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -10,17 +10,17 @@
 -- correct AST node Java interface is emitted by this module.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.EmitNodeIf (
+module Gen.Emit.NodeIface (
         -- * Functions
         genNodeInterface,
     ) where
 
-import Gen.Emit.JavaClass (JavaClass(..))
-import Gen.Emit.Java.Java (Java, java)
-import Gen.Emit.Java.JModifier (JModifier(..))
-import qualified Gen.Emit.Java.JMethod as Method (JMethod, new)
-import qualified Gen.Emit.Java.JComment as Comment (JComment, new)
-import qualified Gen.Emit.Java.JParameter as Parameter (newFromList)
+import Gen.Emit.Class (JavaClass(..))
+import Gen.Emit.Java.Class (Java, java)
+import Gen.Emit.Java.Modifier (Modifier(..))
+import qualified Gen.Emit.Java.Method as Method (Method, new)
+import qualified Gen.Emit.Java.Comment as Comment (Comment, new)
+import qualified Gen.Emit.Java.Parameter as Parameter (newFromList)
 -----------------------------------------------------------------------------
 
 type Children = Int
@@ -41,7 +41,7 @@ genNodeInterface pkg children hasLnk retTy
     jSetIface (jSetMethods (jSetComments j0 genComments) methods) True
 
 -- | Generate Child Node access methods.
-genChildMethods :: Children -> [Method.JMethod]
+genChildMethods :: Children -> [Method.Method]
 genChildMethods children
     = map
         (\arity ->
@@ -49,15 +49,15 @@ genChildMethods children
         ([1 .. children])
 
 -- | genLinkMethod.
-genLinkMethod :: [Method.JMethod]
+genLinkMethod :: [Method.Method]
 genLinkMethod = [Method.new Public False "Node" "link" [] ""]
 
 -- | Generate link node access method interface
-genKindMethod :: KindReturn -> [Method.JMethod]
+genKindMethod :: KindReturn -> [Method.Method]
 genKindMethod ty = [Method.new Public False ty "kind" [] ""]
 
 -- | Generate Java MapEntry manipulation method interfaces
-genMapEntryMethods :: [Method.JMethod]
+genMapEntryMethods :: [Method.Method]
 genMapEntryMethods
     = [Method.new Public False "boolean"  "is"   (Parameter.newFromList [("NT","nt")]) ""] ++
     [Method.new Public False "MapEntry" "put"  (Parameter.newFromList [("NT","nt"),("MapEntry","entry")]) ""] ++
@@ -65,7 +65,7 @@ genMapEntryMethods
     [Method.new Public False "int"      "cost" (Parameter.newFromList [("NT","nt")]) ""] ++
     [Method.new Public False "RuleEnum" "rule" (Parameter.newFromList [("NT","nt")]) ""]
 
-genComments :: Comment.JComment
+genComments :: Comment.Comment
 genComments
     = Comment.new [
     "Node Interface Implementation:",
