@@ -47,10 +47,9 @@ type Closure = [P.Production]
 
 -- | Non terminal definition type
 data Definition
-    = Def {nt       :: Nt.Nt,           -- ^ the non terminal being defined
-           code     :: Code,            -- ^ associated semantic action
-           prods    :: [P.Production]   -- ^ a definition consists of productions
-        }
+    = Def { nt      :: Nt.Nt            -- ^ the non terminal being defined
+          , code    :: Code             -- ^ associated semantic action
+          , prods   :: [P.Production]}  -- ^ a definition consists of productions
 
 instance Eq Definition where
     (==) d1 d2 =  nt d1 == nt d2
@@ -93,8 +92,7 @@ new :: Id.Ident -> [Attr] -> Code -> [P.Production] -> Definition
 new i attrs c ps
     = Def {nt = (Nt.new i B.empty attrs),
            code = c,
-           prods = ps
-        }
+           prods = ps}
 
 --
 -- Getters

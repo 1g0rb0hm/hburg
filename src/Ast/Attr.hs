@@ -28,7 +28,16 @@ import qualified Ast.Ident as Id (Ident)
 ------------------------------------------------------------------------------------
 
 -- | Specifies whether the attribute is an input or an output attribute
-data AttrTy = InAttr | OutAttr deriving (Eq)
+data AttrTy
+    = InAttr
+    | OutAttr
+    deriving (Eq)
+
+-- | Attribute datatype
+data Attr
+    = Attr { ident  :: Id.Ident -- ^ attribute identifier
+           , isOut  :: Bool     -- ^ is it an output type
+           , aty    :: Ty}      -- ^ language specific type
 
 instance Show AttrTy where
     show InAttr = "in"
@@ -47,13 +56,6 @@ instance Eq Ty where
 instance Show Ty where
     show (MkTy i) = show i
     show MkEmptyTy = ""
-
--- | Attribute datatype
-data Attr 
-    = Attr { ident  :: Id.Ident -- ^ attribute identifier
-           , isOut  :: Bool     -- ^ is it an output type
-           , aty    :: Ty       -- ^ language specific type
-           }
 
 instance Eq Attr where
     (==) a1 a2 = ((isOut a1 == isOut a2) && (aty a1 == aty a2))

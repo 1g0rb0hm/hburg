@@ -41,24 +41,22 @@ type UserCode = String
 
 -- | Java Type
 data Java
-    = Class {
-        package         :: Package,             -- ^ package in which this Java file resides
-        imports         :: [Import],            -- ^ java import statements
-        enumerations    :: [E.Enum],             -- ^ defined enumerations
-        modifier        :: Modifier,           -- ^ private|public|protected modifier
-        isStatic        :: Bool,
-        isFinal         :: Bool,
-        isIface         :: Bool,
-        comments        :: Comment.Comment,    -- ^ class comments
-        name            :: Name,                -- ^ class name
-        constructors    :: [Constructor],      -- ^ constructors
-        staticInit      :: StaticInit,          -- ^ static initializer block
-        variables       :: [Variable],         -- ^ java variables
-        methods         :: [Method.Method],    -- ^ java methods
-        nestedClasses   :: [NestedClass],       -- ^ nested classes
-        moreClasses     :: [AdditionalClass],   -- ^ additional classes
-        userCode        :: UserCode             -- ^ user code as defined in the 'declerations' section
-    }
+    = Class {   package         :: Package              -- ^ package in which this Java file resides
+            ,   imports         :: [Import]             -- ^ java import statements
+            ,   enumerations    :: [E.Enum]             -- ^ defined enumerations
+            ,   modifier        :: Modifier             -- ^ private|public|protected modifier
+            ,   isStatic'       :: Bool
+            ,   isFinal'        :: Bool
+            ,   isIface'        :: Bool
+            ,   comments        :: Comment.Comment      -- ^ class comments
+            ,   name            :: Name                 -- ^ class name
+            ,   constructors    :: [Constructor]        -- ^ constructors
+            ,   staticInit      :: StaticInit           -- ^ static initializer block
+            ,   variables       :: [Variable]           -- ^ java variables
+            ,   methods         :: [Method.Method]      -- ^ java methods
+            ,   nestedClasses   :: [NestedClass]        -- ^ nested classes
+            ,   moreClasses     :: [AdditionalClass]    -- ^ additional classes
+            ,   userCode        :: UserCode}            -- ^ user code as defined in the 'declerations' section
 
 -- | java. Smart constructor.
 java :: Package -> Name -> Java
@@ -67,9 +65,9 @@ java pack n
             imports = [],
             enumerations = [],
             modifier = Public,
-            isStatic = False,
-            isFinal = False,
-            isIface = False,
+            isStatic' = False,
+            isFinal' = False,
+            isIface' = False,
             comments = Comment.new [n ++ " Class"],
             name = n,
             constructors = [],
@@ -82,53 +80,53 @@ java pack n
         }
 
 instance JavaClass Java where
-    jSetPackage c pkg = c { package = pkg }
-    jGetPackage c = package c
+    setPackage c pkg = c { package = pkg }
+    getPackage c = package c
 
-    jSetImports c imp = c { imports = imp }
-    jGetImports c = imports c
+    setImports c imp = c { imports = imp }
+    getImports c = imports c
 
-    jSetComments c com = c { comments = com }
-    jGetComments c = comments c
+    setComments c com = c { comments = com }
+    getComments c = comments c
 
-    jSetClassName c name1 = c { name = name1 }
-    jGetClassName c = name c
+    setClassName c name1 = c { name = name1 }
+    getClassName c = name c
 
-    jIsStatic c = isStatic c
-    jSetStatic c bool = c { isStatic = bool }
+    isStatic c = isStatic' c
+    setStatic c bool = c { isStatic' = bool }
 
-    jIsFinal c = isFinal c
-    jSetFinal c bool = c { isFinal = bool }
+    isFinal c = isFinal' c
+    setFinal c bool = c { isFinal' = bool }
 
-    jIsIface c = isIface c
-    jSetIface c bool = c { isIface = bool }
+    isIface c = isIface' c
+    setIface c bool = c { isIface' = bool }
 
-    jSetModifier c m = c { modifier = m }
-    jGetModifier c = modifier c
+    setModifier c m = c { modifier = m }
+    getModifier c = modifier c
 
-    jSetStaticInitializer c i = c { staticInit = i }
-    jGetStaticInitializer c =  staticInit c
+    setStaticInitializer c i = c { staticInit = i }
+    getStaticInitializer c =  staticInit c
 
-    jSetConstructors c cnst = c { constructors = cnst }
-    jGetConstructors c = constructors c
+    setConstructors c cnst = c { constructors = cnst }
+    getConstructors c = constructors c
 
-    jSetVariables c vars = c { variables = vars }
-    jGetVariables c = variables c
+    setVariables c vars = c { variables = vars }
+    getVariables c = variables c
 
-    jSetMethods c meths = c { methods = meths }
-    jGetMethods c = methods c
+    setMethods c meths = c { methods = meths }
+    getMethods c = methods c
 
-    jSetNestedClasses c nested = c { nestedClasses = nested }
-    jGetNestedClasses c = nestedClasses c
+    setNestedClasses c nested = c { nestedClasses = nested }
+    getNestedClasses c = nestedClasses c
 
-    jSetEnumClasses c enum = c { enumerations = enum }
-    jGetEnumClasses c = enumerations c
+    setEnumClasses c enum = c { enumerations = enum }
+    getEnumClasses c = enumerations c
 
-    jSetAdditionalClasses c more = c { moreClasses = more }
-    jGetAdditionalClasses c = moreClasses c
+    setAdditionalClasses c more = c { moreClasses = more }
+    getAdditionalClasses c = moreClasses c
 
-    jSetUserCode c uc = c { userCode = uc }
-    jGetUserCode (Class { userCode = uc })
+    setUserCode c uc = c { userCode = uc }
+    getUserCode (Class { userCode = uc })
         = if (uc /= "")
             then "// @USER CODE START\n" ++ uc ++ "\n// @USER CODE END\n"
             else uc
@@ -147,45 +145,45 @@ instance Emit Java where
 
 instance Show Java where
         -- Interface.
-        show clazz | (jIsIface clazz)
+        show clazz | (isIface clazz)
             = packageDef clazz ++ importDefs clazz ++
-            show (jGetComments clazz) ++ "\n" ++
-            show (jGetModifier clazz) ++ " interface " ++
-            jGetClassName clazz ++ " {\n" ++
-            (foldWith "\n" [ "\t" ++ show (Method.setIfaceDef z True) | z <- jGetMethods clazz])
-            ++ "\n\n} // END INTERFACE " ++ jGetClassName clazz ++ "\n"
+            show (getComments clazz) ++ "\n" ++
+            show (getModifier clazz) ++ " interface " ++
+            getClassName clazz ++ " {\n" ++
+            (foldWith "\n" [ "\t" ++ show (Method.setIfaceDef z True) | z <- getMethods clazz])
+            ++ "\n\n} // END INTERFACE " ++ getClassName clazz ++ "\n"
 
         -- Enumeration.
-        show clazz | (jGetEnumClasses clazz /= [])
+        show clazz | (getEnumClasses clazz /= [])
             = packageDef clazz ++ importDefs clazz ++
-            show (jGetComments clazz) ++ "\n" ++
+            show (getComments clazz) ++ "\n" ++
             -- Enumerations
-            (foldWith "\n" [ show z | z <- jGetEnumClasses clazz ]) ++ "\n"
+            (foldWith "\n" [ show z | z <- getEnumClasses clazz ]) ++ "\n"
 
         -- Regular class.
         show clazz 
             = packageDef clazz ++ importDefs clazz ++
-            show (jGetComments clazz) ++ "\n" ++
+            show (getComments clazz) ++ "\n" ++
             -- Class name
-            show (jGetModifier clazz) ++
-            (\b -> if (b) then " static " else " " ) (jIsStatic clazz)  ++ "class " ++
-            jGetClassName clazz ++ " {\n" ++
+            show (getModifier clazz) ++
+            (\b -> if (b) then " static " else " " ) (isStatic clazz)  ++ "class " ++
+            getClassName clazz ++ " {\n" ++
             -- Class Constructors
-            (foldWith "\n"  [ show z | z <- jGetConstructors clazz ]) ++ "\n" ++
+            (foldWith "\n"  [ show z | z <- getConstructors clazz ]) ++ "\n" ++
             -- Static initializers
-            jGetStaticInitializer clazz ++ "\n" ++
+            getStaticInitializer clazz ++ "\n" ++
             -- User Code
-            jGetUserCode clazz ++
+            getUserCode clazz ++
             -- Class and instance variables
-            (foldWith "\n" [ show z | z <- jGetVariables clazz ]) ++ "\n\n" ++
+            (foldWith "\n" [ show z | z <- getVariables clazz ]) ++ "\n\n" ++
             -- Methods
-            (foldWith "\n\n" [ show z | z <- jGetMethods clazz ]) ++ "\n" ++
+            (foldWith "\n\n" [ show z | z <- getMethods clazz ]) ++ "\n" ++
             -- Nested Classes
-            (foldWith "\n" [ show z | z <- jGetNestedClasses clazz ]) ++ "\n" ++
+            (foldWith "\n" [ show z | z <- getNestedClasses clazz ]) ++ "\n" ++
             -- Class End
-            "\n} // END CLASS " ++ jGetClassName clazz ++ "\n" ++
+            "\n} // END CLASS " ++ getClassName clazz ++ "\n" ++
             -- Additional Classes
-            (foldWith "\n" [ show z | z <- jGetAdditionalClasses clazz ]) ++ "\n"
+            (foldWith "\n" [ show z | z <- getAdditionalClasses clazz ]) ++ "\n"
 
 -- | foldWith.
 foldWith :: String -> [String] -> String
@@ -194,10 +192,10 @@ foldWith z strs = stringFoldr (\x y -> x ++ z ++ y) (strs)
 -- | packageDef.
 packageDef :: Java -> String
 packageDef clazz 
-    = if (jGetPackage clazz /= "")
-        then "package " ++ jGetPackage clazz ++ ";\n\n"
+    = if (getPackage clazz /= "")
+        then "package " ++ getPackage clazz ++ ";\n\n"
         else ""
 
 -- | importDefs.
 importDefs :: Java -> String
-importDefs clazz = (foldWith "\n" (jGetImports clazz)) ++ "\n\n"
+importDefs clazz = (foldWith "\n" (getImports clazz)) ++ "\n\n"

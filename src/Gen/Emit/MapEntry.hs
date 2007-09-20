@@ -41,5 +41,5 @@ genMapEntry pkg
         in
     let v1 = Variable.new Public False "int" "cost" "" in
     let v2 = Variable.new Public False "RuleEnum" "rule" "" in
-    let j0 = jSetConstructors (java pkg "MapEntry") [c1, c2] in
-    jSetVariables j0 [v1, v2]
+    let j0 = setConstructors (java pkg "MapEntry") [c1, c2] in
+    setVariables j0 [v1, v2]

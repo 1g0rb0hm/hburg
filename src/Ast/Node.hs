@@ -12,22 +12,22 @@
 
 module Ast.Node (
         -- * Classes
-        NodeClass(..),
+        TreeClass(..),
         -- * Types
-        Node,
+        Node, Position(..),
         -- * Construction
         new,
         -- * Functions
         addLinkBlockCode, setLink,
-        getName, getTerm, getIdent, getLink,
-        getSem1, getSem2, getSem3, getSem4, getSem5, getSem6,
-        equalIdents,hasLink,
-        showAsFunction,
+        getName, getTerm, getIdent, getLink, getSemAct,
+        equalIdents, hasLink,
+        showAsFun,
         -- ** AST traversal functions
         mapPreOrder,mapPreOrder2,mapPreOrder3,
         mapChildren,
     ) where
 
+import qualified Data.Map as M
 
 import qualified Ast.Ident as Id (Ident)
 import Ast.Term (Term, TermClass(..))
@@ -36,9 +36,9 @@ import qualified Ast.Code as C (Code, empty)
 import Env.Env(ElemClass(..), ElemType(EUnknown))
 -----------------------------------------------------------------------------
 
--- | AST Node class
-class NodeClass a where
-    emptyNode :: a
+-- | Abstract Syntax Tree class
+class TreeClass a where
+    empty :: a
     isNil :: a -> Bool
     addChild :: a -> a -> a
     addSibling :: a -> a -> a
@@ -49,24 +49,26 @@ class NodeClass a where
     getChildren :: a -> [a]
     getSiblings :: a -> [a]
 
--- | AST Node type
-data Node 
+-- | Abstract Syntax Tree Node data type
+data Node
     = Nil
-    | N {
-        term    :: Term,    -- ^ node kind or type of node (e.g.: reg, ADD, SUB, stmt, etc.)
-        child   :: Node,    -- ^ link to first child node
-        sibling :: Node,    -- ^ points to sibling
-        link    :: Node,    -- ^ points to link node
-        -- semantic actions
-        code1   :: C.Code,  -- ^ code before the Term
-        code2   :: C.Code,  -- ^ code after the Term and before any sub pattern
-        code3   :: C.Code,  -- ^ code after subpattern of this Term
-        code4   :: C.Code,  -- ^ code at the very end of this Term
-        -- semantic actions in link block '[' ']'
-        lcode1  :: C.Code,  -- ^ code within link block and before link
-        lcode2  :: C.Code   -- ^ code within link block and after link
-    }
+    | N {   term    :: Term     -- ^ node kind or type of node (e.g.: reg, ADD, SUB, stmt, etc.)
+        ,   child   :: Node     -- ^ link to first child node
+        ,   sibling :: Node     -- ^ points to sibling
+        ,   link    :: Node     -- ^ points to link node
+        ,   code    :: M.Map Position C.Code }  -- ^ Map enconding semantic actions and their position relativ to this node
     deriving (Ord)
+
+-- | Position denotes the position of a semantic action relativ to a node
+data Position
+    = Pos1 -- ^ code before the Term
+    | Pos2 -- ^ code after the Term and before any sub pattern
+    | Pos3 -- ^ code after subpattern of this Term
+    | Pos4 -- ^ code at the very end of this Term
+    -- semantic actions in link block '[' ']'
+    | Pos5 -- ^ code within link block and before link
+    | Pos6 -- ^ code within link block and after link
+    deriving (Eq,Ord,Show)
 
 instance Eq Node where
     -- Two nodes are equal if they share the same Term and if they have
@@ -78,19 +80,38 @@ instance Eq Node where
 
 instance Show Node where
     show (Nil) = "Nil"
-    show n@(N { link = (Nil) })
-        = show (term n) ++ ": " ++
-        (displayChildren (child n) "   ")
     show n
-        = show (term n) ++ ":" ++ " link->" ++ show (term (link n)) ++
-        (displayChildren (child n) "   ")
+        = show (term n) ++ ":" ++
+        (if (hasLink n)
+            then " link->" ++ show (term (link n))
+            else " ") ++
+        (showChildren (child n) "   ")
+        where
+            showChildren :: Node -> String -> String
+            showChildren (Nil) gap = ")"
+            showChildren n gap
+                = "\n" ++ gap ++ "(" ++ show (term n) ++
+                  (showChildren (child n) (gap ++ "  ")) ++
+                  (showChildren (sibling n) gap)
 
-displayChildren :: Node -> String -> String
-displayChildren (Nil) gap = ")"
-displayChildren n gap
-    = "\n" ++ gap ++ "(" ++ show (term n) ++
-      (displayChildren (child n) (gap ++ "  ")) ++
-      (displayChildren (sibling n) gap)
+-- | Shows a node like a function 'name(child1, child2, etc.)'
+showAsFun :: Node -> String
+showAsFun (Nil) = ""
+showAsFun n | hasChildren n
+    = elemShow n ++ " (" ++
+    foldr
+      (\child str ->
+               (if (str /= "") 
+                    then (str ++ ", ") 
+                    else "") ++
+                (getName child) ++
+                (if (isTerminal child)
+                    then "(...)"
+                    else ""))
+      ""
+      (getChildren n) ++ ")"
+showAsFun n = elemShow n
+
 
 instance ElemClass Node where
     elemShow Nil = "Nil"
@@ -105,11 +126,11 @@ instance ElemClass Node where
     elemC Nil = -1
     elemC n = elemC (term n)
 
-instance NodeClass Node where
+instance TreeClass Node where
     isNil (Nil) = True
     isNil _ = False
 
-    emptyNode = Nil
+    empty = Nil
 
     getSiblings (Nil) = []
     getSiblings (N { sibling = Nil }) = []
@@ -118,30 +139,30 @@ instance NodeClass Node where
     getChildren (Nil) = []
     getChildren (N { child = Nil }) = []
     getChildren n = (child n) : getSiblings (child n)
-    
+
     addChild (Nil) child = Nil
     addChild n@(N { child = Nil }) child1 = n { child = child1 }
     addChild n child1 = n { child = addSibling (child n) child1 }
-    
+
     addSibling (Nil) sib = Nil
     addSibling n@(N { sibling = Nil }) sib = n { sibling = sib }
     addSibling n sib1 = n { sibling = addSibling (sibling n) sib1 }
 
 instance TermClass Node where
     getId n = getId (term n)
-    
+
     isTerminal (Nil) = False
     isTerminal n = isTerminal (term n)
-    
+
     isNonTerminal (Nil) = False
     isNonTerminal n = isNonTerminal (term n)
-    
+
     getTerminal n = getTerminal (term n)
     getNonTerminal n = getNonTerminal (term n)
-    
+
     getAttr (Nil) = []
     getAttr n = getAttr (term n)
-    
+
     hasBinding (Nil) = False
     hasBinding n = hasBinding (term n)
     getBinding n = getBinding (term n)
@@ -150,52 +171,23 @@ instance TermClass Node where
 -- | Constructor for building a Node
 new :: Term -> C.Code -> C.Code -> Node -> C.Code -> Node -> C.Code -> Node
 new t c1 c2 child' c3 link' c4
-    = N {
-        term = t,
-        child = child',
-        sibling = link',
-        link = Nil,
+    = N {   term = t
+        ,   child = child'
+        ,   sibling = link'
+        ,   link = Nil
         -- semantic actions
-        code1 = c1,
-        code2 = c2,
-        code3 = c3,
-        code4 = c4,
-        -- semantic actions in link block
-        lcode1 = C.empty,
-        lcode2 = C.empty
-    }
-
--- | Adds semantic action contained in link block
-addLinkBlockCode :: Node -> C.Code -> C.Code -> Node
-addLinkBlockCode n c1 c2 = (n { lcode1 = c1 }) { lcode2 = c2 }
-
-hasLink :: Node -> Bool
-hasLink (Nil) = False
-hasLink (N { link = Nil }) = False
-hasLink _ = True
+        ,   code = M.fromList [ (Pos1, c1)
+                              , (Pos2, c2)
+                              , (Pos3, c3)
+                              , (Pos4, c4)
+                              , (Pos5, C.empty)
+                              , (Pos6, C.empty)] }
 
 -- | Compare Nodes based on identifiers
 equalIdents :: Node -> Node -> Bool
 equalIdents (Nil) (Nil) = True
 equalIdents (N { term = t1 }) (N { term = t2 }) = getId t1 == getId t2
 equalIdents _ _ = False
-
-
--- | Shows a node like a function 'name (child1, child2, etc.)'
-showAsFunction :: Node -> String
-showAsFunction (Nil) = ""
-showAsFunction n | hasChildren n
-    = elemShow n ++ " (" ++
-    foldr
-        (\child str -> 
-            (\x -> if ((length x) > 0) then (str ++ ", ") else "") (str) ++
-            if (isTerminal child)
-                then show (getId child) ++ "(...)"
-                else show (getId child))
-        ""
-        (getChildren n) ++
-    ")"
-showAsFunction n = elemShow n
 
 getName :: Node -> String
 getName (Nil) = ""
@@ -209,37 +201,29 @@ getTerm :: Node -> Maybe Term
 getTerm (Nil) = Nothing
 getTerm n = Just (term n)
 
+hasLink :: Node -> Bool
+hasLink (Nil) = False
+hasLink (N { link = Nil }) = False
+hasLink _ = True
+
 getLink :: Node -> Node
 getLink (Nil) = Nil
 getLink n = link n
 
-getSem1 :: Node -> C.Code
-getSem1 (Nil) = C.empty
-getSem1 n = code1 n
-
-getSem2 :: Node -> C.Code
-getSem2 (Nil) = C.empty
-getSem2 n = code2 n
-
-getSem3 :: Node -> C.Code
-getSem3 (Nil) = C.empty
-getSem3 n = code3 n
-
-getSem4 :: Node -> C.Code
-getSem4 (Nil) = C.empty
-getSem4 n = code4 n
-
-getSem5 :: Node -> C.Code
-getSem5 (Nil) = C.empty
-getSem5 n = lcode1 n
-
-getSem6 :: Node -> C.Code
-getSem6 (Nil) = C.empty
-getSem6 n = lcode2 n
-
 setLink :: Node -> Node -> Node
 setLink (Nil) _ = Nil
 setLink n link' = n { link = link' }
+
+-- | Adds semantic action contained in link block
+addLinkBlockCode :: Node -> C.Code -> C.Code -> Node
+addLinkBlockCode n c1 c2 
+    = let code' = (M.insert Pos5 c1 (M.insert Pos6 c2 (code n))) in
+    n { code = code' }
+
+-- | Get Semantic Action based on Position where it has been specified
+getSemAct :: Position -> Node -> C.Code
+getSemAct _ (Nil) = C.empty
+getSemAct pos n = (code n) M.! pos
 
 --
 -- Higher order AST traversal functions
@@ -279,27 +263,29 @@ mapPreOrder2 f g n
 
 
 -- | Note: The root node is NOT processed! Processing starts from roots children.
-mapPreOrder3 :: (Int -> Node -> [a])        -- ^ path accumulation function
-                -> ([a] -> Node -> [b])     -- ^ do this before recursing in pre order
-                -> ([a] -> Node -> [b])     -- ^ do this after returning from pre order recursion
-                -> Node                     -- ^ current node
-                -> [([a], [b], Node)]       -- ^ return type
+mapPreOrder3 :: (Int -> Node -> [a])  ->      -- ^ path accumulation function
+                ([a] -> Node -> [b]) ->    -- ^ do this before recursing in pre order
+                ([a] -> Node -> [b]) ->    -- ^ do this after returning from pre order recursion
+                Node ->                    -- ^ current node
+                [([a], [b], Node)]       -- ^ return type
 mapPreOrder3 _ _ _ (Nil) = []
 mapPreOrder3 _ _ _ (N { child = Nil }) = []
 mapPreOrder3 path pre post n
     = let children = (zip [1 .. (length (getChildren n))]  (getChildren n)) in
     concat [ accumMap path pre post index [] node  | (index, node) <- children ]
     where
-        accumMap ::    (Int -> Node -> [a]) -> 
+        accumMap :: (Int -> Node -> [a]) ->
                     ([a] -> Node -> [b]) ->
                     ([a] -> Node -> [b]) ->
                     Int -> 
                     [a] -> 
                     Node -> 
                     [([a], [b], Node)]
+        -- Case where Node has no children
         accumMap path pre post pos accum n@(N { child = Nil })
             = let curpath = accum ++ (path pos n) in
             [(curpath, (pre curpath n) ++ (post curpath n), n)]
+        -- Case where Node has children
         accumMap path pre post pos accum n
             = let children = (zip [1 .. (length (getChildren n))]  (getChildren n)) in
             let curpath = accum ++ (path pos n) in

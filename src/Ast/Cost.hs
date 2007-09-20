@@ -20,7 +20,7 @@ import Ast.Code (Code)
 -----------------------------------------------------------------------------
 
 -- | Cost Type
-data Cost 
+data Cost
     = Static Int
     | Dynamic Code
     deriving (Eq)

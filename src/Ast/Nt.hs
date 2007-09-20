@@ -40,7 +40,7 @@ instance Eq Nt where
     (==) (Nt i1 _ at1) (Nt i2 _ at2) = ((i1 == i2) && (at1 == at2))
 
 instance Ord Nt where
-    compare nt1@(Nt i1 _ at1) nt2@(Nt i2 _ at2) 
+    compare nt1@(Nt i1 _ at1) nt2@(Nt i2 _ at2)
         = if (nt1 == nt2)
             then EQ
             else 
@@ -56,26 +56,44 @@ instance Ord Nt where
 
 instance Show Nt where
     show (Nt i b []) 
-        = "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]"
+        = "Nt[" ++ (show i) ++
+        (if (B.hasBinding b)
+            then "->"
+            else "") ++
+        show b ++ "]"
+
     show (Nt i b atts)
-        = "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]<:" ++  
-        (stringFoldr 
+        = "Nt[" ++ (show i) ++
+        (if (B.hasBinding b)
+            then "->"
+            else "") ++
+        show b ++ "]<:" ++
+        (stringFoldr
             (\x y -> x ++ ", " ++ y)
             (map (\z -> show z) atts))  ++ ":>"
 
 instance Debug Nt where
     debug (Nt i b []) 
-        = "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]"
+        = "Nt[" ++ (show i) ++
+        (if (B.hasBinding b)
+            then "->" else "") ++
+        show b ++ "]"
+
     debug (Nt i b atts)
-        = "Nt[" ++ (show i) ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]<:" ++  
-        (stringFoldr 
+        = "Nt[" ++ (show i) ++
+        (if (B.hasBinding b)
+            then "->"
+            else "") ++
+        show b ++ "]<:" ++
+        (stringFoldr
             (\x y -> x ++ ", " ++ y)
             (map (\z -> debug z) atts))  ++ ":>"
 
 -- | A Non Terminal is also an Elem since we need to be able to type check it
 instance ElemClass Nt where
     elemShow (Nt i _ []) = show i
-    elemShow (Nt i _ atts) = show i ++ "<:" ++ 
+    elemShow (Nt i _ atts) 
+        = show i ++ "<:" ++
         (stringFoldr
              (\x y -> x ++ " param, " ++ y ++ " param")
             (map (\z -> show (attrIsOut z)) atts)) ++ ":>"

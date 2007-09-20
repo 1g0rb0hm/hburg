@@ -50,30 +50,30 @@ type NodeKind = String
 genTiling :: [Operator] -> [Definition] -> NodeKind -> Java -> (Java, Java)
 genTiling ops defs nkind parentClass
     = let tile = T.new ops defs in                      -- produce Tiling
-    let j0 = jSetModifier (java "" "Tiling") Private in -- create new class which will hold tilings
-    let j1 = jSetStatic j0 True in
+    let j0 = setModifier (java "" "Tiling") Private in -- create new class which will hold tilings
+    let j1 = setStatic j0 True in
     let (vars, sets) = genEnumSetVars tile in           -- generate EnumSet variables
     let nodeIf
             = genNodeInterface                          -- generate Node interface
-                        (jGetPackage parentClass)       -- package name
+                        (getPackage parentClass)       -- package name
                         (last (sort sets))              -- max. amount of children node can have
                         (not
                             (S.null
                             (T.getLinkSet tile)))       -- do link nodes exist
                         nkind                           -- return type of node
         in
-    let j2 = jSetVariables j1 vars in
+    let j2 = setVariables j1 vars in
     let mLab = genLabelMethod tile in                   -- generate label() mehtod
     let mTile = genTileMethod tile sets in              -- generate tile() method as in in [Cooper p.566]
     let mLabS = genLabelSetMethods defs tile in         -- generate label_N() methods for nodes with arity N
     let nestedClass 
-            = jSetMethods j2                            -- finally set all methods for this tiling class
+            = setMethods j2                            -- finally set all methods for this tiling class
                 ([mLab, mTile] ++ mLabS ++
                     if (T.getClosures tile /= [])       -- only generate closure() method if there are closures
                         then [genClosureMethod tile]
                         else [])
         in
-    (jSetNestedClasses parentClass [nestedClass], nodeIf)   -- the Tiling class is nested into another class
+    (setNestedClasses parentClass [nestedClass], nodeIf)   -- the Tiling class is nested into another class
 
 
 -- | Generate a name for node sets based on node arity.

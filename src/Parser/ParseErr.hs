@@ -20,7 +20,7 @@ module Parser.ParseErr (
 -----------------------------------------------------------------------------
 
 import Parser.Lexer(Token)
-import Ast.Node(Node, showAsFunction)
+import Ast.Node(Node, showAsFun)
 import Env.Env(ElemClass(..), Elem, envElem)
 
 -- | typeError. Produces error message upon type error.
@@ -36,11 +36,11 @@ parseErrRedefinition :: String -> Node -> Node -> String
 parseErrRedefinition str n1 n2
     = parseErrElem
             (envElem n1)
-            ("'" ++ showAsFunction n1 ++ "' " ++ str ++ " " ++
+            ("'" ++ showAsFun n1 ++ "' " ++ str ++ " " ++
             "[line:" ++ (show (elemL (envElem n2))) ++
             " col:" ++ (show (elemC (envElem n2))) ++ 
             "], namely as '" ++
-            showAsFunction n2 ++ "'.")
+            showAsFun n2 ++ "'.")
 
 -- | parseErrDupBind. Produces error message when encountering
 --      a duplicate binding.

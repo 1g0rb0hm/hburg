@@ -28,7 +28,7 @@ import qualified Data.Map as M
 import Ast.Term (Term, TermClass(..))
 
 import qualified Ast.Ident as Id (Ident)
-import qualified Ast.Node as N (Node, NodeClass(..), getLink, showAsFunction, mapPreOrder)
+import qualified Ast.Node as N (Node, TreeClass(..), getLink, showAsFun, mapPreOrder)
 import qualified Ast.Bind as B (getIdent)
 import qualified Ast.Prod as P (getNode)
 import qualified Ast.Def as D (Definition, getProds, isNodeDefined)
@@ -42,27 +42,26 @@ import Parser.ParseErr (parseErrElem, typeError)
 type IdSet = S.Set Id.Ident
 
 -- | A type entry represents an entry in a Symbol Table
-data TypeEntry
-    = Entry {node   :: N.Node,  -- ^ AST node where first definition was encountered
-            returns :: IdSet,   -- ^ set of Id's a Term produces, possibly through chain rules
-            params  :: [IdSet]} -- ^ parameter list where the elements are Sets of Id's a T expects
+data TyEntry
+    = Entry {   node    :: N.Node   -- ^ AST node where first definition was encountered
+            ,   returns :: IdSet    -- ^ set of Id's a Term produces, possibly through chain rules
+            ,   params  :: [IdSet]} -- ^ parameter list where the elements are Sets of Id's a T expects
 
 -- | Mapping of Identifiers to TypeEntries (a.k.a. Symbol Table)
-type TypeMap
-    = (M.Map
-        Id.Ident    -- Key: Id.Ident
-        TypeEntry)  -- Value: TypeEntry
+type TyMap
+    = (M.Map Id.Ident    -- Key: Id.Ident
+             TyEntry)  -- Value: TyEntry
 
 -- | Constructor for building TypeEntries
-tentry :: N.Node -> IdSet -> [IdSet] -> TypeEntry
-tentry n rs ps = Entry {node = n,
+tyEntry :: N.Node -> IdSet -> [IdSet] -> TyEntry
+tyEntry n rs ps = Entry {node = n,
                         returns = rs,
                         params = ps}
 
 -- | Compute map from Term's (or rather their Id's) to TypeEntries where a 
---      TypeEntry represents the return and parameter types of Term's.
-computeTypeMap :: [D.Definition] -> TypeMap
-computeTypeMap ds
+--      TyEntry represents the return and parameter types of Term's.
+computeTyMap :: [D.Definition] -> TyMap
+computeTyMap ds
     = let tmap = -- 1. Calculate 'return' types (a.k.a. set Nt's which a T or Nt produces)
             foldr
                 (\d m' ->
@@ -72,23 +71,23 @@ computeTypeMap ds
                                 (getId d)
                                 (computeTypeSet d (filter (\x -> x /= d) ds) S.empty)
                         in
-                    -- 1.1 Insert non terminal being defined into TypeMap
+                    -- 1.1 Insert non terminal being defined into TyMap
                     let m'' = if (M.notMember (getId d) m')
-                                then M.insert (getId d) (tentry N.emptyNode typeSet []) m'
+                                then M.insert (getId d) (tyEntry N.empty typeSet []) m'
                                 else let ent = m' M.! (getId d) in
                                     M.insert
                                         (getId d)
-                                        (tentry (node ent) (S.union typeSet (returns ent)) (params ent)) m'
+                                        (tyEntry (node ent) (S.union typeSet (returns ent)) (params ent)) m'
                         in
-                    -- 1.2 Insert productions (a.k.a. right hand sides of definitions) into TypeMap
+                    -- 1.2 Insert productions (a.k.a. right hand sides of definitions) into TyMap
                     foldr
                         (\p m''' ->
                             if (M.notMember (getId p) m''')
-                                then M.insert (getId p) (tentry (P.getNode p) typeSet []) m'''
+                                then M.insert (getId p) (tyEntry (P.getNode p) typeSet []) m'''
                                 else let ent = m''' M.! (getId p) in
                                     M.insert
                                         (getId p)
-                                        (tentry (node ent) (S.union typeSet (returns ent)) (params ent)) m''')
+                                        (tyEntry (node ent) (S.union typeSet (returns ent)) (params ent)) m''')
                         (m'')
                         (D.getProds d))
                 (M.empty)
@@ -103,7 +102,7 @@ computeTypeMap ds
                                 (\child -> returns (tmap M.! (getId child)))
                                 (N.getChildren (node ent))
                         in
-                    tentry (node ent) (returns ent) paramList
+                    tyEntry (node ent) (returns ent) paramList
                 else ent)
         (tmap)
     where
@@ -157,7 +156,7 @@ checkDef d
 checkEnv :: [D.Definition] -> Env -> Maybe [String]
 checkEnv [] env = Nothing
 checkEnv defs env
-    = let tymap = computeTypeMap defs in
+    = let tymap = computeTyMap defs in
     let pnodes = concatMap (\x -> (map (\y -> P.getNode y) (D.getProds x))) (defs) in
     let results = -- go over each production node in preorder and collect CSA results
             concatMap
@@ -186,7 +185,7 @@ checkEnv defs env
                                                     typeError
                                         else -- Whoops! Check failed
                                             Just (parseErrElem (envElem n) (show (elemType n) ++ " '" ++
-                                                N.showAsFunction n ++ "' is undefined."))
+                                                N.showAsFun n ++ "' is undefined."))
                                 else -- Whoops! Check failed
                                     Just (parseErrElem (envElem n) (show (elemType n) ++ " '" ++
                                         elemShow n ++ "' is undefined.")))
@@ -205,8 +204,8 @@ checkEnv defs env
         [] -> Nothing
         otherwise -> Just (reverse errors)
 
--- | Type check a node by looking it up in the TypeMap (our SymbolTable).
-typeCheck :: N.Node -> TypeMap -> Maybe String
+-- | Type check a node by looking it up in the TyMap (our SymbolTable).
+typeCheck :: N.Node -> TyMap -> Maybe String
 typeCheck n _ | (N.isNil n) = Nothing
 typeCheck n tymap
     = if (isTerminal n) -- Only T's are of interest for type checking.
@@ -222,7 +221,7 @@ typeCheck n tymap
                                     -- Intersection of parameter and return set must not be empty
                                     if (S.null (S.intersection p (returns ent')))
                                         then Just (typeError (envElem n) i (show (elemType n) ++ " '" ++
-                                            N.showAsFunction n ++
+                                            N.showAsFun n ++
                                             "' - expected type" ++ (if (S.size p > 1) then "s" else "") ++
                                             " '" ++ show (S.toList p) ++
                                             " but found '" ++ show (S.toList (returns ent')) ++ "'"))

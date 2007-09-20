@@ -31,14 +31,14 @@ type Package = String
 -- | Generates Java Node Interface class.
 genNodeInterface :: Package -> Children -> Link -> KindReturn -> Java
 genNodeInterface pkg children hasLnk retTy
-    = let j0 = jSetModifier (java pkg "Node") Public in
+    = let j0 = setModifier (java pkg "Node") Public in
     let methods
             = genChildMethods children ++ 
                 genKindMethod retTy ++ 
                 genMapEntryMethods ++
                 (if (hasLnk) then genLinkMethod else [])
         in
-    jSetIface (jSetMethods (jSetComments j0 genComments) methods) True
+    setIface (setMethods (setComments j0 genComments) methods) True
 
 -- | Generate Child Node access methods.
 genChildMethods :: Children -> [Method.Method]

@@ -32,68 +32,68 @@ import Gen.Emit.Java.Comment (Comment)
 
 class (Emit a) => JavaClass a where
     -- | set package name in which this class resides
-    jSetPackage :: a -> String -> a
+    setPackage :: a -> String -> a
     -- | retrieve class package name
-    jGetPackage :: a -> String
+    getPackage :: a -> String
     -- | set imports for this class
-    jSetImports :: a -> [String] -> a
+    setImports :: a -> [String] -> a
     -- | get imports for this class
-    jGetImports :: a->  [String]
+    getImports :: a->  [String]
     -- | get class comments
-    jGetComments :: a -> Comment
+    getComments :: a -> Comment
     -- | get class comments
-    jSetComments :: a -> Comment -> a
+    setComments :: a -> Comment -> a
     -- | set class name
-    jSetClassName :: a -> String -> a
+    setClassName :: a -> String -> a
     -- | get class name
-    jGetClassName :: a -> String
+    getClassName :: a -> String
     -- | set static initializer block
-    jSetStaticInitializer :: a -> String -> a
+    setStaticInitializer :: a -> String -> a
     -- | get static initializer block
-    jGetStaticInitializer :: a -> String
+    getStaticInitializer :: a -> String
     -- | set constructors
-    jSetConstructors :: a -> [Constructor] -> a
+    setConstructors :: a -> [Constructor] -> a
     -- | get constructors
-    jGetConstructors :: a -> [Constructor]
+    getConstructors :: a -> [Constructor]
     -- | set class variables
-    jSetVariables :: a -> [Variable] -> a
+    setVariables :: a -> [Variable] -> a
     -- | get class variables
-    jGetVariables :: a -> [Variable]
+    getVariables :: a -> [Variable]
     -- | set methods
-    jSetMethods :: a -> [Method] -> a
+    setMethods :: a -> [Method] -> a
     -- | get methods
-    jGetMethods :: a -> [Method]
+    getMethods :: a -> [Method]
     -- | set class modifier
-    jSetModifier :: a -> Modifier -> a
+    setModifier :: a -> Modifier -> a
     -- | get class modifier
-    jGetModifier :: a -> Modifier
+    getModifier :: a -> Modifier
     -- | is the class a static class
-    jIsStatic :: a -> Bool
-    jSetStatic :: a -> Bool -> a
+    isStatic :: a -> Bool
+    setStatic :: a -> Bool -> a
     -- | is the class a final class
-    jIsFinal :: a -> Bool
-    jSetFinal :: a -> Bool -> a
+    isFinal :: a -> Bool
+    setFinal :: a -> Bool -> a
     -- | is this an interface
-    jIsIface :: a -> Bool
-    jSetIface :: a -> Bool -> a
+    isIface :: a -> Bool
+    setIface :: a -> Bool -> a
 
     -- | add nested classes to this class
-    jSetNestedClasses :: a -> [a] -> a
+    setNestedClasses :: a -> [a] -> a
     -- | get nested classes from this class
-    jGetNestedClasses :: a -> [a]
+    getNestedClasses :: a -> [a]
     -- | add enumeration classes to this class
-    jSetEnumClasses :: a -> [E.Enum] -> a
+    setEnumClasses :: a -> [E.Enum] -> a
     -- | get enumeration classes from this class
-    jGetEnumClasses :: a -> [E.Enum]
+    getEnumClasses :: a -> [E.Enum]
     -- | add additional class to this class: 
     --      * A Java file can have one and only one public Java class.
     --          But the file can contain additional non public classes.
-    jSetAdditionalClasses :: a -> [a] -> a
+    setAdditionalClasses :: a -> [a] -> a
     -- | get additional java classes
-    jGetAdditionalClasses :: a -> [a]
+    getAdditionalClasses :: a -> [a]
     -- | set user defined code which gets included right after the class declaration.
     --      This code is defined in the 'declerations' part of the tree pattern matching
     --      grammar.
-    jSetUserCode :: a -> String -> a
+    setUserCode :: a -> String -> a
     -- | get user defined code
-    jGetUserCode :: a -> String
+    getUserCode :: a -> String

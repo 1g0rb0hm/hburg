@@ -35,7 +35,7 @@ import Debug (Debug(..))
 import Ast.Op (Operator, op)
 import Ast.Term (TermClass(..))
 import Ast.Cost (Cost)
-import qualified Ast.Node as N (Node, NodeClass(getChildren), equalIdents, getName)
+import qualified Ast.Node as N (Node, TreeClass(getChildren), equalIdents, getName)
 -----------------------------------------------------------------------------
 
 -- | Rule label for this production (e.g. R_REG_ASSIGN_0) - assigned during code generation phase
@@ -46,45 +46,43 @@ type ResultLabel = String
 
 -- | Production type
 data Production
-    = Prod {node    :: N.Node,      -- ^ root node for this production
-            cost    :: Cost,        -- ^ cost of this production
-            rule    :: RuleLabel,   -- ^ rule label
-            result  :: ResultLabel  -- ^ result label
-        }
+    = Prod  {   pattern :: N.Node       -- ^ tree pattern for this production
+            ,   cost    :: Cost         -- ^ cost of this production
+            ,   rule    :: RuleLabel    -- ^ rule label
+            ,   result  :: ResultLabel} -- ^ result label
 
 instance Eq Production where
-    (==) p1 p2 = ((node p1 == node p2) && (cost p1 == cost p1))
+    (==) p1 p2 = ((pattern p1 == pattern p2) && (cost p1 == cost p1))
 
 instance Show Production where
-    show p = "Prod[" ++ show (cost p) ++ "]:\n  " ++ show (node p)
+    show p = "Prod[" ++ show (cost p) ++ "]:\n  " ++ show (pattern p)
 
 instance Debug Production where
-    debug p = "Prod[" ++ show (cost p) ++ "]:\n  " ++ show (node p)
+    debug p = "Prod[" ++ show (cost p) ++ "]:\n  " ++ show (pattern p)
 
 instance TermClass Production where
-    getId p = getId (node p)
+    getId p = getId (pattern p)
 
-    isTerminal p = isTerminal (node p)
-    isNonTerminal p = isNonTerminal (node p)
+    isTerminal p = isTerminal (pattern p)
+    isNonTerminal p = isNonTerminal (pattern p)
 
-    getTerminal p = getTerminal (node p)
-    getNonTerminal p = getNonTerminal (node p)
+    getTerminal p = getTerminal (pattern p)
+    getNonTerminal p = getNonTerminal (pattern p)
 
-    getAttr p = getAttr (node p)
+    getAttr p = getAttr (pattern p)
 
-    hasBinding p = hasBinding (node p)
-    getBinding p = getBinding (node p)
+    hasBinding p = hasBinding (pattern p)
+    getBinding p = getBinding (pattern p)
 
 -- | Constructor for building a production
 prod :: N.Node -> Cost -> Production
-prod n c = Prod {node = n,
+prod n c = Prod {pattern = n,
                  cost = c,
                  rule = "",
-                 result = ""
-            }
+                 result = ""}
 
 getNode :: Production -> N.Node
-getNode p = node p
+getNode p = pattern p
 
 getName :: Production -> String
 getName p = N.getName (getNode p)
@@ -109,26 +107,26 @@ getResultLabel :: Production -> ResultLabel
 getResultLabel p = result p
 
 getArity :: Production -> Int
-getArity p = length (N.getChildren (node p))
+getArity p = length (N.getChildren (pattern p))
 
 isDefined :: [Production] -> N.Node -> Bool
 isDefined [] _ = False
-isDefined prods n =  n `elem` (map (\p -> node p) prods)
+isDefined prods n =  n `elem` (map (\p -> pattern p) prods)
 
 -- | Retrieves all productions which have the same identifier
 getProdsByIdent :: [Production] -> N.Node -> [Production]
 getProdsByIdent [] _ = []
 getProdsByIdent prods n
     = filter 
-        (\p -> N.equalIdents (node p) n) 
+        (\p -> N.equalIdents (pattern p) n) 
         (prods)
 
 -- | Merges productions iff productions with the same name, have the same amount of parameters
 mergeProds :: [Production] -> Production -> Either (N.Node, N.Node) [Production]
 mergeProds [] _ = Right []
-mergeProds prods p@(Prod {node = new})
+mergeProds prods p@(Prod {pattern = new})
     = let errprod = find
-                        (\(Prod {node = n}) -> n /= new) 
+                        (\(Prod {pattern = n}) -> n /= new) 
                         (getProdsByIdent prods new)
         in
     case errprod of

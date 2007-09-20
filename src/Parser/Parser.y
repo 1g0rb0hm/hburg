@@ -28,7 +28,7 @@ import qualified Ast.Def as Def (Definition, new, mergeDefs)
 import qualified Ast.Nt as Nt (new)
 import qualified Ast.T as T (new)
 import Ast.Term (Term, TermClass(..), terminal, nonTerminal)
-import qualified Ast.Node as N (Node, NodeClass(..), new, setLink, addLinkBlockCode)
+import qualified Ast.Node as N (Node, TreeClass(..), new, setLink, addLinkBlockCode)
 import Ast.Prod (Production, prod, mergeProds)
 import Ast.Cost as Cost (Cost, static, dynamic)
 
@@ -199,11 +199,11 @@ Prods :: { [ Production ]  }
 
 Prod :: { Production }
     : Sem T Sem ':' Cost
-        {   prod (N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode C.empty) $5 }
+        {   prod (N.new $2 $1 $3 N.empty C.empty N.empty C.empty) $5 }
     | Sem T Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
-            let link = (N.new $6 C.empty C.empty N.emptyNode C.empty N.emptyNode C.empty) in
-            let n = (N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode $9) in
+            let link = (N.new $6 C.empty C.empty N.empty C.empty N.empty C.empty) in
+            let n = (N.new $2 $1 $3 N.empty C.empty N.empty $9) in
             let p = prod (N.setLink (N.addLinkBlockCode n $5 $7) link) $11 in
             -- CSA: check duplicate bindings for T and Nt
             if (equalBindings $2 $6)
@@ -216,7 +216,7 @@ Prod :: { Production }
     | Sem T Sem Pat Sem ':' Cost
         {%
             let (ns, env) = $4 in
-            let n = N.new $2 $1 $3 ns $5 N.emptyNode C.empty in
+            let n = N.new $2 $1 $3 ns $5 N.empty C.empty in
             let p = prod n $7 in
             -- CSA: check duplicate bindings
             case (updateEnv $2 env) of
@@ -225,9 +225,9 @@ Prod :: { Production }
         }
     | Sem T Sem Pat Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
-            let link = N.new $8 C.empty C.empty N.emptyNode C.empty N.emptyNode C.empty in
+            let link = N.new $8 C.empty C.empty N.empty C.empty N.empty C.empty in
             let (child, env) = $4 in
-            let n = N.setLink (N.addLinkBlockCode (N.new $2 $1 $3 child $5 N.emptyNode $11) $7 $9) link in
+            let n = N.setLink (N.addLinkBlockCode (N.new $2 $1 $3 child $5 N.empty $11) $7 $9) link in
             let p = prod n $13 in
             -- CSA: check duplicate bindings
             -- 1: Check binding clashes for T in Env
@@ -240,11 +240,11 @@ Prod :: { Production }
                             Right _ -> returnP p
         }
     | Sem Nt Sem ':' Cost
-        { prod (N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode C.empty) $5 }
+        { prod (N.new $2 $1 $3 N.empty C.empty N.empty C.empty) $5 }
     | Sem Nt Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
-            let link = (N.new $6 C.empty C.empty N.emptyNode C.empty N.emptyNode C.empty) in
-            let n = N.new $2 $1 $3 N.emptyNode C.empty N.emptyNode $9 in
+            let link = (N.new $6 C.empty C.empty N.empty C.empty N.empty C.empty) in
+            let n = N.new $2 $1 $3 N.empty C.empty N.empty $9 in
             let p = prod (N.setLink (N.addLinkBlockCode n $5 $7) link) $11 in
             -- CSA: check duplicate bindings for Nt and Nt
             if (equalBindings $2 $6)
@@ -264,7 +264,7 @@ Pat :: { (N.Node, Env) }
     : '(' Sem Nt Sem PatSeq ')'
         {%
             let (ns, env) = $5 in
-            let n =  N.new $3 $2 $4 N.emptyNode C.empty ns C.empty in
+            let n =  N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
             case (updateEnv $3 env) of
                 Right e -> returnP (n, e)
@@ -273,7 +273,7 @@ Pat :: { (N.Node, Env) }
     | '(' Sem T Sem PatSeq ')'
         {% 
             let (ns, env) = $5 in
-            let n = N.new $3 $2 $4 N.emptyNode C.empty ns C.empty in
+            let n = N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
             case (updateEnv $3 env) of
                 Right e -> returnP (n, e)
@@ -298,11 +298,11 @@ Pat :: { (N.Node, Env) }
 --
 PatSeq :: { (N.Node, Env) }
     : {- empty -}
-        { (N.emptyNode, emptyEnv ) }
+        { (N.empty, emptyEnv ) }
     | ',' Sem Nt Sem PatSeq
         {% 
             let (ns, env) = $5 in
-            let n = N.new $3 $2 $4 N.emptyNode C.empty ns C.empty in
+            let n = N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
             case (updateEnv $3 env) of
                 Right e -> returnP (n, e)
@@ -311,7 +311,7 @@ PatSeq :: { (N.Node, Env) }
     | ',' Sem T Sem PatSeq
         {%
             let (ns, env) = $5 in
-            let n = N.new $3 $2 $4 N.emptyNode C.empty ns C.empty in
+            let n = N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
             case (updateEnv $3 env) of
                 Right e -> returnP (n, e)
@@ -400,7 +400,7 @@ data ParseResult a
     deriving (Show, Eq, Ord)
 
 thenP :: P a -> (a -> P b) -> P b
-m `thenP` k 
+m `thenP` k
     = case m of
         ParseOk a -> k a                -- Indicates sucessful parse
         ParseErr err a ->               -- Indicates CSA errors
@@ -415,7 +415,7 @@ returnP ok
     = ParseOk ok
 
 failP :: String -> P a
-failP err 
+failP err
     = ParseFail err
 
 errP :: String -> a -> P a

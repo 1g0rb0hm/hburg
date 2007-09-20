@@ -20,8 +20,7 @@ import Maybe (fromJust, isJust)
 import Ast.Attr (attrGetIn, attrGetOut, attrId, attrTy)
 import Ast.Term (Term, TermClass(..))
 import qualified Ast.Code as C (Code, isEmpty)
-import Ast.Node (Node, mapPreOrder3, getSem1, getSem2, getSem3, getSem4,
-        getSem5, getSem6, getTerm, hasLink, getLink)
+import Ast.Node (Node, Position(..), mapPreOrder3, getSemAct, getTerm, hasLink, getLink)
 import Ast.Prod (getRuleLabel, getNode)
 import Ast.Def (Definition, getProds, getCode)
 import Ast.Decl (Declaration)
@@ -39,13 +38,13 @@ import qualified Gen.Emit.Java.Parameter as Parameter (Parameter, new)
 -- | This function is the top level function for generating the Target Source Code of the code emission.
 genEval :: Declaration -> [Definition] -> Java -> Java
 genEval decl defs clazz
-    = let j0 = jSetModifier (java "" "Eval") Private in -- Create new class which will hold eval stuff
-    let j1 = jSetStatic j0 True in
-    let nestedClass = jSetMethods j1 (genEvalMethods defs) in
-    let parentClass = jSetUserCode clazz (show decl) in
-    jSetNestedClasses                                   -- the Eval class is nested into another class
+    = let j0 = setModifier (java "" "Eval") Private in -- Create new class which will hold eval stuff
+    let j1 = setStatic j0 True in
+    let nestedClass = setMethods j1 (genEvalMethods defs) in
+    let parentClass = setUserCode clazz (show decl) in
+    setNestedClasses                                   -- the Eval class is nested into another class
         parentClass 
-        (jGetNestedClasses parentClass ++ [nestedClass])
+        (getNestedClasses parentClass ++ [nestedClass])
 
 returnType :: Definition -> String
 returnType d 
@@ -159,7 +158,7 @@ genEvalMethods defs
                         genPreCode path n
                             = let ty = getTerm n in
                             -- First Semantic action 
-                            wrapUserCode "\t\t\t" (getSem1 n) ++
+                            wrapUserCode "\t\t\t" (getSemAct Pos1 n) ++
                             -- Emit Eval and Binding Term
                             (if (isJust ty)
                                 then
@@ -180,30 +179,30 @@ genEvalMethods defs
                                         else "")
                                 else "") ++
                             -- Second Semantic action
-                            wrapUserCode "\t\t\t" (getSem2 n)
+                            wrapUserCode "\t\t\t" (getSemAct Pos2 n)
 
                         -- | genPostCode.
                         genPostCode :: String -> Node -> String
                         genPostCode path n
                             = let ty = (getTerm (getLink n)) in
                             -- Third semantic action
-                            wrapUserCode "\t\t\t" (getSem3 n) ++
+                            wrapUserCode "\t\t\t" (getSemAct Pos3 n) ++
                             -- Emit code for link evaluation
                             (if (hasLink n && isJust ty)
                                 then 
                                     let ret = (genFunRetVal (fromJust ty)) in
                                     "\t\t\tif (n.link() != null) {\n" ++
-                                    wrapUserCode "\t\t\t\t" (getSem5 n) ++
+                                    wrapUserCode "\t\t\t\t" (getSemAct Pos5 n) ++
                                     (if (isJust ret)
                                         then
                                             "\t\t\t\t" ++ (fst (fromJust ret)) ++ " " ++ (snd (fromJust ret)) ++ " = "
                                         else
                                             "\t\t\t\t") ++
                                     (genFunCall (fromJust ty) ".link()") ++ ";\n" ++
-                                    wrapUserCode "\t\t\t" (getSem6 n) ++ "\t\t\t}\n"
+                                    wrapUserCode "\t\t\t" (getSemAct Pos6 n) ++ "\t\t\t}\n"
                                 else "") ++
                             -- Fourth semantic action
-                            wrapUserCode "\t\t\t" (getSem4 n)
+                            wrapUserCode "\t\t\t" (getSemAct Pos4 n)
 
                         -- | genBinding.
                         genBinding :: Term -> String -> String

@@ -38,8 +38,8 @@ genEnums :: Package -> [Definition] -> ([Definition], [Java])
 genEnums pkg defs
     = let ntenums = genNtEnums defs in              -- 1. Generate NT Enumeration
     let (ndefs, rulenums) = genRuleEnums defs in    -- 2. Generate RuleEnum Enumeration
-    let jNtEnum = jSetEnumClasses (java pkg "NT") [ntenums] in
-    let jRuleEnum = jSetEnumClasses (java pkg "RuleEnum") [rulenums] in
+    let jNtEnum = setEnumClasses (java pkg "NT") [ntenums] in
+    let jRuleEnum = setEnumClasses (java pkg "RuleEnum") [rulenums] in
     (ndefs, [jNtEnum, jRuleEnum])
 
 

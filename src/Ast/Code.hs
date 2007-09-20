@@ -24,7 +24,7 @@ import Debug (Debug(..))
 ------------------------------------------------------------------------------------
 
 -- | Code data type
-data Code 
+data Code
     = MkEmptyCode
     | MkCode String     -- ^ the content of semantic actions (the stuff between '(:' ':)')
     deriving (Eq,Ord)
