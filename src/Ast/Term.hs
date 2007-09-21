@@ -27,7 +27,7 @@ import Ast.Attr (Attr)
 import qualified Ast.T as T (T, getIdent, getBinding, hasBinding)
 import qualified Ast.Nt as Nt (Nt, getIdent, getAttr, getBinding, hasBinding)
 
-import Env.Env(ElemClass(..))
+import qualified Csa.Elem as E (ElemClass(..))
 -----------------------------------------------------------------------------
 
 -- | All terminals and non terminals are instances of this class
@@ -72,15 +72,15 @@ instance Ord Term where
     compare (Terminal _) (NonTerm _) = LT
     compare (NonTerm _) (Terminal _) = GT
 
-instance ElemClass Term where
-    elemShow (Terminal t) = elemShow t
-    elemShow (NonTerm nt) = elemShow nt
-    elemType (Terminal t) = elemType t
-    elemType (NonTerm nt) = elemType nt
-    elemC (Terminal t) = elemC t
-    elemC (NonTerm nt) = elemC nt
-    elemL (Terminal t) = elemL t
-    elemL (NonTerm nt) = elemL nt
+instance E.ElemClass Term where
+    elemShow (Terminal t) = E.elemShow t
+    elemShow (NonTerm nt) = E.elemShow nt
+    elemType (Terminal t) = E.elemType t
+    elemType (NonTerm nt) = E.elemType nt
+    elemC (Terminal t) = E.elemC t
+    elemC (NonTerm nt) = E.elemC nt
+    elemL (Terminal t) = E.elemL t
+    elemL (NonTerm nt) = E.elemL nt
 
 instance Show Term where
     show (Terminal t) = show t

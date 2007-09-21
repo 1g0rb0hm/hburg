@@ -33,7 +33,7 @@ import qualified Ast.Ident as Id (Ident)
 import Ast.Term (Term, TermClass(..))
 import qualified Ast.Code as C (Code, empty)
 
-import Env.Env(ElemClass(..), ElemType(EUnknown))
+import qualified Csa.Elem as E (ElemClass(..), ElemType(EUnknown))
 -----------------------------------------------------------------------------
 
 -- | Abstract Syntax Tree class
@@ -98,7 +98,7 @@ instance Show Node where
 showAsFun :: Node -> String
 showAsFun (Nil) = ""
 showAsFun n | hasChildren n
-    = elemShow n ++ " (" ++
+    = E.elemShow n ++ " (" ++
     foldr
       (\child str ->
                (if (str /= "") 
@@ -110,21 +110,21 @@ showAsFun n | hasChildren n
                     else ""))
       ""
       (getChildren n) ++ ")"
-showAsFun n = elemShow n
+showAsFun n = E.elemShow n
 
 
-instance ElemClass Node where
+instance E.ElemClass Node where
     elemShow Nil = "Nil"
-    elemShow n = elemShow (term n)
+    elemShow n = E.elemShow (term n)
     
-    elemType Nil = EUnknown
-    elemType n = elemType (term n)
+    elemType Nil = E.EUnknown
+    elemType n = E.elemType (term n)
     
     elemL Nil = -1
-    elemL n = elemL (term n)
+    elemL n = E.elemL (term n)
     
     elemC Nil = -1
-    elemC n = elemC (term n)
+    elemC n = E.elemC (term n)
 
 instance TreeClass Node where
     isNil (Nil) = True

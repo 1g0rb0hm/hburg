@@ -23,7 +23,7 @@ module Ast.Ident (
 
 import Parser.Lexer (Token(..))
 
-import Env.Env(ElemClass(..), ElemType(EIdent))
+import qualified Csa.Elem as E (ElemClass(..), ElemType(EIdent))
 ------------------------------------------------------------------------------------
 
 -- | A simple Identifier.
@@ -31,13 +31,13 @@ data Ident
     = MkTokId Token     -- ^ token as the lexer produces them can be identifiers
     | MkIdent String    -- ^ regular strings are identifiers as well
 
-instance ElemClass Ident where
+instance E.ElemClass Ident where
     elemShow (MkTokId (ConToken _ _ str)) = str
     elemShow (MkIdent str) = str
-    elemType _ = EIdent
-    elemL (MkTokId t@(ConToken _ _ _)) = elemL t
+    elemType _ = E.EIdent
+    elemL (MkTokId t@(ConToken _ _ _)) = E.elemL t
     elemL _ = -1
-    elemC (MkTokId t@(ConToken _ _ _)) = elemC t
+    elemC (MkTokId t@(ConToken _ _ _)) = E.elemC t
     elemC _ = -1
 
 instance Eq Ident where

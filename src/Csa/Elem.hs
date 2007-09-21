@@ -7,16 +7,16 @@
 --
 --
 -- Am Elem is defined as an existential type in order to hold heterogeneous
--- values which then get stuffed into an Environment (Env).
+-- values.
 -----------------------------------------------------------------------------
 
-module Env.Elem (
+module Csa.Elem (
         -- * Classes
         ElemClass(..),ElemType(..),
         -- * Types
         Elem,
         -- * Functions
-        envElem,
+        new,
     ) where
 -----------------------------------------------------------------------------
 
@@ -44,19 +44,18 @@ class (Eq a, Ord a, Show a) => ElemClass a where
     elemId a = elemShow a
     -- | converts an element into a string
     elemShow :: a -> String
-    -- | Env can hold heterogeneous elements. This function
-    --    should be used to convey which element it is.
+    -- | convey the type of this element
     elemType :: a -> ElemType
     elemType _ = EUnknown
-    -- | every element in the environment must be declared at some
-    --    point and thus must reside on a line and column
+    -- | convey at which line this element was defined
     elemL :: a -> Int
+    -- | convey at which column this element was defined
     elemC :: a -> Int
 
 -- | Use 'existential type' in order to be able to package heterogenous values
 --    together with a bunch of functions that manipulate them, and then treat that
 --    collection of packages in a uniform manner. In our case we want to stick different
---    'things' into Envs, and all these 'things' implement ElemClass functions.
+--    'things' into Contexts, and all these 'things' implement ElemClass functions.
 --    This is how it would work in the OO world and of course Haskell can do this as well ;-)
 --    <http://www.haskell.org/haskellwiki/Existential_types>
 data Elem
@@ -71,9 +70,6 @@ instance Ord Elem where
 instance Show Elem where
     show (Elem e) = show e
 
--- | An ElemClass must implement the elemShow function which is used in the
---    environment in order to uniquely identify elements. The rest are default
---    dummy implementations.
 instance ElemClass Elem where
     elemShow (Elem e) = elemShow e
     elemType (Elem e) = elemType e
@@ -81,5 +77,5 @@ instance ElemClass Elem where
     elemC (Elem e) = elemC e
 
 -- | Constructor for creating Elems
-envElem :: (ElemClass a) => a -> Elem
-envElem a = Elem a
+new :: (ElemClass a) => a -> Elem
+new a = Elem a

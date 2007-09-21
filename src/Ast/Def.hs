@@ -40,7 +40,7 @@ import Ast.Term (TermClass(..))
 import Ast.Code (Code)
 import qualified Ast.Prod as P (Production, getNode, isDefined, getProdsByIdent)
 
-import Env.Env (ElemClass(..), ElemType(EDef))
+import qualified Csa.Elem as E (ElemClass(..), ElemType(EDef))
 ------------------------------------------------------------------------------------
 
 type Closure = [P.Production]
@@ -57,18 +57,18 @@ instance Eq Definition where
 instance Ord Definition where
     compare d1 d2 = compare (nt d1) (nt d2)
 
-instance ElemClass Definition where
-    elemShow d = elemShow (nt d)
-    elemType _ = EDef
-    elemL d = elemL (Nt.getIdent(nt d))
-    elemC d = elemC (Nt.getIdent(nt d))
+instance E.ElemClass Definition where
+    elemShow d = E.elemShow (nt d)
+    elemType _ = E.EDef
+    elemL d = E.elemL (Nt.getIdent(nt d))
+    elemC d = E.elemC (Nt.getIdent(nt d))
 
 instance Show Definition where
     show d
         = "\nDef: " ++ debug (nt d) ++ " @closure->" ++ 
         show 
             (map
-                (\n -> elemShow (P.getNode n))
+                (\n -> E.elemShow (P.getNode n))
                 (calcClosures (prods d))) ++
             "\n\n " ++
             (concatMap (\p -> show p ++ "\n\n ") (prods d))

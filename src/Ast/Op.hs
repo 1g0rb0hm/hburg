@@ -28,7 +28,7 @@ module Ast.Op (
 import qualified Ast.Ident as Id (Ident)
 import qualified Ast.Code as C (Code, new)
 
-import Env.Env(ElemClass(..), ElemType(EOp))
+import qualified Csa.Elem as E (ElemClass(..), ElemType(EOp))
 -----------------------------------------------------------------------------
 
 -- | Operator Definition
@@ -52,11 +52,11 @@ instance Ord Operator where
     compare (OpMap i1 _) (Op i2) = compare i1 i2
     compare (Op i1) (Op i2) = compare i1 i2
 
-instance ElemClass Operator where
+instance E.ElemClass Operator where
     elemShow o = show (opId o)
-    elemType _ = EOp
-    elemL o = elemL (opId o)
-    elemC o = elemC (opId o)
+    elemType _ = E.EOp
+    elemL o = E.elemL (opId o)
+    elemC o = E.elemC (opId o)
 
 -- | Create Operator from Ident
 op :: Id.Ident -> Operator

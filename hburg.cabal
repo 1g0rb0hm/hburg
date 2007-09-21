@@ -69,8 +69,8 @@ other-modules:
     Ast.T
     Ast.Term
     Csa.Csa
-    Env.Elem
-    Env.Env
+    Csa.Ctx
+    Csa.Elem
     Gen.Tile
     Gen.Emit
     Gen.Backend

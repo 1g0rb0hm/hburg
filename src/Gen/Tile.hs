@@ -38,7 +38,7 @@ import Ast.Node (getTerm, hasLink)
 import qualified Ast.Def as D (Definition, getClosures, getProds, getDefForProd)
 import Ast.Prod (Production, getArity, getNode, toOp, getRuleLabel, getResultLabel)
 
-import Env.Elem (ElemClass(elemId))
+import Csa.Elem (ElemClass(elemId))
 
 import Gen.Emit.Label (Label, tTyToEnumLabel)
 

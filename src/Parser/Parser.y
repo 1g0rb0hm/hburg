@@ -23,18 +23,19 @@ import qualified Ast.Ident as Id (toIdent)
 import qualified Ast.Bind as B (new, empty, getIdent)
 import qualified Ast.Attr as A (Attr, AttrTy(..), new, ty, emptyTy)
 import qualified Ast.Code as C (Code, new, empty, isEmpty)
-import qualified Ast.Decl as D (Declaration, new)
+import qualified Ast.Decl as Decl (Declaration, new)
 import qualified Ast.Def as Def (Definition, new, mergeDefs)
 import qualified Ast.Nt as Nt (new)
 import qualified Ast.T as T (new)
 import Ast.Term (Term, TermClass(..), terminal, nonTerminal)
 import qualified Ast.Node as N (Node, TreeClass(..), new, setLink, addLinkBlockCode)
-import Ast.Prod (Production, prod, mergeProds)
+import Ast.Prod (Production, prod)
 import Ast.Cost as Cost (Cost, static, dynamic)
 
-import Csa.Csa (updateEnv, checkEnv, checkDef)
+import qualified Csa.Csa as Csa (updateCtx, checkCtx, checkDef, checkProd)
 
-import Env.Env (Env, newEnv, emptyEnv, envElem, mergeEnvs)
+import qualified Csa.Ctx as Ctx (Ctx, new, empty, merge)
+import qualified Csa.Elem as Elem (new)
 
 import Parser.Lexer (Token(..), TokenClass(..))
 import Parser.ParseErr (parseErrDupBind, parseErrTok, parseErrRedefinition)
@@ -73,7 +74,7 @@ import Parser.ParseErr (parseErrDupBind, parseErrTok, parseErrRedefinition)
 --
 -- The Generator itself
 --
-G :: { (Incl.Include, D.Declaration, [Operator], [Def.Definition], String) }
+G :: { (Incl.Include, Decl.Declaration, [Operator], [Def.Definition], String) }
     : generator
         Incl
       declarations
@@ -85,19 +86,19 @@ G :: { (Incl.Include, D.Declaration, [Operator], [Def.Definition], String) }
       end
         {%
             let incl = $2 in            -- Includes
-            let decl = D.new $4 in      -- Declarations
-            let (ops, openv) = $6 in    -- Operators and their Env
-            let (defs, defenv) = $8 in  -- Definitions and their Env
+            let decl = Decl.new $4 in   -- Declarations
+            let (ops, opctx) = $6 in    -- Operators and their Context
+            let (defs, defctx) = $8 in  -- Definitions and their Context
             let debug = foldr (++) "" (map (\d -> show d) defs) ++
-                        "\n\nDefinition " ++ show defenv ++
-                        "\n\nOperator " ++ show openv
+                        "\n\nDefinition " ++ show defctx ++
+                        "\n\nOperator " ++ show opctx
                 in                      -- if debug cli option is defined
-            case (mergeEnvs defenv openv) of
-                Right env ->
-                    case checkEnv defs env of
+            case (Ctx.merge defctx opctx) of
+                Right ctx ->
+                    case Csa.checkCtx defs ctx of
                         Nothing -> returnP (incl, decl, ops, (reverse defs), debug)
                         Just errors -> failP (foldr1 (\e old -> e ++ "\n" ++ old) errors)
-                Left (el1, el2) -> error "\nERROR: Merging of Definition and Operator Env failed!\n"
+                Left (el1, el2) -> error "\nERROR: Merging of Definition and Operator Context failed!\n"
         }
 
 --
@@ -108,30 +109,30 @@ Incl :: { Incl.Include }
         { Incl.new $1 }
 
 --
--- Operators are stored in Envs
+-- Operators are stored in Contexts
 --
-Ops :: { ([Operator], Env) }
+Ops :: { ([Operator], Ctx.Ctx) }
     : Op
-        { (\(op, env) -> ([op], env)) ($1) }
+        { (\(op, ctx) -> ([op], ctx)) ($1) }
     | Ops ',' Op
         {%
-            let (ops, env) = $1 in
-            let (nops, nenv) = $3 in
-            case (mergeEnvs env nenv) of
+            let (ops, ctx) = $1 in
+            let (nops, nctx) = $3 in
+            case (Ctx.merge ctx nctx) of
                 Right e -> returnP ( nops : ops, e)
-                Left (el1, el2) -> errP (parseErrDupBind "Operator" el2 el1) (ops, env)
+                Left (el1, el2) -> errP (parseErrDupBind "Operator" el2 el1) (ops, ctx)
         }
 
-Op :: { (Operator, Env) }
+Op :: { (Operator, Ctx.Ctx) }
     : term Sem
         {
             if (C.isEmpty $2)
                 then
                     let o = op (Id.toIdent $1) in
-                    (o, newEnv (envElem o))
+                    (o, Ctx.new (Elem.new o))
                 else
                     let o = opMap (Id.toIdent $1) $2 in
-                    (o, newEnv (envElem o))
+                    (o, Ctx.new (Elem.new o))
         }
 
 -------------------------------------------------------------------
@@ -139,41 +140,41 @@ Op :: { (Operator, Env) }
 --
 -- Definitions of non terminals
 --
-Ds :: { ([ Def.Definition ], Env) }
+Ds :: { ([ Def.Definition ], Ctx.Ctx) }
     : D
-        { (\(def, env) -> ([def], env)) ($1) }
+        { (\(def, ctx) -> ([def], ctx)) ($1) }
     | Ds D
         {%
-            let (ndef, nenv) = $2 in
-            let (odefs, oenv) = $1 in
-            case (mergeEnvs nenv oenv) of
+            let (ndef, nctx) = $2 in
+            let (odefs, octx) = $1 in
+            -- CSA: Check for possible erroneous redefinitions, if this check
+            --      fails we call failP instead of errP because otherwise we
+            --      would get loads of subsequent errors due to missing definitions
+            --      in our Context. This would only confuse the user.
+            case (Ctx.merge nctx octx) of
                 Right e -> 
-                    -- CSA: Check for possible erroneous redefinitions, if this check
-                    --        fails we call failP instead of errP because otherwise we
-                    --        would get loads of subsequent errors due to missing definitions
-                    --        in the environment. This would only confuse the user.
                     case Def.mergeDefs odefs ndef of
                         Right defs -> returnP (defs, e)
                         Left (n1, n2) -> failP (parseErrRedefinition "redefined at" (n1) (n2))
                 Left (el1, el2) -> failP (parseErrDupBind "Non Terminal" el1 el2)
         }
 
-D :: { (Def.Definition, Env) }
+D :: { (Def.Definition, Ctx.Ctx) }
     : ident Sem '=' Prods '.'
         {%
             let def = Def.new (Id.toIdent $1) [] $2 $4 in
-            let env = newEnv (envElem def) in
-            case checkDef def of
-                Nothing -> returnP (def, env)
-                Just err -> errP (err) (def, env)
+            let ctx = Ctx.new (Elem.new def) in
+            case Csa.checkDef def of
+                Nothing -> returnP (def, ctx)
+                Just err -> errP (err) (def, ctx)
         }
     | ident '<' Ads '>' Sem '=' Prods  '.'
         {%
             let def = Def.new (Id.toIdent $1) $3 $5 $7 in
-            let env = newEnv (envElem def) in
-            case checkDef def of
-                Nothing -> returnP (def, env)
-                Just err -> errP (err) (def, env)
+            let ctx = Ctx.new (Elem.new def) in
+            case Csa.checkDef def of
+                Nothing -> returnP (def, ctx)
+                Just err -> errP (err) (def, ctx)
         }
 
 -------------------------------------------------------------------
@@ -188,7 +189,7 @@ Prods :: { [ Production ]  }
         {%
             -- CSA: Check if all productions with the same ident have the same
             --        amount of parameters.
-            case mergeProds $1 $3 of
+            case Csa.checkProd $1 $3 of
                 Right prods -> returnP prods
                 Left (n1, n2) ->
                     errP (parseErrRedefinition
@@ -208,34 +209,34 @@ Prod :: { Production }
             -- CSA: check duplicate bindings for T and Nt
             if (equalBindings $2 $6)
                 then errP (parseErrDupBind "Binding"
-                            (envElem (B.getIdent (getBinding $6)))
-                            (envElem (B.getIdent (getBinding $2))))
+                            (Elem.new (B.getIdent (getBinding $6)))
+                            (Elem.new (B.getIdent (getBinding $2))))
                             (p)
                 else returnP p
         }
     | Sem T Sem Pat Sem ':' Cost
         {%
-            let (ns, env) = $4 in
+            let (ns, ctx) = $4 in
             let n = N.new $2 $1 $3 ns $5 N.empty C.empty in
             let p = prod n $7 in
             -- CSA: check duplicate bindings
-            case (updateEnv $2 env) of
+            case (Csa.updateCtx $2 ctx) of
                 Right _ -> returnP p
                 Left (el1 , el2) -> errP (parseErrDupBind "Binding" el1 el2) (p)
         }
     | Sem T Sem Pat Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
             let link = N.new $8 C.empty C.empty N.empty C.empty N.empty C.empty in
-            let (child, env) = $4 in
+            let (child, ctx) = $4 in
             let n = N.setLink (N.addLinkBlockCode (N.new $2 $1 $3 child $5 N.empty $11) $7 $9) link in
             let p = prod n $13 in
             -- CSA: check duplicate bindings
-            -- 1: Check binding clashes for T in Env
-            case (updateEnv $2 env) of
+            -- 1: Check binding clashes for T in Context
+            case (Csa.updateCtx $2 ctx) of
                 Left (el1 , el2) -> errP (parseErrDupBind "Binding" el1 el2) (p)
-                Right env1 -> 
-                        -- 2: Check binding clashes for Nt in Env extended with T's binding
-                        case (updateEnv $8 env1) of
+                Right ctx1 ->
+                        -- 2: Check binding clashes for Nt in Context extended with T's binding
+                        case (Csa.updateCtx $8 ctx1) of
                             Left (el1 , el2) -> errP (parseErrDupBind "Binding" el2 el1) (p)
                             Right _ -> returnP p
         }
@@ -249,8 +250,8 @@ Prod :: { Production }
             -- CSA: check duplicate bindings for Nt and Nt
             if (equalBindings $2 $6)
                 then errP (parseErrDupBind "Binding"
-                            (envElem (B.getIdent (getBinding $6)))
-                            (envElem (B.getIdent (getBinding $2))))
+                            (Elem.new (B.getIdent (getBinding $6)))
+                            (Elem.new (B.getIdent (getBinding $2))))
                             (p)
                 else returnP p
         }
@@ -260,75 +261,75 @@ Prod :: { Production }
 --
 -- Patterns
 --
-Pat :: { (N.Node, Env) }
+Pat :: { (N.Node, Ctx.Ctx) }
     : '(' Sem Nt Sem PatSeq ')'
         {%
-            let (ns, env) = $5 in
+            let (ns, ctx) = $5 in
             let n =  N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
-            case (updateEnv $3 env) of
+            case (Csa.updateCtx $3 ctx) of
                 Right e -> returnP (n, e)
-                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, env)
+                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
         }
     | '(' Sem T Sem PatSeq ')'
         {% 
-            let (ns, env) = $5 in
+            let (ns, ctx) = $5 in
             let n = N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
-            case (updateEnv $3 env) of
+            case (Csa.updateCtx $3 ctx) of
                 Right e -> returnP (n, e)
-                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, env)
+                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
         }
     | '(' Sem T Sem Pat Sem PatSeq ')'
         {%
-            let (ns1, env1) = $5 in
-            let (ns2, env2) = $7 in
+            let (ns1, ctx1) = $5 in
+            let (ns2, ctx2) = $7 in
             let n = N.new $3 $2 $4 ns1 $6 ns2 C.empty in
             -- CSA: Check for duplicate bindings
-            case mergeEnvs env2 env1 of
-                Left (e1, e2) -> errP (parseErrDupBind "Binding" e1 e2) (n,env1)
-                Right env -> 
-                    case (updateEnv $3 env) of
+            case Ctx.merge ctx2 ctx1 of
+                Left (e1, e2) -> errP (parseErrDupBind "Binding" e1 e2) (n,ctx1)
+                Right ctx ->
+                    case (Csa.updateCtx $3 ctx) of
                         Right e -> returnP (n, e)
-                        Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, env)
+                        Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
         }
 
 --
 -- Pattern Sequences
 --
-PatSeq :: { (N.Node, Env) }
+PatSeq :: { (N.Node, Ctx.Ctx) }
     : {- empty -}
-        { (N.empty, emptyEnv ) }
+        { (N.empty, Ctx.empty ) }
     | ',' Sem Nt Sem PatSeq
         {% 
-            let (ns, env) = $5 in
+            let (ns, ctx) = $5 in
             let n = N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
-            case (updateEnv $3 env) of
+            case (Csa.updateCtx $3 ctx) of
                 Right e -> returnP (n, e)
-                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, env)
+                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
         }
     | ',' Sem T Sem PatSeq
         {%
-            let (ns, env) = $5 in
+            let (ns, ctx) = $5 in
             let n = N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
-            case (updateEnv $3 env) of
+            case (Csa.updateCtx $3 ctx) of
                 Right e -> returnP (n, e)
-                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, env)
+                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
         }
     | ',' Sem T Sem Pat Sem PatSeq
         {%
-            let (ns1, env1) = $5 in
-            let (ns2, env2) = $7 in
+            let (ns1, ctx1) = $5 in
+            let (ns2, ctx2) = $7 in
             let n = N.new $3 $2 $4 ns1 $6 ns2 C.empty in
             -- CSA: Check for duplicate bindings
-            case mergeEnvs env2 env1 of
+            case Ctx.merge ctx2 ctx1 of
                 Left (e1, e2) -> failP (parseErrDupBind "Binding" e1 e2)
-                Right env -> 
-                    case (updateEnv $3 env) of
+                Right ctx ->
+                    case (Csa.updateCtx $3 ctx) of
                         Right e -> returnP (n, e)
-                        Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, env)
+                        Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
         }
 
 -------------------------------------------------------------------

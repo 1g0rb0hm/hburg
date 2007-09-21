@@ -21,7 +21,7 @@ module Parser.Lexer (
 
 -----------------------------------------------------------------------------
 
-import Env.Env(ElemClass(..))
+import Csa.Elem (ElemClass(..))
 
 }
 

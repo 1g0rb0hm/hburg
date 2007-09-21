@@ -17,17 +17,18 @@ module Parser.ParseErr (
         typeError,
     ) where
 
------------------------------------------------------------------------------
-
 import Parser.Lexer(Token)
 import Ast.Node(Node, showAsFun)
-import Env.Env(ElemClass(..), Elem, envElem)
+
+import qualified Csa.Elem as E (ElemClass(..), Elem, new)
+
+-----------------------------------------------------------------------------
 
 -- | typeError. Produces error message upon type error.
-typeError :: Elem -> Int -> String -> String
+typeError :: E.Elem -> Int -> String -> String
 typeError e i msg
-    = "\nType error at [line:" ++ show (elemL e) ++
-        " col:" ++ show (elemC e) ++ "] parameter " ++ 
+    = "\nType error at [line:" ++ show (E.elemL e) ++
+        " col:" ++ show (E.elemC e) ++ "] parameter " ++ 
         show i ++ " of " ++ msg ++ "\n"
 
 -- | parseErrRedefinition. Produces error message upon the
@@ -35,29 +36,29 @@ typeError e i msg
 parseErrRedefinition :: String -> Node -> Node -> String
 parseErrRedefinition str n1 n2
     = parseErrElem
-            (envElem n1)
+            (E.new n1)
             ("'" ++ showAsFun n1 ++ "' " ++ str ++ " " ++
-            "[line:" ++ (show (elemL (envElem n2))) ++
-            " col:" ++ (show (elemC (envElem n2))) ++ 
+            "[line:" ++ (show (E.elemL (E.new n2))) ++
+            " col:" ++ (show (E.elemC (E.new n2))) ++ 
             "], namely as '" ++
             showAsFun n2 ++ "'.")
 
 -- | parseErrDupBind. Produces error message when encountering
 --      a duplicate binding.
-parseErrDupBind :: String -> Elem -> Elem -> String
+parseErrDupBind :: String -> E.Elem -> E.Elem -> String
 parseErrDupBind str e1 e2
     = parseErrElem
             (e1)
-            (str ++ " '" ++ (elemShow e1) ++ "' already defined at " ++
-            "[line:" ++ (show (elemL e2)) ++
-            " col:" ++ (show (elemC e2)) ++ "].")
+            (str ++ " '" ++ (E.elemShow e1) ++ "' already defined at " ++
+            "[line:" ++ (show (E.elemL e2)) ++
+            " col:" ++ (show (E.elemC e2)) ++ "].")
 
 -- | parseErrTok.
 parseErrTok :: Token -> String -> String
-parseErrTok tok msg = parseErrElem (envElem tok) msg
+parseErrTok tok msg = parseErrElem (E.new tok) msg
 
 -- | parseErrElem. Generic error message.
-parseErrElem :: Elem -> String -> String
+parseErrElem :: E.Elem -> String -> String
 parseErrElem e msg
-    = "\nParse error at [line:" ++ show (elemL e) ++
-        " col:" ++ show (elemC e) ++ "]: " ++ msg ++ "\n"
+    = "\nParse error at [line:" ++ show (E.elemL e) ++
+        " col:" ++ show (E.elemC e) ++ "]: " ++ msg ++ "\n"

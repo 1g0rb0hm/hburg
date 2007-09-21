@@ -14,12 +14,14 @@
 
 module Csa.Csa (
         -- * Functions
-        updateEnv,
-        checkEnv,
+        updateCtx,
+        checkCtx,
         checkDef,
+        checkProd,
     ) where
 
 import Maybe (fromJust, isJust, isNothing)
+import List (find)
 
 import qualified List as L (find)
 import qualified Data.Set as S
@@ -30,11 +32,11 @@ import Ast.Term (Term, TermClass(..))
 import qualified Ast.Ident as Id (Ident)
 import qualified Ast.Node as N (Node, TreeClass(..), getLink, showAsFun, mapPreOrder)
 import qualified Ast.Bind as B (getIdent)
-import qualified Ast.Prod as P (getNode)
+import qualified Ast.Prod as P (Production, getNode, getProdsByIdent)
 import qualified Ast.Def as D (Definition, getProds, isNodeDefined)
 
-import Env.Env (ElemClass(..), Elem, Env,
-            mergeEnvs, newEnv, envElem, inEnv)
+import qualified Csa.Ctx as Ctx (Ctx, merge, new, member)
+import qualified Csa.Elem as Elem (ElemClass(..), Elem, new)
 
 import Parser.ParseErr (parseErrElem, typeError)
 -----------------------------------------------------------------------------
@@ -124,13 +126,13 @@ computeTyMap ds
                 Nothing -> S.insert (getId d) set
 
 
--- | If Binding for Term is not in the Env return 'Right' with
---    updated Env, otherwise return 'Left' indicating the two culprits
-updateEnv :: Term -> Env -> Either (Elem, Elem) Env
-updateEnv ty env
+-- | If Binding for Term is not in the context return 'Right' with
+--    updated Ctx, otherwise return 'Left' indicating the two culprits
+updateCtx :: Term -> Ctx.Ctx -> Either (Elem.Elem, Elem.Elem) Ctx.Ctx
+updateCtx ty ctx
     = if (hasBinding ty)
-        then mergeEnvs env (newEnv (envElem (B.getIdent (getBinding ty))))
-        else Right env
+        then Ctx.merge ctx (Ctx.new (Elem.new (B.getIdent (getBinding ty))))
+        else Right ctx
 
 
 -- | Checks if a definition contains the following:
@@ -147,15 +149,29 @@ checkDef d
         in
     case clash of
         Nothing -> Nothing
-        Just p -> Just (parseErrElem (envElem (P.getNode p))
-                ("'" ++ elemShow (envElem (P.getNode p)) ++ "' can not be defined in terms of itself."))
+        Just p -> Just (parseErrElem (Elem.new (P.getNode p))
+                ("'" ++ Elem.elemShow (Elem.new (P.getNode p)) ++ "' can not be defined in terms of itself."))
+
+
+-- | Merges productions iff productions with the same name, have the same amount of parameters
+checkProd :: [P.Production] -> P.Production -> Either (N.Node, N.Node) [P.Production]
+checkProd [] _ = Right []
+checkProd prods p
+    = let new = P.getNode p in
+    let errprod = find
+                        (\n -> (P.getNode n) /= new) 
+                        (P.getProdsByIdent prods new)
+        in
+    case errprod of
+        Nothing -> Right (p:prods)
+        Just err -> Left (new, P.getNode err)
 
 
 -- | Checks if all nodes have been defined. Returns 'Nothing' if checks succeed, 
 --      or a 'Just [String]' where '[String]' contains the the error messages.
-checkEnv :: [D.Definition] -> Env -> Maybe [String]
-checkEnv [] env = Nothing
-checkEnv defs env
+checkCtx :: [D.Definition] -> Ctx.Ctx -> Maybe [String]
+checkCtx [] ctx = Nothing
+checkCtx defs ctx
     = let tymap = computeTyMap defs in
     let pnodes = concatMap (\x -> (map (\y -> P.getNode y) (D.getProds x))) (defs) in
     let results = -- go over each production node in preorder and collect CSA results
@@ -163,8 +179,8 @@ checkEnv defs env
                 (\p ->
                     N.mapPreOrder
                         -- Apply the following to each node
-                        (\n -> -- 1. Check if node is in the Environment
-                            if (inEnv env (envElem n))
+                        (\n -> -- 1. Check if node is in Context
+                            if (Ctx.member ctx (Elem.new n))
                                 then -- 2. Check if node is defined
                                     if (D.isNodeDefined defs n)
                                         then
@@ -176,19 +192,19 @@ checkEnv defs env
                                                     if (N.isNil (N.getLink n))
                                                         then Nothing
                                                         else -- link node is defined
-                                                            if (inEnv env (envElem (N.getLink n)))
+                                                            if (Ctx.member ctx (Elem.new (N.getLink n)))
                                                                 then Nothing
                                                                 else -- Whoops! Check of link failed
-                                                                    Just (parseErrElem (envElem (N.getLink n)) (show (elemType (N.getLink n)) ++
-                                                                        " '" ++ elemShow (N.getLink n) ++ "' is undefined."))
+                                                                    Just (parseErrElem (Elem.new (N.getLink n)) (show (Elem.elemType (N.getLink n)) ++
+                                                                        " '" ++ Elem.elemShow (N.getLink n) ++ "' is undefined."))
                                                 else -- Whoops! Type Check failed
                                                     typeError
                                         else -- Whoops! Check failed
-                                            Just (parseErrElem (envElem n) (show (elemType n) ++ " '" ++
+                                            Just (parseErrElem (Elem.new n) (show (Elem.elemType n) ++ " '" ++
                                                 N.showAsFun n ++ "' is undefined."))
                                 else -- Whoops! Check failed
-                                    Just (parseErrElem (envElem n) (show (elemType n) ++ " '" ++
-                                        elemShow n ++ "' is undefined.")))
+                                    Just (parseErrElem (Elem.new n) (show (Elem.elemType n) ++ " '" ++
+                                        Elem.elemShow n ++ "' is undefined.")))
                         (p))
                 (pnodes)
         in
@@ -220,7 +236,7 @@ typeCheck n tymap
                                     let ent' = tymap M.! (getId n') in
                                     -- Intersection of parameter and return set must not be empty
                                     if (S.null (S.intersection p (returns ent')))
-                                        then Just (typeError (envElem n) i (show (elemType n) ++ " '" ++
+                                        then Just (typeError (Elem.new n) i (show (Elem.elemType n) ++ " '" ++
                                             N.showAsFun n ++
                                             "' - expected type" ++ (if (S.size p > 1) then "s" else "") ++
                                             " '" ++ show (S.toList p) ++
@@ -229,7 +245,7 @@ typeCheck n tymap
                                 else
                                     -- If we got in here we have encountered an undefined
                                     -- node. Checking if all nodes are defined is NOT the
-                                    -- the task of this function - this happens in checkEnv
+                                    -- the task of this function - this happens in checkCtx
                                     -- so typeCheck just returns Nothing in this case.
                                     Nothing)
                         (zip3 (params ent)

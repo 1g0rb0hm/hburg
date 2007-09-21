@@ -26,7 +26,7 @@ import qualified Ast.Ident as Id (Ident)
 import qualified Ast.Bind as B (Binding, hasBinding)
 import Ast.Attr(Attr, attrIsOut)
 
-import Env.Env(ElemClass(..),ElemType(ENonTerm))
+import qualified Csa.Elem as E (ElemClass(..),ElemType(ENonTerm))
 ------------------------------------------------------------------------------------
 
 -- | Non Terminal Type
@@ -90,16 +90,16 @@ instance Debug Nt where
             (map (\z -> debug z) atts))  ++ ":>"
 
 -- | A Non Terminal is also an Elem since we need to be able to type check it
-instance ElemClass Nt where
+instance E.ElemClass Nt where
     elemShow (Nt i _ []) = show i
     elemShow (Nt i _ atts) 
         = show i ++ "<:" ++
         (stringFoldr
              (\x y -> x ++ " param, " ++ y ++ " param")
             (map (\z -> show (attrIsOut z)) atts)) ++ ":>"
-    elemType _ = ENonTerm
-    elemL (Nt i _ _) = elemL i
-    elemC (Nt i _ _) = elemC i
+    elemType _ = E.ENonTerm
+    elemL (Nt i _ _) = E.elemL i
+    elemC (Nt i _ _) = E.elemC i
 
 -- | Construct a non terminal
 new :: Id.Ident -> B.Binding -> [Attr] -> Nt

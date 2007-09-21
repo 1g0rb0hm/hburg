@@ -25,7 +25,7 @@ import Debug (Debug(..))
 import qualified Ast.Ident as Id (Ident)
 import qualified Ast.Bind as B (Binding, hasBinding)
 
-import Env.Env(ElemClass(..),ElemType(ETerm))
+import qualified Csa.Elem as E (ElemClass(..),ElemType(ETerm))
 
 ------------------------------------------------------------------------------------
 
@@ -49,11 +49,11 @@ instance Eq T where
 instance Ord T where
     compare (T i1 _) (T i2 _) = compare i1 i2
 
-instance ElemClass T where
+instance E.ElemClass T where
     elemShow (T i _) = show i
-    elemType _ = ETerm
-    elemL (T i _) = elemL i
-    elemC (T i _) = elemC i
+    elemType _ = E.ETerm
+    elemL (T i _) = E.elemL i
+    elemC (T i _) = E.elemC i
 
 -- | Constructor for creating a T
 new :: Id.Ident -> B.Binding -> T

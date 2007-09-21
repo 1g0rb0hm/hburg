@@ -25,10 +25,7 @@ module Ast.Prod (
         setRuleLabel,setResultLabel,
         toOp,
         isDefined,
-        mergeProds,
     ) where
-
-import List (find)
 
 import Debug (Debug(..))
 
@@ -120,15 +117,3 @@ getProdsByIdent prods n
     = filter 
         (\p -> N.equalIdents (pattern p) n) 
         (prods)
-
--- | Merges productions iff productions with the same name, have the same amount of parameters
-mergeProds :: [Production] -> Production -> Either (N.Node, N.Node) [Production]
-mergeProds [] _ = Right []
-mergeProds prods p@(Prod {pattern = new})
-    = let errprod = find
-                        (\(Prod {pattern = n}) -> n /= new) 
-                        (getProdsByIdent prods new)
-        in
-    case errprod of
-        Nothing -> Right (p:prods)
-        Just err -> Left (new, getNode err)
