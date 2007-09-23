@@ -16,53 +16,43 @@ module Gen.Emit.Label (
         -- * Types
         Label,
         -- * Functions
-        tTyToEnumLabel, ntToEnumLabel,
-        defToEnumLabel, defToEvalLabel,
-        tTyToEvalLabel, prodToEnumLabel,
-        childCallLabel,
+        termToEnumLab, prodToEnumLab,
+        termToEvalLab,
+        childCallLab,
     ) where
 
 import Util (stringToUpper)
 
-import Ast.Nt (Nt, getIdent)
-import Ast.Term (Term, TermClass(..))
+import Ast.Term (TermClass(..))
 import Ast.Def (Definition)
-import Ast.Prod (Production, getName)
+import Ast.Prod (Production)
 ------------------------------------------------------------------------------------
 
 type Label = String
 type Suffix = String
 
--- | Generate label for Term
-tTyToEnumLabel :: Term -> Label
-tTyToEnumLabel t = "NT_" ++ stringToUpper (show (getId t))
+-- | Non terminal labels
+termToEnumLab :: TermClass a => a -> Label
+termToEnumLab t | (isTerminal t) = stringToUpper (show $ getId t)
+termToEnumLab t = "NT_" ++ stringToUpper (show $ getId t)
 
--- | Generate label for Nt
-ntToEnumLabel :: Nt -> Label
-ntToEnumLabel nt = "NT_" ++ stringToUpper (show (getIdent nt))
+-- | evaluation method labels
+termToEvalLab :: TermClass a => a -> Label
+termToEvalLab t | (isTerminal t) = error "\nERROR: Can not generate EVAL label for Terminal: " ++ (show (getId t))
+termToEvalLab t = "eval_" ++ (show $ getId t)
 
--- | Generate label for Definition
-defToEnumLabel :: Definition -> Label
-defToEnumLabel d = "NT_" ++ stringToUpper (show (getId d))
 
--- | Generate label for Production
-prodToEnumLabel :: Definition -> Production -> Suffix -> Label
-prodToEnumLabel def prod suffix
-    = "R_" ++ 
-        stringToUpper (show (getId def)) ++ 
-        "_" ++ stringToUpper (getName prod) ++
+-- | Rule labels
+prodToEnumLab :: Definition -> Production -> Suffix -> Label
+prodToEnumLab def prod suffix
+    = "R_" ++
+        stringToUpper (show $ getId def) ++
+        "_" ++ stringToUpper (show $ getId prod) ++
         "_" ++ suffix
 
--- | Generates node child access label:
+-- | Labels for accessing child nodes:
 --      * 'n.child0()' or 'n.child1()' for left and right child
-childCallLabel :: Int -> String
-childCallLabel pos = "child" ++ (show pos)
+childCallLab :: Show a => a -> String
+childCallLab str = "child" ++ (show str)
 
--- | Generate label for evaluation methods given a definition
-defToEvalLabel :: Definition -> Label
-defToEvalLabel d = "eval_" ++ (show (getId d))
-
--- | Generate label for evaluation methods given a Term
-tTyToEvalLabel :: Term -> Label
-tTyToEvalLabel ty = "eval_" ++ (show (getId ty))
 

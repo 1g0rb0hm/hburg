@@ -153,7 +153,13 @@ checkDef d
                 ("'" ++ Elem.elemShow (Elem.new (P.getNode p)) ++ "' can not be defined in terms of itself."))
 
 
--- | Merges productions iff productions with the same name, have the same amount of parameters
+-- | Checks whether all uses of a production have the same amount of parameters
+-- as has been defined. The following error case should be captured:
+--      reg = ADD (reg, reg)
+--          | SUB (ADD(reg), reg)
+--                 ^^^ 
+-- ADD was defined as a tree pattern with 2 children but 'used' with only one child.
+-- In other words ADD was defined with two parameters but was called with only one.
 checkProd :: [P.Production] -> P.Production -> Either (N.Node, N.Node) [P.Production]
 checkProd [] _ = Right []
 checkProd prods p

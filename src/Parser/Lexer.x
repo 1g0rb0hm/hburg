@@ -73,14 +73,17 @@ CODEGENERATOR :-
 
 -- Return a token containing complete semantic action
 "(:"                { semanticAction }
+"(."                { semanticAction } -- like Coco/R
 
 -- Go to state <attr> when encountering an attribute
 <0>"<:"             { attrStart }
+<0>"<."             { attrStart } -- like Coco/R
 <attr> $white+      { skipit }
 <attr> @attrkeyword { mkL TAttrKeyword }
 <attr> @attrident   { mkL TAttrIdent }
 <attr> $comma       { mkL TComma }
 <attr> ":>"         { attrEnd }
+<attr> ".>"         { attrEnd } -- like Coco/R
 
 <0> @keywords       { mkL TKeyword }
 
@@ -108,13 +111,15 @@ data Token
     = ConToken AlexPosn TokenClass String
 
 instance Eq Token where
-    (==) (ConToken pos1 c1 str1) (ConToken pos2 c2 str2) 
+    (==) (ConToken pos1 c1 str1)
+         (ConToken pos2 c2 str2)
         = if (and [pos1 == pos2, c1 == c2, str1 == str2])
             then True
             else False
 
 instance Ord Token where
-    compare t1@(ConToken (AlexPn _ l1 c1) _ _) t2@(ConToken (AlexPn _ l2 c2) _ _)
+    compare t1@(ConToken (AlexPn _ l1 c1) _ _)
+            t2@(ConToken (AlexPn _ l2 c2) _ _)
         = if (t1 == t2)
             then EQ
             else if (l1 < l2)
@@ -169,17 +174,15 @@ mkL c (p,_,str) len
 
 attrStart :: AlexInput -> Int -> Alex Token
 attrStart inp@(p,_,str) pos 
-    = do {
+    = do
         alexSetStartCode attr;
         return (ConToken p TAttrStart "<:")
-    }
 
 attrEnd :: AlexInput -> Int -> Alex Token
 attrEnd inp@(p,_,str) pos 
-    = do {
+    = do
         alexSetStartCode 0;
         return (ConToken p TAttrEnd ":>")
-    }
 
 -- @TODO: revert escaped \:\) which may be in semantic action
 semanticAction :: AlexInput -> Int -> Alex Token
@@ -192,33 +195,33 @@ semanticAction _ _
         go :: Int -> [Char] -> AlexInput -> Alex Token
         go 0 xs input 
             = let (p,_,str) = input in
-            do {
+            do
                 alexSetInput input;
                 return (ConToken p TSemAction xs)
-            }
         go n xs input
-            = do {
+            = do
                 case alexGetChar input of
                     Nothing -> err input
                     Just (c,input) ->
-                        do {
+                        do
                             case c of
-                                ':' ->
-                                    do {
-                                        case alexGetChar input of
-                                            Nothing -> err input
-                                            Just (')',inp) -> go 0 xs inp
-                                            Just (c,inp) -> go n (xs ++ [':'] ++ [c]) inp
-                                    }
+                                ':' -> isCloseParen ':' input
+                                '.' -> isCloseParen '.' input
                                 c -> go n (xs ++ [c]) input
-                        }
-            }
+            where
+                isCloseParen :: Char -> AlexInput -> Alex Token
+                isCloseParen ch input
+                    = do
+                        case alexGetChar input of
+                            Nothing -> err input
+                            Just (')',inp) -> go 0 xs inp
+                            Just (c,inp) -> go n (xs ++ [ch] ++ [c]) inp
+            
         err :: AlexInput -> Alex Token
         err input
-            = do {
+            = do
                 alexSetInput input;
                 lexError "Lexical Error in semantic action"
-            }
 
 showPosn :: AlexPosn -> String
 showPosn (AlexPn _ line col)
@@ -226,13 +229,12 @@ showPosn (AlexPn _ line col)
 
 lexError :: String -> Alex Token
 lexError s
-    = do {
+    = do
         (p,c,input) <- alexGetInput;
-        alexError (s ++ " " ++ showPosn p ++ ": " ++ 
+        alexError (s ++ " " ++ showPosn p ++ ": " ++
                (if (not (null input))
                  then " at charcter " ++ show (head input)
                  else " at end of file"))
-    }
 
 alexEOF :: Alex Token
 alexEOF = return (ConToken undefined TEOF "")
@@ -245,17 +247,15 @@ alexEOF = return (ConToken undefined TEOF "")
 -- | scanner. Tokenizes a String into an array of tokens
 scanner :: String -> Either String [Token]
 scanner str
-    = runAlex str $ do
-        let accum xs = do {
-            tok@(ConToken p cl s) <- monadScan;
-            if cl == TEOF
-                then return xs
-                else -- ($!) :: (a -> b) -> a -> b  => Strict call-by-value
-                     -- application defined in terms of seq see:
-                     -- http://haskell.org/haskellwiki/Recursion_in_a_monad
-                    do { accum (xs ++ [tok]) }
-            }
-        accum []
+    = runAlex str $
+        do
+            let accum xs = do {
+                tok@(ConToken p cl s) <- monadScan;
+                if cl == TEOF
+                    then return xs
+                    else do { accum (xs ++ [tok]) }
+                }
+            accum []
 
 skipit :: AlexInput -> Int -> Alex Token
 skipit input len = monadScan

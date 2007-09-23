@@ -18,12 +18,13 @@ module Gen.Emit.Enums (
         genEnums,
     ) where
 
+import Control.Monad.State
 
 import Ast.Def (Definition, getProds, setProds)
-
 import Ast.Prod (Production, setRuleLabel, setResultLabel)
+import qualified Ast.Ir as Ir (Ir(..))
 
-import Gen.Emit.Label (Label, prodToEnumLabel, defToEnumLabel)
+import Gen.Emit.Label (Label, prodToEnumLab, termToEnumLab)
 
 import Gen.Emit.Class (JavaClass(..))
 import Gen.Emit.Java.Class (Java, java)
@@ -34,36 +35,41 @@ import Gen.Emit.Java.Modifier (Modifier(..))
 type Package = String
 
 -- | Generates all necessary enumerations.
-genEnums :: Package -> [Definition] -> ([Definition], [Java])
-genEnums pkg defs
-    = let ntenums = genNtEnums defs in              -- 1. Generate NT Enumeration
-    let (ndefs, rulenums) = genRuleEnums defs in    -- 2. Generate RuleEnum Enumeration
-    let jNtEnum = setEnumClasses (java pkg "NT") [ntenums] in
-    let jRuleEnum = setEnumClasses (java pkg "RuleEnum") [rulenums] in
-    (ndefs, [jNtEnum, jRuleEnum])
-
-
--- | Generates Java Enumeration for NT's
-genNtEnums :: [Definition] -> Enum.Enum
-genNtEnums defs
-    = Enum.new Public "NT" (map (\d -> defToEnumLabel d) defs)
-
--- | Generates Java Enumeration for rules and store srule labels with productions.
-genRuleEnums :: [Definition] -> ([Definition], Enum.Enum)
-genRuleEnums defs
-    = let (ndefs, labels)
-            = unzip
-                (map
-                    (\d ->
-                        let (prods, labs) = unzip (labelProds d (getProds d) 0) in
-                        (setProds d prods, labs))
-                    (defs))
-        in
-    (ndefs, Enum.new Public "RuleEnum" (concat labels))
+genEnums :: Package -> Ir.Ir -> (Ir.Ir, [Java])
+genEnums pkg ir
+    = -- Generate Nt enmus
+    let ntenums = Enum.new Public "NT" (map (\d -> termToEnumLab d) (Ir.definitions ir)) in
+    -- Generate Rule enums - this operation also modifies definitions
+    let (ir', rulenums) = genRuleEnums in
+    -- Create the appropriate classes
+    let ntEnumClass = setEnumClasses (java pkg "NT") [ntenums] in
+    let ruleEnumClass = setEnumClasses (java pkg "RuleEnum") [rulenums] in
+    (ir', [ntEnumClass, ruleEnumClass])
     where
-        labelProds :: Definition -> [Production] -> Int -> [(Production, Label)]
-        labelProds d [] _ = []
-        labelProds d (p:ps) num
-            = let label = prodToEnumLabel d p (show num) in
-            let prod = setResultLabel (setRuleLabel p label) (defToEnumLabel d) in
-            (prod, label) : (labelProds d ps (succ num))
+        -- | Generates Java Enumeration for rules and store srule labels with productions.
+        genRuleEnums :: (Ir.Ir, Enum.Enum)
+        genRuleEnums
+            = let (ndefs, labels)
+                    = unzip
+                        (map
+                            (\d ->
+                                let (prods, labs) = unzip (labelProds d (getProds d) 0) in
+                                (setProds d prods, labs))
+                            (Ir.definitions ir))
+                in
+            (ir { Ir.definitions = ndefs }, Enum.new Public "RuleEnum" (concat labels))
+            where
+                labelProds :: Definition -> [Production] -> Int -> [(Production, Label)]
+                labelProds d [] _ = []
+                labelProds d (p:ps) num
+                    = let label = prodToEnumLab d p (show num) in
+                    let prod = evalState
+                                    (do
+                                        p <- get
+                                        put (setRuleLabel p label)
+                                        p <- get
+                                        put (setResultLabel p $ termToEnumLab d)
+                                        get)
+                                    (p)
+                        in
+                    (prod, label) : (labelProds d ps (succ num))

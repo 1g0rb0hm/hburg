@@ -20,7 +20,7 @@ module Ast.Prod (
         -- * Construction
         prod,
         -- * Functions
-        getName,getProdsByIdent,getArity,getNode,getCost,
+        getProdsByIdent,getArity,getNode,getCost,
         getRuleLabel,getResultLabel,
         setRuleLabel,setResultLabel,
         toOp,
@@ -32,7 +32,9 @@ import Debug (Debug(..))
 import Ast.Op (Operator, op)
 import Ast.Term (TermClass(..))
 import Ast.Cost (Cost)
-import qualified Ast.Node as N (Node, TreeClass(getChildren), equalIdents, getName)
+import qualified Ast.Node as N (Node, TreeClass(getChildren))
+
+import qualified Csa.Elem as E (ElemClass(..), ElemType(EProd))
 -----------------------------------------------------------------------------
 
 -- | Rule label for this production (e.g. R_REG_ASSIGN_0) - assigned during code generation phase
@@ -47,6 +49,7 @@ data Production
             ,   cost    :: Cost         -- ^ cost of this production
             ,   rule    :: RuleLabel    -- ^ rule label
             ,   result  :: ResultLabel} -- ^ result label
+    deriving (Ord)
 
 instance Eq Production where
     (==) p1 p2 = ((pattern p1 == pattern p2) && (cost p1 == cost p1))
@@ -71,6 +74,12 @@ instance TermClass Production where
     hasBinding p = hasBinding (pattern p)
     getBinding p = getBinding (pattern p)
 
+instance E.ElemClass Production where
+    elemShow p = E.elemShow $ pattern p
+    elemType p = E.EProd
+    elemL p = E.elemL $ pattern p
+    elemC p = E.elemC $ pattern p
+
 -- | Constructor for building a production
 prod :: N.Node -> Cost -> Production
 prod n c = Prod {pattern = n,
@@ -80,9 +89,6 @@ prod n c = Prod {pattern = n,
 
 getNode :: Production -> N.Node
 getNode p = pattern p
-
-getName :: Production -> String
-getName p = N.getName (getNode p)
 
 toOp :: Production -> Operator
 toOp p | isTerminal p = op (getId p)
@@ -113,7 +119,4 @@ isDefined prods n =  n `elem` (map (\p -> pattern p) prods)
 -- | Retrieves all productions which have the same identifier
 getProdsByIdent :: [Production] -> N.Node -> [Production]
 getProdsByIdent [] _ = []
-getProdsByIdent prods n
-    = filter 
-        (\p -> N.equalIdents (pattern p) n) 
-        (prods)
+getProdsByIdent prods n = filter (\p -> getId p == getId n) (prods)

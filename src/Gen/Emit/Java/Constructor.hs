@@ -51,6 +51,6 @@ instance Show Constructor where
             params) ++ ") {\n" ++
         body ++ "\n} // END CONSTRUCTOR " ++ ident ++ "()"
 
--- | Constructor for building a Constructor
+-- | Create a new constructor
 new :: Modifier -> String -> [Parameter] -> Body -> Constructor
 new m str params body = MkConstructor (Comment.new []) m str params body

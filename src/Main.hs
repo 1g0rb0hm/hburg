@@ -23,10 +23,7 @@ import System.Console.GetOpt
 import Parser.Lexer (Token, scanner)
 import Parser.Parser (ParseResult(..), parse)
 
-import Ast.Incl (Include)
-import Ast.Decl (Declaration)
-import Ast.Def (Definition)
-import Ast.Op (Operator)
+import qualified Ast.Ir as Ir (Ir(..))
 
 import qualified Gen.Backend as B (emit)
 import qualified Gen.Emit as E (Emit(..))
@@ -130,46 +127,44 @@ codeGen :: [String] -> IO ()
 codeGen args
     = case getOpt Permute argInfo (constArgs ++ args) of
         (cli,_,[]) | OptHelp `elem` cli ->
-            getProgName >>= \prog -> byeStr (usageInfo (usageHeader prog) argInfo)
+            do
+                prog <- getProgName
+                byeStr (usageInfo (usageHeader prog) argInfo)
         (cli,[fname],[]) ->
-            -- Read the input file
-            readFile fname >>= \content ->
-            -- The output class name
-            getOutputClassName cli >>= \outclass ->
-            -- The output package name
-            getOutputPackage cli >>= \outpkg ->
-            -- The node kind type
-            getNodeKindType cli >>= \ntype ->
-            -- Run Our Parser
-            case runParse content of
-                -- If the result or the parser is Right we emit code for it
-                Right (incl, decl, ops, defs, parseDebug) ->
-                    let clazz = B.emit outclass outpkg ntype incl decl ops defs in
-                    if (OptDebug `elem` cli)
-                        then 
-                            do
-                                outputClass clazz
-                                byeStr 
-                                    ("\n#### DEBUG: Parsing START ####\n" ++
-                                    parseDebug ++
-                                    "\n\n#### DEBUG: Parsing END ####\n")
-                        else
-                            do
-                                outputClass clazz
-                                bye
-                Left (err, debug) | OptDebug `elem` cli ->
-                    dieCodeGen (err ++ debug)
-                Left (err, _) ->
-                    dieCodeGen err
+            do
+                content <- readFile fname
+                outclass <- getOutputClassName cli
+                outpkg <- getOutputPackage cli
+                ntype <- getNodeKindType cli
+                -- Run Our Parser
+                case runParse content of
+                    -- If the result or the parser is Right we emit code for it
+                    Right result ->
+                        let clazz = B.emit outclass outpkg ntype result in
+                        if (OptDebug `elem` cli)
+                            then 
+                                do
+                                    outputClass clazz
+                                    byeStr 
+                                        ("\n#### DEBUG: Parsing START ####\n" ++
+                                        Ir.debug result ++
+                                        "\n\n#### DEBUG: Parsing END ####\n")
+                            else
+                                do
+                                    outputClass clazz
+                                    bye
+                    Left (err, debugMsg) | OptDebug `elem` cli ->
+                        dieCodeGen (err ++ debugMsg)
+                    Left (err, _) ->
+                        dieCodeGen err
         (_,_,errors) ->
-            getProgName >>= \prog ->
+            do
+                prog <- getProgName
                 die (concat errors ++
                      usageInfo (usageHeader prog) argInfo)
 
 -- | Runs the Lexer and Parser
-runParse :: String -> Either
-                        (String, String)
-                        (Include, Declaration, [Operator], [Definition], String)
+runParse :: String -> Either (String, String) Ir.Ir
 runParse input =
     -- Scan using our scanner
     case (scanner input) of
@@ -180,8 +175,8 @@ runParse input =
             ParseOk result ->
                     Right result
             -- There were errors...
-            ParseErr errs (incl, decl, ops, defs, debug) ->
-                    Left (concat errs, debug)
+            ParseErr errs result ->
+                    Left (concat errs, Ir.debug result)
             -- The parse failed due to some serious error...
             ParseFail s ->
                     Left (s, "")

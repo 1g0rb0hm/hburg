@@ -38,7 +38,7 @@ class (Emit a) => JavaClass a where
     -- | set imports for this class
     setImports :: a -> [String] -> a
     -- | get imports for this class
-    getImports :: a->  [String]
+    getImports :: a ->  [String]
     -- | get class comments
     getComments :: a -> Comment
     -- | get class comments

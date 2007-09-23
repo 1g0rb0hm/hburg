@@ -68,7 +68,7 @@ instance Show Definition where
         = "\nDef: " ++ debug (nt d) ++ " @closure->" ++ 
         show 
             (map
-                (\n -> E.elemShow (P.getNode n))
+                (\p -> E.elemShow p)
                 (calcClosures (prods d))) ++
             "\n\n " ++
             (concatMap (\p -> show p ++ "\n\n ") (prods d))
@@ -90,9 +90,9 @@ instance TermClass Definition where
 -- | Construct a non terminal
 new :: Id.Ident -> [Attr] -> Code -> [P.Production] -> Definition
 new i attrs c ps
-    = Def {nt = (Nt.new i B.empty attrs),
-           code = c,
-           prods = ps}
+    = Def { nt = (Nt.new i B.empty attrs)
+          , code = c
+          , prods = ps }
 
 --
 -- Getters
@@ -113,19 +113,17 @@ setProds d ps = d { prods = ps }
 -- | Get definition for an NonTerm Prod.
 getDefForProd :: [Definition] -> P.Production -> Maybe Definition
 getDefForProd defs p | isNonTerminal p
-    = find 
-        (\d ->  (getId d) == (getId p))
-        (defs)
+    = find (\d ->  (getId d) == (getId p)) (defs)
 getDefForProd _ _ = Nothing
 
 -- | Compare a definition with a node.
 equalsNode :: Definition -> Node -> Bool
 equalsNode (Def { nt = nt1}) n 
     = case getTerm n of
-        Just ty -> 
-            if (isNonTerminal ty)
-                then (((getId ty) == (Nt.getIdent nt1)) &&
-                        (attrEqualInOut (Nt.getAttr nt1) (getAttr ty)))
+        Just term -> 
+            if (isNonTerminal term)
+                then (((getId term) == (Nt.getIdent nt1)) &&
+                        (attrEqualInOut (Nt.getAttr nt1) (getAttr term)))
                 else False
         Nothing -> False
 
@@ -142,11 +140,7 @@ isNodeDefined defs n
 calcClosures :: [P.Production] -> [P.Production]
 calcClosures [] = []
 calcClosures prods 
-    = filter
-        (\p -> case (getTerm (P.getNode p)) of
-                (Just ty) -> isNonTerminal ty
-                Nothing -> False) 
-        (prods)
+    = filter (\p -> isNonTerminal p) (prods)
 
 -- | Merge definitions together
 mergeDefs :: [Definition] -> Definition -> Either (Node, Node) [Definition]

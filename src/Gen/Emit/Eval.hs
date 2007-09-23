@@ -16,16 +16,17 @@ module Gen.Emit.Eval (
     ) where
 
 import Maybe (fromJust, isJust)
+import Control.Monad.State
 
 import Ast.Attr (attrGetIn, attrGetOut, attrId, attrTy)
-import Ast.Term (Term, TermClass(..))
+import Ast.Term (TermClass(..))
 import qualified Ast.Code as C (Code, isEmpty)
-import Ast.Node (Node, Position(..), mapPreOrder3, getSemAct, getTerm, hasLink, getLink)
+import Ast.Node (Node, Position(..), mapPreOrder3, getSemAct, hasLink, getLink)
 import Ast.Prod (getRuleLabel, getNode)
 import Ast.Def (Definition, getProds, getCode)
-import Ast.Decl (Declaration)
+import qualified Ast.Ir as Ir (Ir(..))
 
-import Gen.Emit.Label (defToEvalLabel, defToEnumLabel, childCallLabel, tTyToEvalLabel)
+import Gen.Emit.Label (termToEvalLab, termToEnumLab, childCallLab)
 
 import Gen.Emit.Class (JavaClass(..))
 import Gen.Emit.Java.Class (Java, java)
@@ -36,15 +37,18 @@ import qualified Gen.Emit.Java.Parameter as Parameter (Parameter, new)
 
 
 -- | This function is the top level function for generating the Target Source Code of the code emission.
-genEval :: Declaration -> [Definition] -> Java -> Java
-genEval decl defs clazz
-    = let j0 = setModifier (java "" "Eval") Private in -- Create new class which will hold eval stuff
-    let j1 = setStatic j0 True in
-    let nestedClass = setMethods j1 (genEvalMethods defs) in
-    let parentClass = setUserCode clazz (show decl) in
-    setNestedClasses                                   -- the Eval class is nested into another class
-        parentClass 
-        (getNestedClasses parentClass ++ [nestedClass])
+genEval :: Ir.Ir -> Java
+genEval ir
+    = evalState
+        (do
+            clazz <- get
+            put (setModifier clazz Private)
+            clazz <- get
+            put (setStatic clazz True)
+            clazz <- get
+            put (setMethods clazz (genEvalMethods $ Ir.definitions ir))
+            get)
+        (java "" "Eval")
 
 returnType :: Definition -> String
 returnType d 
@@ -72,7 +76,7 @@ genParameters :: Definition -> [Parameter.Parameter]
 genParameters d
     = case attrGetIn (getAttr d) of
         [] -> []
-        list -> map (\x -> Parameter.new (show (attrTy x)) (show (attrId x))) (list)
+        list -> map (\x -> Parameter.new (show $ attrTy x) (show $ attrId x)) list
 
 -- | Generates all evaluation methods which emit code supplied by the user in semantic actions.
 genEvalMethods :: [Definition] -> [Method.Method]
@@ -80,7 +84,7 @@ genEvalMethods defs
     = map
         (\d ->
             let params = [Parameter.new "Node" "n"] ++ (genParameters d) in
-            Method.new Private True (returnType d) (defToEvalLabel d) params (funBody d))
+            Method.new Private True (returnType d) (termToEvalLab d) params (funBody d))
         (defs)
     where
         -- | Compute body of each evaluation method.
@@ -92,7 +96,7 @@ genEvalMethods defs
         --            5. return result of this definition if present
         funBody :: Definition ->  String
         funBody d
-            = "\tRuleEnum r = n.rule(" ++ defToEnumLabel d ++ ");\n" ++
+            = "\tRuleEnum r = n.rule(" ++ termToEnumLab d ++ ");\n" ++
             defineReturnVar d "\t\n\t" ++
             wrapUserCode "\t" (getCode d) ++
             genCases d "\t\n\t" ++
@@ -126,7 +130,7 @@ genEvalMethods defs
                         (\p ->
                             let childCalls 
                                     = mapPreOrder3
-                                        (\pos n -> "." ++ childCallLabel pos ++ "()")
+                                        (\pos n -> "." ++ childCallLab pos ++ "()")
                                         (\path n -> genPreCode path n)
                                         (\path n -> genPostCode path n)
                                         (getNode p)
@@ -137,14 +141,6 @@ genEvalMethods defs
                             indent ++ "\t}\n")
                         (getProds def)
                     where
-                        -- | src/Ast/Node contains the data structure of a node.
-                        --  Such is filled up with various information like:
-                        --            - if it is a T or Nt
-                        --            - semantic actions which can be defined at various places
-                        --            - bindings
-                        --            - child nodes (a.k.a. tree patterns)
-                        --  For each node we need to emit the information stored during parsing
-                        --  in the correct order in order to preserve the semantics intended by the user.
                         nodeBody :: Node -> [(String, String, Node)] -> String
                         nodeBody root nodes
                             = genPreCode "" root ++         -- code which goes before processing children (evaluation methods)
@@ -156,27 +152,22 @@ genEvalMethods defs
                         -- | genPreCode.
                         genPreCode :: String -> Node -> String
                         genPreCode path n
-                            = let ty = getTerm n in
-                            -- First Semantic action 
+                            = -- First Semantic action 
                             wrapUserCode "\t\t\t" (getSemAct Pos1 n) ++
-                            -- Emit Eval and Binding Term
-                            (if (isJust ty)
+                            -- If this is a Nt emit a function call to respective eval method
+                            (if (isNonTerminal n)
                                 then
-                                    -- If this is a Nt emit a function call to respective eval method
-                                    (if (isNonTerminal (fromJust ty))
-                                        then
-                                            let ret = (genFunRetVal (fromJust ty)) in
-                                            "\t\t\t" ++ 
-                                            -- If there are out parameters we assign the fun call to them
-                                            (if (isJust ret)
-                                                then (fst (fromJust ret)) ++ " " ++ (snd (fromJust ret)) ++ " = "
-                                                else "") ++
-                                            genFunCall (fromJust ty) path ++ ";\n"
+                                    let ret = (genFunRetVal n) in
+                                    "\t\t\t" ++ 
+                                    -- If there are out parameters we assign the fun call to them
+                                    (if (isJust ret)
+                                        then (fst (fromJust ret)) ++ " " ++ (snd (fromJust ret)) ++ " = "
                                         else "") ++
-                                    -- Generate binding code if present
-                                    (if (hasBinding (fromJust ty))
-                                        then "\t\t\t" ++ genBinding (fromJust ty) path
-                                        else "")
+                                    genFunCall n path ++ ";\n"
+                                else "") ++
+                            -- Generate binding code if present
+                            (if (hasBinding n)
+                                then "\t\t\t" ++ genBinding n path
                                 else "") ++
                             -- Second Semantic action
                             wrapUserCode "\t\t\t" (getSemAct Pos2 n)
@@ -184,13 +175,12 @@ genEvalMethods defs
                         -- | genPostCode.
                         genPostCode :: String -> Node -> String
                         genPostCode path n
-                            = let ty = (getTerm (getLink n)) in
-                            -- Third semantic action
+                            = -- Third semantic action
                             wrapUserCode "\t\t\t" (getSemAct Pos3 n) ++
                             -- Emit code for link evaluation
-                            (if (hasLink n && isJust ty)
+                            (if (hasLink n)
                                 then 
-                                    let ret = (genFunRetVal (fromJust ty)) in
+                                    let ret = (genFunRetVal $ getLink n) in
                                     "\t\t\tif (n.link() != null) {\n" ++
                                     wrapUserCode "\t\t\t\t" (getSemAct Pos5 n) ++
                                     (if (isJust ret)
@@ -198,27 +188,27 @@ genEvalMethods defs
                                             "\t\t\t\t" ++ (fst (fromJust ret)) ++ " " ++ (snd (fromJust ret)) ++ " = "
                                         else
                                             "\t\t\t\t") ++
-                                    (genFunCall (fromJust ty) ".link()") ++ ";\n" ++
+                                    (genFunCall (getLink n) ".link()") ++ ";\n" ++
                                     wrapUserCode "\t\t\t" (getSemAct Pos6 n) ++ "\t\t\t}\n"
                                 else "") ++
                             -- Fourth semantic action
                             wrapUserCode "\t\t\t" (getSemAct Pos4 n)
 
                         -- | genBinding.
-                        genBinding :: Term -> String -> String
-                        genBinding ty path | hasBinding ty
-                            = "Node " ++ (show (getBinding ty)) ++ " = n" ++ path ++ ";\n"
+                        genBinding :: TermClass a => a -> String -> String
+                        genBinding term path | hasBinding term
+                            = "Node " ++ (show (getBinding term)) ++ " = n" ++ path ++ ";\n"
                         genBinding _ _ = ""
 
                         -- | Given a NonTerm, this function gives the the return value as a
                         --  definition (e.g. List<String> list) in the form of a tuple where
                         --   fst is the type and snd is the identifier.
-                        genFunRetVal :: Term -> Maybe (String, String)
-                        genFunRetVal ty | (isNonTerminal ty)
+                        genFunRetVal :: TermClass a => a -> Maybe (String, String)
+                        genFunRetVal term | (isNonTerminal term)
                             = let outattr 
                                     = map
-                                        (\a -> (show (attrTy a), show (attrId a))) 
-                                        (attrGetOut (getAttr ty))
+                                        (\a -> (show (attrTy a), show (attrId a)))
+                                        (attrGetOut (getAttr term))
                                 in
                             case outattr of
                                 [] -> Nothing
@@ -226,14 +216,13 @@ genEvalMethods defs
                         genFunRetVal _ = Nothing
 
                         -- | genFunCall.
-                        genFunCall :: Term -> String ->  String
-                        genFunCall ty path | (isNonTerminal ty)
+                        genFunCall :: TermClass a => a -> String ->  String
+                        genFunCall term path | (isNonTerminal term)
                             = let inattrs 
                                     = concatMap 
-                                        (\a -> ", " ++ show (attrId a)) 
-                                        (attrGetIn (getAttr ty)) 
+                                        (\a -> ", " ++ show (attrId a))
+                                        (attrGetIn (getAttr term))
                                 in
-                            let funname = tTyToEvalLabel ty in
-                            let nodearg = "n" ++ path in
-                            funname ++ "(" ++ nodearg ++ inattrs ++ ")"
+                            let funname = termToEvalLab term in
+                            funname ++ "( n" ++ path ++ inattrs ++ ")"
                         genFunCall _ _ = ""

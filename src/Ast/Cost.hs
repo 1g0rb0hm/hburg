@@ -14,6 +14,8 @@ module Ast.Cost (
         Cost,
 		-- * Construction
         static, dynamic,
+        -- * Functions
+        isZero,
 	) where
 
 import Ast.Code (Code)
@@ -23,7 +25,7 @@ import Ast.Code (Code)
 data Cost
     = Static Int
     | Dynamic Code
-    deriving (Eq)
+    deriving (Eq,Ord)
 
 instance Show Cost where
     show (Static i) = show i
@@ -36,3 +38,9 @@ static i = (Static i)
 -- | Create dynamic cost consisting of an arbitrary expression.
 dynamic :: Code -> Cost
 dynamic c = (Dynamic c)
+
+-- | In the case when a cost is statically defined we can scrutinize
+-- it to see if it is zero.
+isZero :: Cost -> Bool
+isZero (Dynamic _) = False
+isZero (Static num) = num == 0 

@@ -1,7 +1,7 @@
 generator		-- Import Statements
 declarations	-- General Declarations
 operators		-- Operators (our Node Kinds)
-	CONST
+	CONST, CONST1
 rules			-- Production Rules
-	test = CONST (CONST (test), test) : 1 .
+	test = CONST (CONST1 (test) , test) : 1 .
 end

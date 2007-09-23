@@ -27,7 +27,7 @@ Description:
     See "Homepage" for an example on how to integrate the generated
     code into a compiler.
 Stability:      Experimental
-build-depends:  base, haskell98, filepath
+build-depends:  base, haskell98, filepath, mtl
 extra-source-files:
     TODO
     test/01-grammar.tpg
@@ -58,10 +58,12 @@ other-modules:
     Ast.Attr
     Ast.Bind
     Ast.Code
+    Ast.Closure
     Ast.Decl
     Ast.Def
     Ast.Ident
     Ast.Incl
+    Ast.Ir
     Ast.Node
     Ast.Nt
     Ast.Op
@@ -71,14 +73,12 @@ other-modules:
     Csa.Csa
     Csa.Ctx
     Csa.Elem
-    Gen.Tile
     Gen.Emit
     Gen.Backend
     Gen.Emit.Enums
     Gen.Emit.Eval
-    Gen.Emit.MapEntry
     Gen.Emit.NodeIface
-    Gen.Emit.Tiling
+    Gen.Emit.Tile
     Gen.Emit.Class
     Gen.Emit.Label
     Gen.Emit.Java.Class

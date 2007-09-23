@@ -23,6 +23,7 @@ module Csa.Elem (
 data ElemType
     = EUnknown
     | EDef
+    | EProd
     | EOp
     | EIdent
     | ETerm
@@ -32,6 +33,7 @@ data ElemType
 instance Show ElemType where
     show EUnknown = "Unknown"
     show EDef = "Definition"
+    show EProd = "Production"
     show EOp = "Operator"
     show EIdent = "Ident"
     show ETerm = "Term"

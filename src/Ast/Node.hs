@@ -18,18 +18,17 @@ module Ast.Node (
         -- * Construction
         new,
         -- * Functions
-        addLinkBlockCode, setLink,
-        getName, getTerm, getIdent, getLink, getSemAct,
-        equalIdents, hasLink,
+        addLinkCode, setLink,
+        getTerm, getLink, getSemAct,
+        hasLink,
         showAsFun,
-        -- ** AST traversal functions
+        -- ** Tree traversal functions
         mapPreOrder,mapPreOrder2,mapPreOrder3,
         mapChildren,
     ) where
 
 import qualified Data.Map as M
 
-import qualified Ast.Ident as Id (Ident)
 import Ast.Term (Term, TermClass(..))
 import qualified Ast.Code as C (Code, empty)
 
@@ -104,7 +103,7 @@ showAsFun n | hasChildren n
                (if (str /= "") 
                     then (str ++ ", ") 
                     else "") ++
-                (getName child) ++
+                (show $ getId child) ++
                 (if (isTerminal child)
                     then "(...)"
                     else ""))
@@ -183,20 +182,6 @@ new t c1 c2 child' c3 link' c4
                               , (Pos5, C.empty)
                               , (Pos6, C.empty)] }
 
--- | Compare Nodes based on identifiers
-equalIdents :: Node -> Node -> Bool
-equalIdents (Nil) (Nil) = True
-equalIdents (N { term = t1 }) (N { term = t2 }) = getId t1 == getId t2
-equalIdents _ _ = False
-
-getName :: Node -> String
-getName (Nil) = ""
-getName n = show (getId (term n))
-
-getIdent :: Node -> Maybe Id.Ident
-getIdent (Nil) = Nothing
-getIdent n = Just (getId (term n))
-
 getTerm :: Node -> Maybe Term
 getTerm (Nil) = Nothing
 getTerm n = Just (term n)
@@ -215,8 +200,8 @@ setLink (Nil) _ = Nil
 setLink n link' = n { link = link' }
 
 -- | Adds semantic action contained in link block
-addLinkBlockCode :: Node -> C.Code -> C.Code -> Node
-addLinkBlockCode n c1 c2 
+addLinkCode :: Node -> C.Code -> C.Code -> Node
+addLinkCode n c1 c2 
     = let code' = (M.insert Pos5 c1 (M.insert Pos6 c2 (code n))) in
     n { code = code' }
 
@@ -263,11 +248,11 @@ mapPreOrder2 f g n
 
 
 -- | Note: The root node is NOT processed! Processing starts from roots children.
-mapPreOrder3 :: (Int -> Node -> [a])  ->      -- ^ path accumulation function
-                ([a] -> Node -> [b]) ->    -- ^ do this before recursing in pre order
-                ([a] -> Node -> [b]) ->    -- ^ do this after returning from pre order recursion
-                Node ->                    -- ^ current node
-                [([a], [b], Node)]       -- ^ return type
+mapPreOrder3 :: (Int -> Node -> [a])  ->    -- ^ path accumulation function
+                ([a] -> Node -> [b]) ->     -- ^ do this before recursing in pre order
+                ([a] -> Node -> [b]) ->     -- ^ do this after returning from pre order recursion
+                Node ->                     -- ^ current node
+                [([a], [b], Node)]          -- ^ return type
 mapPreOrder3 _ _ _ (Nil) = []
 mapPreOrder3 _ _ _ (N { child = Nil }) = []
 mapPreOrder3 path pre post n

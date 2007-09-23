@@ -15,6 +15,10 @@ module Parser.Parser (
         parse
     ) where
 
+import qualified Data.Map as M
+import qualified Data.Set as S
+import Maybe (isJust, fromJust)
+
 import Util (stringToInt)
 
 import Ast.Op (Operator, op, opMap)
@@ -23,14 +27,15 @@ import qualified Ast.Ident as Id (toIdent)
 import qualified Ast.Bind as B (new, empty, getIdent)
 import qualified Ast.Attr as A (Attr, AttrTy(..), new, ty, emptyTy)
 import qualified Ast.Code as C (Code, new, empty, isEmpty)
-import qualified Ast.Decl as Decl (Declaration, new)
+import qualified Ast.Decl as Decl (new)
 import qualified Ast.Def as Def (Definition, new, mergeDefs)
 import qualified Ast.Nt as Nt (new)
 import qualified Ast.T as T (new)
 import Ast.Term (Term, TermClass(..), terminal, nonTerminal)
-import qualified Ast.Node as N (Node, TreeClass(..), new, setLink, addLinkBlockCode)
+import qualified Ast.Node as N (Node, TreeClass(..), new, setLink, addLinkCode)
 import Ast.Prod (Production, prod)
 import Ast.Cost as Cost (Cost, static, dynamic)
+import Ast.Ir (Ir(..), OperatorMap)
 
 import qualified Csa.Csa as Csa (updateCtx, checkCtx, checkDef, checkProd)
 
@@ -74,7 +79,7 @@ import Parser.ParseErr (parseErrDupBind, parseErrTok, parseErrRedefinition)
 --
 -- The Generator itself
 --
-G :: { (Incl.Include, Decl.Declaration, [Operator], [Def.Definition], String) }
+G :: { Ir }
     : generator
         Incl
       declarations
@@ -85,18 +90,21 @@ G :: { (Incl.Include, Decl.Declaration, [Operator], [Def.Definition], String) }
         Ds
       end
         {%
-            let incl = $2 in            -- Includes
-            let decl = Decl.new $4 in   -- Declarations
-            let (ops, opctx) = $6 in    -- Operators and their Context
-            let (defs, defctx) = $8 in  -- Definitions and their Context
-            let debug = foldr (++) "" (map (\d -> show d) defs) ++
+            let (ops, opctx) = $6 in                    -- Operators and their Context
+            let (defs, defctx, opmap) = $8 in           -- Definitions and their Context
+            let debugMsg = foldr (++) "" (map (\d -> show d) defs) ++
                         "\n\nDefinition " ++ show defctx ++
                         "\n\nOperator " ++ show opctx
-                in                      -- if debug cli option is defined
+                in                                      -- if debug cli option is defined
             case (Ctx.merge defctx opctx) of
                 Right ctx ->
                     case Csa.checkCtx defs ctx of
-                        Nothing -> returnP (incl, decl, ops, (reverse defs), debug)
+                        Nothing -> returnP Ir { include = $2
+                                              , declaration = Decl.new $4
+                                              , operators = ops
+                                              , definitions = (reverse defs)
+                                              , debug = debugMsg
+                                              , operatorMap = opmap }
                         Just errors -> failP (foldr1 (\e old -> e ++ "\n" ++ old) errors)
                 Left (el1, el2) -> error "\nERROR: Merging of Definition and Operator Context failed!\n"
         }
@@ -140,13 +148,14 @@ Op :: { (Operator, Ctx.Ctx) }
 --
 -- Definitions of non terminals
 --
-Ds :: { ([ Def.Definition ], Ctx.Ctx) }
+Ds :: { ([ Def.Definition ], Ctx.Ctx, OperatorMap) }
     : D
-        { (\(def, ctx) -> ([def], ctx)) ($1) }
+        { (\(d, ctx, opmap) -> ([d], ctx, opmap)) $1 }
     | Ds D
         {%
-            let (ndef, nctx) = $2 in
-            let (odefs, octx) = $1 in
+            let (ndef, nctx, opmap1) = $2 in
+            let (odefs, octx, opmap2) = $1 in
+            let opmap = M.unionWith (\a1 a2 -> S.union a1 a2) opmap1 opmap2 in
             -- CSA: Check for possible erroneous redefinitions, if this check
             --      fails we call failP instead of errP because otherwise we
             --      would get loads of subsequent errors due to missing definitions
@@ -154,27 +163,27 @@ Ds :: { ([ Def.Definition ], Ctx.Ctx) }
             case (Ctx.merge nctx octx) of
                 Right e -> 
                     case Def.mergeDefs odefs ndef of
-                        Right defs -> returnP (defs, e)
+                        Right defs -> returnP (defs, e, opmap)
                         Left (n1, n2) -> failP (parseErrRedefinition "redefined at" (n1) (n2))
                 Left (el1, el2) -> failP (parseErrDupBind "Non Terminal" el1 el2)
         }
 
-D :: { (Def.Definition, Ctx.Ctx) }
+D :: { (Def.Definition, Ctx.Ctx, OperatorMap) }
     : ident Sem '=' Prods '.'
         {%
-            let def = Def.new (Id.toIdent $1) [] $2 $4 in
+            let def = Def.new (Id.toIdent $1) [] $2 (fst $4) in
             let ctx = Ctx.new (Elem.new def) in
             case Csa.checkDef def of
-                Nothing -> returnP (def, ctx)
-                Just err -> errP (err) (def, ctx)
+                Nothing -> returnP (def, ctx, snd $4)
+                Just err -> errP (err) (def, ctx, snd $4)
         }
     | ident '<' Ads '>' Sem '=' Prods  '.'
         {%
-            let def = Def.new (Id.toIdent $1) $3 $5 $7 in
+            let def = Def.new (Id.toIdent $1) $3 $5 (fst $7) in
             let ctx = Ctx.new (Elem.new def) in
             case Csa.checkDef def of
-                Nothing -> returnP (def, ctx)
-                Just err -> errP (err) (def, ctx)
+                Nothing -> returnP (def, ctx, snd $7)
+                Just err -> errP (err) (def, ctx, snd $7)
         }
 
 -------------------------------------------------------------------
@@ -182,78 +191,83 @@ D :: { (Def.Definition, Ctx.Ctx) }
 --
 -- Productions
 --
-Prods :: { [ Production ]  }
+Prods :: { ([ Production ], OperatorMap)  }
     : Prod
-        { [ $1 ] }
+        { ([ fst $1 ], snd $1) }
     | Prods '|' Prod
         {%
             -- CSA: Check if all productions with the same ident have the same
             --        amount of parameters.
-            case Csa.checkProd $1 $3 of
-                Right prods -> returnP prods
+            case Csa.checkProd (fst $1) (fst $3) of
+                Right prods ->
+                    returnP (prods, M.unionWith (\a1 a2 -> S.union a1 a2) (snd $1) (snd $3))
                 Left (n1, n2) ->
                     errP (parseErrRedefinition
                         "redefined with different amount of parameters at"
                         (n1) (n2))
-                        ($3:$1)
+                        (((fst $3):(fst $1)), M.unionWith (\a1 a2 -> S.union a1 a2) (snd $1) (snd $3))
         }
 
-Prod :: { Production }
+Prod :: { (Production, OperatorMap) }
     : Sem T Sem ':' Cost
-        {   prod (N.new $2 $1 $3 N.empty C.empty N.empty C.empty) $5 }
+        {   (prod (N.new $2 $1 $3 N.empty C.empty N.empty C.empty) $5,
+             M.singleton 0 $ S.singleton $ op (getId $2)) }
     | Sem T Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
             let link = (N.new $6 C.empty C.empty N.empty C.empty N.empty C.empty) in
             let n = (N.new $2 $1 $3 N.empty C.empty N.empty $9) in
-            let p = prod (N.setLink (N.addLinkBlockCode n $5 $7) link) $11 in
+            let p = prod (N.setLink (N.addLinkCode n $5 $7) link) $11 in
+            let opmap = M.singleton 0 $ S.singleton $ op (getId $2) in
             -- CSA: check duplicate bindings for T and Nt
             if (equalBindings $2 $6)
                 then errP (parseErrDupBind "Binding"
                             (Elem.new (B.getIdent (getBinding $6)))
                             (Elem.new (B.getIdent (getBinding $2))))
-                            (p)
-                else returnP p
+                            (p, opmap)
+                else returnP (p, opmap)
         }
     | Sem T Sem Pat Sem ':' Cost
         {%
-            let (ns, ctx) = $4 in
+            let (ns, ctx, opmap) = $4 in
             let n = N.new $2 $1 $3 ns $5 N.empty C.empty in
             let p = prod n $7 in
+            let opmap' = updateOpMap n opmap in
             -- CSA: check duplicate bindings
             case (Csa.updateCtx $2 ctx) of
-                Right _ -> returnP p
-                Left (el1 , el2) -> errP (parseErrDupBind "Binding" el1 el2) (p)
+                Right _ -> returnP (p, opmap')
+                Left (el1 , el2) -> errP (parseErrDupBind "Binding" el1 el2) (p, opmap')
         }
     | Sem T Sem Pat Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
             let link = N.new $8 C.empty C.empty N.empty C.empty N.empty C.empty in
-            let (child, ctx) = $4 in
-            let n = N.setLink (N.addLinkBlockCode (N.new $2 $1 $3 child $5 N.empty $11) $7 $9) link in
+            let (child, ctx, opmap) = $4 in
+            let n = N.setLink (N.addLinkCode (N.new $2 $1 $3 child $5 N.empty $11) $7 $9) link in
             let p = prod n $13 in
+            let opmap' = updateOpMap n opmap in
             -- CSA: check duplicate bindings
             -- 1: Check binding clashes for T in Context
             case (Csa.updateCtx $2 ctx) of
-                Left (el1 , el2) -> errP (parseErrDupBind "Binding" el1 el2) (p)
+                Left (el1 , el2) -> errP (parseErrDupBind "Binding" el1 el2) (p, opmap')
                 Right ctx1 ->
                         -- 2: Check binding clashes for Nt in Context extended with T's binding
                         case (Csa.updateCtx $8 ctx1) of
-                            Left (el1 , el2) -> errP (parseErrDupBind "Binding" el2 el1) (p)
-                            Right _ -> returnP p
+                            Left (el1 , el2) -> errP (parseErrDupBind "Binding" el2 el1) (p, opmap')
+                            Right _ -> returnP (p, opmap')
         }
     | Sem Nt Sem ':' Cost
-        { prod (N.new $2 $1 $3 N.empty C.empty N.empty C.empty) $5 }
+        { (prod (N.new $2 $1 $3 N.empty C.empty N.empty C.empty) $5, M.empty) }
     | Sem Nt Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
             let link = (N.new $6 C.empty C.empty N.empty C.empty N.empty C.empty) in
             let n = N.new $2 $1 $3 N.empty C.empty N.empty $9 in
-            let p = prod (N.setLink (N.addLinkBlockCode n $5 $7) link) $11 in
+            let p = prod (N.setLink (N.addLinkCode n $5 $7) link) $11 in
             -- CSA: check duplicate bindings for Nt and Nt
             if (equalBindings $2 $6)
                 then errP (parseErrDupBind "Binding"
                             (Elem.new (B.getIdent (getBinding $6)))
                             (Elem.new (B.getIdent (getBinding $2))))
-                            (p)
-                else returnP p
+                            (p, M.empty)
+                else returnP (p, M.empty)
         }
 
 -------------------------------------------------------------------
@@ -261,75 +275,79 @@ Prod :: { Production }
 --
 -- Patterns
 --
-Pat :: { (N.Node, Ctx.Ctx) }
+Pat :: { (N.Node, Ctx.Ctx, OperatorMap) }
     : '(' Sem Nt Sem PatSeq ')'
         {%
-            let (ns, ctx) = $5 in
+            let (ns, ctx, opmap) = $5 in
             let n =  N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
             case (Csa.updateCtx $3 ctx) of
-                Right e -> returnP (n, e)
-                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
+                Right e -> returnP (n, e, opmap)
+                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx, opmap)
         }
     | '(' Sem T Sem PatSeq ')'
         {% 
-            let (ns, ctx) = $5 in
+            let (ns, ctx, opmap) = $5 in
             let n = N.new $3 $2 $4 N.empty C.empty ns C.empty in
+            let opmap' = updateOpMap n opmap in
             -- CSA: Check for duplicate bindings
             case (Csa.updateCtx $3 ctx) of
-                Right e -> returnP (n, e)
-                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
+                Right e -> returnP (n, e, opmap')
+                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx, opmap')
         }
     | '(' Sem T Sem Pat Sem PatSeq ')'
         {%
-            let (ns1, ctx1) = $5 in
-            let (ns2, ctx2) = $7 in
+            let (ns1, ctx1, opmap1) = $5 in
+            let (ns2, ctx2, opmap2) = $7 in
             let n = N.new $3 $2 $4 ns1 $6 ns2 C.empty in
+            let opmap' = updateOpMap n (M.unionWith (\a1 a2 -> S.union a1 a2) opmap1 opmap2) in
             -- CSA: Check for duplicate bindings
             case Ctx.merge ctx2 ctx1 of
-                Left (e1, e2) -> errP (parseErrDupBind "Binding" e1 e2) (n,ctx1)
+                Left (e1, e2) -> errP (parseErrDupBind "Binding" e1 e2) (n, ctx1, opmap')
                 Right ctx ->
                     case (Csa.updateCtx $3 ctx) of
-                        Right e -> returnP (n, e)
-                        Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
+                        Right e -> returnP (n, e, opmap')
+                        Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx, opmap')
         }
 
 --
 -- Pattern Sequences
 --
-PatSeq :: { (N.Node, Ctx.Ctx) }
+PatSeq :: { (N.Node, Ctx.Ctx, OperatorMap) }
     : {- empty -}
-        { (N.empty, Ctx.empty ) }
+        { (N.empty, Ctx.empty , M.empty) }
     | ',' Sem Nt Sem PatSeq
         {% 
-            let (ns, ctx) = $5 in
+            let (ns, ctx, opmap) = $5 in
             let n = N.new $3 $2 $4 N.empty C.empty ns C.empty in
             -- CSA: Check for duplicate bindings
             case (Csa.updateCtx $3 ctx) of
-                Right e -> returnP (n, e)
-                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
+                Right e -> returnP (n, e, opmap)
+                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx, opmap)
         }
     | ',' Sem T Sem PatSeq
         {%
-            let (ns, ctx) = $5 in
+            let (ns, ctx, opmap) = $5 in
             let n = N.new $3 $2 $4 N.empty C.empty ns C.empty in
+            let opmap' = updateOpMap n opmap in
             -- CSA: Check for duplicate bindings
             case (Csa.updateCtx $3 ctx) of
-                Right e -> returnP (n, e)
-                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
+                Right e -> returnP (n, e, opmap')
+                Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx, opmap')
         }
     | ',' Sem T Sem Pat Sem PatSeq
         {%
-            let (ns1, ctx1) = $5 in
-            let (ns2, ctx2) = $7 in
+            let (ns1, ctx1, opmap1) = $5 in
+            let (ns2, ctx2, opmap2) = $7 in
             let n = N.new $3 $2 $4 ns1 $6 ns2 C.empty in
+            let opmap' = updateOpMap n (M.unionWith (\a1 a2 -> S.union a1 a2) opmap1 opmap2) in
             -- CSA: Check for duplicate bindings
             case Ctx.merge ctx2 ctx1 of
                 Left (e1, e2) -> failP (parseErrDupBind "Binding" e1 e2)
                 Right ctx ->
                     case (Csa.updateCtx $3 ctx) of
-                        Right e -> returnP (n, e)
-                        Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx)
+                        Right e -> returnP (n, e, opmap')
+                        Left (el1, el2) -> errP (parseErrDupBind "Binding" el1 el2) (n, ctx, opmap')
         }
 
 -------------------------------------------------------------------
@@ -422,6 +440,16 @@ failP err
 errP :: String -> a -> P a
 errP errmsg rest
     = ParseErr [ errmsg ] rest
+
+updateOpMap :: N.Node -> OperatorMap -> OperatorMap
+updateOpMap n opmap
+    = M.alter
+        (\a ->
+            if (isJust a)
+                then Just $ S.insert (op $ getId n) (fromJust a)
+                else Just $ S.singleton (op $ getId n))
+        (length (N.getChildren n))
+        opmap
 
 -- Called by Happy if a parse error occurs
 happyError :: [Token] -> P a

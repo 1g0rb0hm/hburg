@@ -15,6 +15,8 @@ module Gen.Emit.NodeIface (
         genNodeInterface,
     ) where
 
+import Control.Monad.State
+
 import Gen.Emit.Class (JavaClass(..))
 import Gen.Emit.Java.Class (Java, java)
 import Gen.Emit.Java.Modifier (Modifier(..))
@@ -31,14 +33,22 @@ type Package = String
 -- | Generates Java Node Interface class.
 genNodeInterface :: Package -> Children -> Link -> KindReturn -> Java
 genNodeInterface pkg children hasLnk retTy
-    = let j0 = setModifier (java pkg "Node") Public in
-    let methods
-            = genChildMethods children ++ 
-                genKindMethod retTy ++ 
-                genMapEntryMethods ++
-                (if (hasLnk) then genLinkMethod else [])
-        in
-    setIface (setMethods (setComments j0 genComments) methods) True
+    = evalState
+        (do
+            clazz <- get
+            put (setModifier clazz Public)
+            clazz <- get
+            put (setIface clazz True)
+            clazz <- get
+            put (setComments clazz genComments)
+            clazz <- get
+            put (setMethods
+                    clazz $ genChildMethods children
+                            ++ genKindMethod retTy
+                            ++ genMapEntryMethods
+                            ++ (if (hasLnk) then genLinkMethod else []))
+            get)
+        (java pkg "Node")
 
 -- | Generate Child Node access methods.
 genChildMethods :: Children -> [Method.Method]

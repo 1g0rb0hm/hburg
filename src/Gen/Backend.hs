@@ -12,21 +12,22 @@
 -----------------------------------------------------------------------------
 
 module Gen.Backend (
-        -- Functions
+        -- * Functions
         emit,
     ) where
 
+import Control.Monad.State
+import qualified Data.Map as M
+import qualified Data.Set as S
+
 import Util (stringFoldr)
 
-import Ast.Op (Operator)
-import Ast.Def (Definition)
-import Ast.Incl(Include)
-import Ast.Decl(Declaration)
+import qualified Ast.Ir as Ir (Ir(..), baseRuleMap, linkSet)
 
 import Gen.Emit.Enums (genEnums)
-import Gen.Emit.Tiling (genTiling)
+import Gen.Emit.Tile (genTiling)
 import Gen.Emit.Eval (genEval)
-import Gen.Emit.MapEntry (genMapEntry)
+import Gen.Emit.NodeIface (genNodeInterface)
 
 import Gen.Emit.Class (JavaClass(..))
 import Gen.Emit.Java.Class (Java, java)
@@ -34,74 +35,108 @@ import qualified Gen.Emit.Java.Method as M (Method, new, setComment, getParams, 
 import Gen.Emit.Java.Modifier (Modifier(..))
 import qualified Gen.Emit.Java.Parameter as Param (getIdent)
 import qualified Gen.Emit.Java.Comment as Comment (new)
+import qualified Gen.Emit.Java.Constructor as Constructor (new)
+import qualified Gen.Emit.Java.Variable as Variable (new)
 -----------------------------------------------------------------------------
 
-type Class = String
-type Package = String
-type Import = String
+type ClassName = String
+type PackageName = String
+type ImportName = String
 type NodeKind = String
 
 -- | Generates all the code which is necessary in order to make our code generator work.
-emit :: Class -> Package -> NodeKind -> Include -> Declaration -> [Operator] -> [Definition] -> [Java]
-emit clazz pkg nkind incl decl ops ds
-    = 
-    let j0 = java pkg clazz in                          -- 1. Create Java Class
-    let (defs, js) = genEnums pkg ds in                 -- 2. Generate Enumerations: Definitions are altered during this step since
-                                                        --        productions are labelled with rules and their result labels
-    let j1 = setImports                                 -- 3. Add appropriate imports
-                j0 [genImport pkg "NT.*" True, 
-                    genImport pkg "RuleEnum.*" True,
-                    genImport pkg "NT" False, 
-                    genImport pkg "RuleEnum" False,
-                    genImport pkg "MapEntry" False,
-                    genImport "java.util" "EnumSet" False,
-                    "// @USER INCLUDES START", (show incl), "// @USER INCLUDES END"]
+emit :: ClassName -> PackageName -> NodeKind -> Ir.Ir -> [Java]
+emit cname pkg nkind ir
+    = let (ir', enumClasses) = genEnums pkg ir in
+    let tileClass = genTiling pkg nkind ir' in
+    let evalClass = genEval ir' in
+    let nodeInterface
+            = genNodeInterface
+                    (pkg)
+                    (fst                            -- max. amount of children node can have
+                        (M.findMax $ Ir.baseRuleMap ir))
+                    (not (S.null $ Ir.linkSet ir))
+                    nkind                           -- return type of node
         in
-    let (j2, nodeIf) = genTiling ops defs nkind j1 in   -- 4. Generate Tiling Class
-    let j3 = genEval decl defs j2 in                    -- 5. Generate Eval Class
-    let j4 = setMethods j3 [genEmitFun j3] in
-    let j5 = genMapEntry pkg in                         -- 6. Generate MapEntry Tuple Type
-    [j4, j5, nodeIf] ++ js                              -- 7. Return finished classes
+    let mapEntryClass
+            = evalState
+                (do
+                    clazz <- get
+                    put (setConstructors
+                            clazz
+                            [ Constructor.new Public "MapEntry" [] ""
+                            , Constructor.new Public "MapEntry"
+                                ["int c", "RuleEnum r"] "\tthis.cost = c;\n\tthis.rule = r;"])
+                    clazz <- get
+                    put (setVariables
+                            clazz
+                            [ Variable.new Public False "int" "cost" ""
+                            , Variable.new Public False "RuleEnum" "rule" ""])
+                    get)
+                (java pkg "MapEntry")
+        in
+    let codeGenClass
+            = evalState
+                (do -- Set imports
+                    clazz <- get
+                    put (setImports
+                                clazz
+                                [genImport pkg "NT.*" True,
+                                 genImport pkg "RuleEnum.*" True,
+                                 genImport pkg "NT" False,
+                                 genImport pkg "RuleEnum" False,
+                                 genImport pkg "MapEntry" False,
+                                 genImport "java.util" "EnumSet" False,
+                                 "// @USER INCLUDES START",
+                                 (show $ Ir.include ir'),
+                                 "// @USER INCLUDES END"])
+                    -- Set code defined in 'declarations' section
+                    clazz <- get
+                    put (setUserCode clazz (show $ Ir.declaration ir'))
+                    -- Add 'tiling' and 'eval' classes as nested classes
+                    clazz <- get
+                    put (setNestedClasses clazz [tileClass, evalClass])
+                    -- Generate Interface method to the outside world
+                    clazz <- get
+                    put (setMethods clazz [genEmitFun evalClass])
+                    get) 
+                (java pkg cname)
+        in
+    -- Return generated classes
+    [   codeGenClass        -- the final code generator class
+    ,   mapEntryClass       -- MapEntry class
+    ,   nodeInterface]      -- Node interface
+    ++  enumClasses         -- Classes holding enumerations
     where
         -- | Generate import statements
-        genImport :: Package -> Class -> Bool -> Import
-        genImport pkg clazz static
-            = let prefix = if (pkg /= "")
-                            then pkg ++ "."
-                            else ""
-                in
-            if (static)
-                then "import static " ++ prefix ++ clazz ++ ";"
-                else "import " ++ prefix ++ clazz ++ ";"
+        genImport :: PackageName -> ClassName -> Bool -> ImportName
+        genImport pkg cname static
+            = "import" ++
+            (if (static) then " static " else " ") ++
+            (if (pkg /= "") then pkg ++ "." else "") ++
+            cname ++ ";"
 
         -- | Create method in our code generator which is public and callable from the outside.
         genEmitFun :: Java -> M.Method
-        genEmitFun j
-            = let evalClass -- retrieve class which does the Evaluation
-                    = case (getNestedClasses j) of
-                        [] -> error ("\nERROR: Class " ++ getClassName j ++ " has no nested classes!\n")
-                        list -> last list
-                in
-            let m1          -- retrieve the entry method for evaluation
-                    = case (getMethods evalClass) of
+        genEmitFun evalClass
+            = let m1 = case (getMethods evalClass) of-- retrieve the entry method for evaluation
                         [] -> error ("\nERROR: Class " ++ getClassName evalClass ++ " has no methods!\n")
-                        list -> head list 
+                        list -> head list
                 in
-            let m2          -- given the entry method for evaluation, its parameters and return
-                            -- type, generate the emit method which serves as an entry point
-                            -- to our code generator
-                    = M.new Public True (M.getRetTy m1) "emit" (M.getParams m1) (genBody m1) 
-                in
+            -- given the entry method for evaluation, its parameters and return
+            -- type, generate the emit method which serves as an entry point
+            -- to our code generator
+            let m2 = M.new Public True (M.getRetTy m1) "emit" (M.getParams m1) (genBody m1) in
             M.setComment m2 (Comment.new ["emit():", "  Generate Code for AST starting with root node."])
             where
                 -- | Method body of emit method.
                 genBody :: M.Method -> String
                 genBody m
-                    = "\t" ++ clazz ++ ".Tiling.tile(n);\n" ++
+                    = "\t" ++ cname ++ ".Tiling.tile(n);\n" ++
                     (if (M.getRetTy m == "void")
                         then "\t"
                         else "\treturn ") ++
-                    clazz ++ ".Eval." ++ (M.getName m) ++ 
+                    cname ++ ".Eval." ++ (M.getName m) ++ 
                     "(" ++
                     (stringFoldr
                         (\x y -> x ++ ", " ++ y)

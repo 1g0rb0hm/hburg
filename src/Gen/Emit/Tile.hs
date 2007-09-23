@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Tiling
+-- Module      :  Tile
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
 -- License     :  BSD-style (see the file LICENSE) 
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
@@ -10,70 +10,63 @@
 -- Java node interface.
 -----------------------------------------------------------------------------
 
-module Gen.Emit.Tiling (
+module Gen.Emit.Tile (
         -- * Functions
         genTiling,
     ) where
 
-import List (sort)
+import Control.Monad.State
 
-import Ast.Term (TermClass(..))
-import qualified Ast.Node as N (mapChildren, mapPreOrder2, getName)
+import Ast.Term (TermClass(..), nonTerminal)
+import qualified Ast.Node as N (mapChildren, mapPreOrder2)
 import Ast.Op (Operator, opSem)
-import Ast.Def (Definition, getNodeReturnType)
-import Ast.Prod (Production, getName, getCost, getNode, getRuleLabel, getResultLabel, getArity)
+import Ast.Def (getNodeReturnType)
+import Ast.Cost as Cost (isZero)
+import Ast.Prod (Production, getCost, getNode, getRuleLabel, getResultLabel, getArity)
+import qualified Ast.Ir as Ir (Ir(..), baseRuleMap, linkSet)
+import qualified Ast.Closure as Cl (Closure(..), closure)
 
-import qualified Gen.Tile as T (Tiling, Arity,
-    new, getClosures, getProductionsPerArity,
-    getOperatorsPerArity, getLinkSet,
-    closureGetFromLabel, closureGetToLabel,
-    closureGetRuleLabel, hasClosures)
-
-import Gen.Emit.Label (ntToEnumLabel, childCallLabel)
+import Gen.Emit.Label (termToEnumLab, childCallLab)
 
 import Gen.Emit.Class (JavaClass(..))
-import Gen.Emit.NodeIface (genNodeInterface)
 import Gen.Emit.Java.Class (Java, java)
 import qualified Gen.Emit.Java.Comment as Comment (new)
-import qualified Gen.Emit.Java.Method as Method (Method, new, setComment)
+import qualified Gen.Emit.Java.Method as Meth (Method, new, setComment)
 import Gen.Emit.Java.Modifier (Modifier(..))
-import qualified Gen.Emit.Java.Variable as Variable (Variable, new)
-import qualified Gen.Emit.Java.Parameter as Parameter (new, newFromList)
+import qualified Gen.Emit.Java.Variable as Var (Variable, new)
+import qualified Gen.Emit.Java.Parameter as Param (new, newFromList)
 
 import qualified Data.Set as S
 import qualified Data.Map as M
 ------------------------------------------------------------------------------------
 
 type NodeKind = String
+type Arity = Int
 
 -- | Top level function for generating tiling target source code and the appropriate node interface.
-genTiling :: [Operator] -> [Definition] -> NodeKind -> Java -> (Java, Java)
-genTiling ops defs nkind parentClass
-    = let tile = T.new ops defs in                      -- produce Tiling
-    let j0 = setModifier (java "" "Tiling") Private in -- create new class which will hold tilings
-    let j1 = setStatic j0 True in
-    let (vars, sets) = genEnumSetVars tile in           -- generate EnumSet variables
-    let nodeIf
-            = genNodeInterface                          -- generate Node interface
-                        (getPackage parentClass)       -- package name
-                        (last (sort sets))              -- max. amount of children node can have
-                        (not
-                            (S.null
-                            (T.getLinkSet tile)))       -- do link nodes exist
-                        nkind                           -- return type of node
-        in
-    let j2 = setVariables j1 vars in
-    let mLab = genLabelMethod tile in                   -- generate label() mehtod
-    let mTile = genTileMethod tile sets in              -- generate tile() method as in in [Cooper p.566]
-    let mLabS = genLabelSetMethods defs tile in         -- generate label_N() methods for nodes with arity N
-    let nestedClass 
-            = setMethods j2                            -- finally set all methods for this tiling class
-                ([mLab, mTile] ++ mLabS ++
-                    if (T.getClosures tile /= [])       -- only generate closure() method if there are closures
-                        then [genClosureMethod tile]
-                        else [])
-        in
-    (setNestedClasses parentClass [nestedClass], nodeIf)   -- the Tiling class is nested into another class
+genTiling :: String -> NodeKind -> Ir.Ir -> Java
+genTiling pkg nkind ir
+    = let prodmap = Ir.baseRuleMap ir in
+    let linkset = Ir.linkSet ir in
+    let vars = genEnumSetVars ir linkset in     -- generate EnumSet variables
+    let closures = Cl.closure $ Ir.definitions ir in
+    evalState
+        (do
+            clazz <- get
+            put (setModifier clazz Private)
+            clazz <- get
+            put (setStatic clazz True)
+            clazz <- get
+            put (setVariables clazz vars)
+            clazz <- get
+            put (setMethods
+                    clazz
+                    $ [  genLabelMethod closures        -- generate label() mehtod
+                      ,  genTileMethod                  -- generate tile() method [Cooper p.566]
+                            linkset (M.keys prodmap)]
+                      ++ genLabelSetMethods ir prodmap) -- generate label_N() methods for nodes with arity N
+            get)
+        (java "" "Tiling")
 
 
 -- | Generate a name for node sets based on node arity.
@@ -87,22 +80,21 @@ genLabelMethodName arity = "label_" ++ (show arity)
 
 -- | Produce EnumSet variables.
 --      * Example: private static EnumSet unarySet = EnumSet.of(FUN,FUNAP,SIDEFFECT)
-genEnumSetVars :: T.Tiling -> ([Variable.Variable], [Int])
-genEnumSetVars tile
-    = let opsets = T.getOperatorsPerArity tile in
-    let linkset = T.getLinkSet tile in
-    let (vars, sets) = unzip (map
-                        (\key -> (genVar (genSetName key) (opsets M.! key), key))
-                        (M.keys opsets))
+genEnumSetVars :: Ir.Ir -> S.Set Operator -> [Var.Variable]
+genEnumSetVars ir linkset
+    = let opsets = Ir.operatorMap ir in
+    let vars = map
+                    (\key -> genVar (genSetName key) (opsets M.! key))
+                    (M.keys opsets)
             in
     if (S.null linkset)
-        then (vars, sets)
-        else ((genVar "linkSet" linkset):vars, sets)
+        then vars
+        else (genVar "linkSet" linkset):vars
     where
         -- | genVar.
-        genVar :: String -> S.Set Operator -> Variable.Variable
+        genVar :: String -> S.Set Operator -> Var.Variable
         genVar name opset
-            = Variable.new Private True "EnumSet"  name
+            = Var.new Private True "EnumSet"  name
                     ("EnumSet.of(" ++ (transformOpSet opset) ++ ")")
 
         -- | Make String representation from an Operator set
@@ -116,11 +108,11 @@ genEnumSetVars tile
                 opset)
 
 -- | Generates label method.
-genLabelMethod :: T.Tiling -> Method.Method
-genLabelMethod tiling
-    = let params = Parameter.newFromList [("Node","n"), ("NT","nt"), ("int","c"), ("RuleEnum","r")] in
-    let m = Method.new Private True "void" "label" params funBody in
-    Method.setComment m (Comment.new ["label():","  Label each AST node appropriately."])
+genLabelMethod :: [Cl.Closure] -> Meth.Method
+genLabelMethod closures
+    = let params = Param.newFromList [("Node","n"), ("NT","nt"), ("int","c"), ("RuleEnum","r")] in
+    let m = Meth.new Private True "void" "label" params funBody in
+    Meth.setComment m (Comment.new ["label():","  Label each AST node appropriately."])
     where
         -- | Function Body of label method
         funBody :: String
@@ -128,43 +120,39 @@ genLabelMethod tiling
             = "\tif (c < n.cost(nt)) {\n" ++
             "\t\tn.put(nt, new MapEntry(c, r));\n" ++
             -- only if we have a closure we emit the code for it
-            (if (T.hasClosures tiling)
-                then "\t\tclosure(n, nt, r);\n"
+            (if (closures /= [])
+                then closure
                 else "") ++
             "\t}"
-
--- | Generate closure method.
-genClosureMethod :: T.Tiling -> Method.Method
-genClosureMethod t
-    = let params = Parameter.newFromList [("Node","n"), ("NT","nt"), ("RuleEnum","r")] in
-    let m = Method.new Private True "void" "closure" params funBody in
-    Method.setComment m (Comment.new ["closure():", "  Calculate the transitive closure for this Node."])
-    where
-        -- | Function Body of closure method
-        funBody :: String
-        funBody 
-            = let closures = T.getClosures t in
-            "\tswitch (nt) {\n" ++
-            concat ["\t\tcase " ++ T.closureGetFromLabel c ++ ": {\n" ++
-                 "\t\t\tlabel (n, " ++ T.closureGetToLabel c ++  
-                 ", n.cost(nt), " ++ T.closureGetRuleLabel c ++ 
-                 "); break;\n\t\t}\n"
-                | c <- closures ] ++ "\t}"
+            where
+                -- | Transitive closure: stmt = reg, reg = lab, etc...
+                closure :: String
+                closure 
+                    = "\t\tswitch (nt) {\n" ++
+                    concat 
+                        ["\t\t\tcase " ++ Cl.fromL c ++ ": {\n" ++
+                         "\t\t\t\tlabel (n, " ++ Cl.toL c ++
+                         ", n.cost(nt) " ++
+                         (if (Cost.isZero (Cl.cost c))
+                             then ", "
+                             else "+ " ++ show (Cl.cost c) ++ " , ") ++
+                        Cl.ruleL c ++ 
+                         "); break;\n\t\t\t}\n"
+                        | c <- closures ] ++ "\t\t}\n"
 
 -- | Generates tile method as in [Cooper p.566]
-genTileMethod :: T.Tiling -> [Int] -> Method.Method
-genTileMethod tiling sets
-    = let m = Method.new Public True "void" "tile" [Parameter.new "Node" "n"] funBody in 
-    Method.setComment m (Comment.new ["tile():" , "   Tile the AST as in [Cooper p.566]"])
+genTileMethod :: S.Set Operator -> [Int] -> Meth.Method
+genTileMethod linkset sets
+    = let m = Meth.new Public True "void" "tile" [Param.new "Node" "n"] funBody in 
+    Meth.setComment m (Comment.new ["tile():" , "   Tile the AST as in [Cooper p.566]"])
     where
         -- | Function Body of tile method
         funBody :: String
         funBody
-            = let hasLinkSet = (not (S.null (T.getLinkSet tiling))) in
-            "\tassert (n != null) : \"ERROR - Can not tile null node.\";\n" ++
+            = "\tassert (n != null) : \"ERROR - Can not tile null node.\";\n" ++
             -- Generate 'If' cascade to distinguish in which Set a node is in
             ifCascade sets ++ "\n" ++
-            if (hasLinkSet)
+            if (not (S.null linkset)) -- is there a linkset?
                 then
                     "\tif (linkSet.contains(n.kind())) {\n" ++ 
                     "\t\tNode link = n.link();\n" ++
@@ -178,34 +166,33 @@ genTileMethod tiling sets
         -- if (..) {...}
         ifCascade (x:[])
             = "\tif (" ++ genSetName x ++ ".contains(n.kind())) {\n" ++
-            concat [ "\t\ttile(n." ++ (childCallLabel pos) ++ "());\n" | pos <- [1 .. x]] ++
+            concat [ "\t\ttile(n." ++ (childCallLab pos) ++ "());\n" | pos <- [1 .. x]] ++
             "\t\t" ++ genLabelMethodName x ++ "(n);\n\t}\n"
         -- if (..) {...} else if (..) ... else {...}
         ifCascade (x:xs)
             = "\tif (" ++ genSetName x ++ ".contains(n.kind())) {\n" ++
-            concat [ "\t\ttile(n." ++ (childCallLabel pos) ++ "());\n" | pos <- [1 .. x]] ++
+            concat [ "\t\ttile(n." ++ (childCallLab pos) ++ "());\n" | pos <- [1 .. x]] ++
             "\t\t" ++ genLabelMethodName x ++ "(n);\n\t} else " ++
             (concatMap
                 (\arity -> 
-                    "if (" ++ genSetName arity ++".contains(n.kind())) {\n" ++
-                    concat [ "\t\ttile(n." ++ (childCallLabel pos) ++ "());\n" | pos <- [1 .. arity]] ++
-                    "\t\t" ++ genLabelMethodName arity ++ "(n);\n\t} else ")
+                    "if ("++ genSetName arity ++".contains(n.kind())) {\n" ++
+                    concat [ "\t\ttile(n." ++ (childCallLab pos) ++ "());\n" | pos <- [1 .. arity]] ++
+                    "\t\t"++ genLabelMethodName arity ++"(n);\n\t} else ")
                 (xs)) ++
             "{\n\t\tSystem.err.println(\"ERROR: Encountered undefined node: \" + n.kind() );\n\t}\n"
 
 -- | Generate methods which do the actual labelling of AST nodes.
-genLabelSetMethods :: [Definition] -> T.Tiling -> [Method.Method]
-genLabelSetMethods defs tiling
-    = let funmap = T.getProductionsPerArity tiling in
-    map -- Iterate over all arities and generate methods
-        (\key -> genLabelSetMethod key (funmap M.! key))
-        (M.keys funmap)
+genLabelSetMethods :: Ir.Ir -> M.Map Int [Production] -> [Meth.Method]
+genLabelSetMethods ir prodmap
+    = map -- Iterate over all arities and generate methods
+        (\key -> genLabelSetMethod key (prodmap M.! key))
+        (M.keys prodmap)
     where
         -- | Generate method which labels Nodes with a certain arity
-        genLabelSetMethod :: T.Arity -> [Production] -> Method.Method
+        genLabelSetMethod :: Arity -> [Production] -> Meth.Method
         genLabelSetMethod arity prods
-            = let m = Method.new Private True "void" (genLabelMethodName arity) [Parameter.new "Node" "n"] funBody in
-            Method.setComment m (Comment.new [genLabelMethodName arity ++ "():" , "  Label nodes with arity " ++ show arity])
+            = let m = Meth.new Private True "void" (genLabelMethodName arity) [Param.new "Node" "n"] funBody in
+            Meth.setComment m (Comment.new [genLabelMethodName arity ++ "():" , "  Label nodes with arity " ++ show arity])
             where
                 -- | funBody. Function Body
                 funBody :: String
@@ -237,7 +224,7 @@ genLabelSetMethods defs tiling
                 genProdMap prods
                     = foldr
                         (\p m ->
-                            let key = getName p in
+                            let key = show $ getId p in
                             if (M.member key m)
                                 then M.insert key (p:(m M.! key)) m
                                 else M.insert key [p] m)
@@ -247,14 +234,14 @@ genLabelSetMethods defs tiling
                 -- | simpleCase.
                 simpleCase :: Production -> String
                 simpleCase p 
-                    = "\n\t\tcase " ++ getName p ++ ": {\n" ++
+                    = "\n\t\tcase " ++ termToEnumLab p ++ ": {\n" ++
                     (costAndLabel p "\t\t\t") ++ "\n\t\t\tbreak;" ++
                     "\n\t\t}"
 
                 -- | complexCase.
                 complexCase :: [Production] -> String
                 complexCase prods
-                    = "\n\t\tcase " ++ getName (head prods) ++ ": {" ++
+                    = "\n\t\tcase " ++ termToEnumLab (head prods) ++ ": {" ++
                     concatMap
                         (\p ->
                             if (getArity p > 0)
@@ -270,19 +257,26 @@ genLabelSetMethods defs tiling
                 costAndLabel p indent
                     = let childCalls 
                             = N.mapChildren
-                                (\pos n -> ("." ++ childCallLabel pos ++ "()", n))
+                                (\pos n -> ("." ++ childCallLab pos ++ "()", n))
                                 (getNode p)
                         in
                     indent ++ "cost = " ++
-                    concatMap 
-                        (\(call, n) ->  
-                                "n" ++ call ++ ".cost(" ++ 
-                                (case getNodeReturnType defs n of
-                                    Just ty -> ntToEnumLabel ty
-                                    Nothing -> error ("\nERROR: costAndLabel() Node '"++ show n ++"' has no return type!\n")) ++
-                                ") + "  )
-                        (childCalls) ++
-                    show (getCost p) ++ ";\n" ++
+                    (if (childCalls /= [])
+                        then (foldr1
+                                (\new old -> new ++ " + " ++ old)
+                                (map
+                                    (\(call, n) ->
+                                            "n" ++ call ++ ".cost(" ++
+                                            (case getNodeReturnType (Ir.definitions ir) n of
+                                                Just term -> termToEnumLab $ nonTerminal term
+                                                Nothing -> error ("\nERROR: costAndLabel() Node '"++ show n ++"' has no return type!\n")) ++
+                                            ")"  )
+                                childCalls)) ++
+                                if (Cost.isZero $ getCost p)
+                                    then ""
+                                    else " + " ++ show (getCost p)
+                        else show (getCost p))
+                    ++ ";\n" ++
                     -- Call label
                     indent ++ "label(n, " ++ (getResultLabel p) ++ ", cost, " ++ (getRuleLabel p) ++ ");"
 
@@ -292,7 +286,7 @@ genLabelSetMethods defs tiling
                 iff :: Production -> String
                 iff p = let childCalls
                                 = N.mapPreOrder2
-                                    (\pos n -> "." ++ childCallLabel pos ++ "()")
+                                    (\pos n -> "." ++ childCallLab pos ++ "()")
                                     (\node -> node)
                                     (getNode p)
                             in
@@ -301,9 +295,9 @@ genLabelSetMethods defs tiling
                         (map
                             (\(call, n) ->
                                 if (isTerminal n)
-                                    then "n" ++ call ++ ".kind() == " ++ N.getName n
+                                    then "n" ++ call ++ ".kind() == " ++ termToEnumLab n
                                     else "n" ++ call ++ ".is(" ++ 
-                                            (case getNodeReturnType defs n of
-                                                Just ty -> ntToEnumLabel ty
+                                            (case getNodeReturnType (Ir.definitions ir) n of
+                                                Just term -> termToEnumLab $ nonTerminal term
                                                 Nothing -> error "\nERROR: iff() Node has no return type!\n") ++ ")" )
                             (childCalls))
