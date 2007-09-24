@@ -1,6 +1,6 @@
 -- Package Stanza
 Name:           hburg
-Version:        1.0
+Version:        1.1
 License:        BSD3
 License-file:   LICENSE
 Author:         Igor Boehm <igor@bytelabs.org>
@@ -59,6 +59,7 @@ other-modules:
     Ast.Bind
     Ast.Code
     Ast.Closure
+    Ast.Cost
     Ast.Decl
     Ast.Def
     Ast.Ident
