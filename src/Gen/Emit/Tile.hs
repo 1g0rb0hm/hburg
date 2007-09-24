@@ -24,7 +24,7 @@ import Ast.Def (getNodeReturnType)
 import Ast.Cost as Cost (isZero)
 import Ast.Prod (Production, getCost, getNode, getRuleLabel, getResultLabel, getArity)
 import qualified Ast.Ir as Ir (Ir(..), baseRuleMap, linkSet)
-import qualified Ast.Closure as Cl (Closure(..), closure)
+import qualified Ast.Closure as Cl (Closure, Label(..), closure, fromLabels, toLabels, empty)
 
 import Gen.Emit.Label (termToEnumLab, childCallLab)
 
@@ -108,8 +108,8 @@ genEnumSetVars ir linkset
                 opset)
 
 -- | Generates label method.
-genLabelMethod :: [Cl.Closure] -> Meth.Method
-genLabelMethod closures
+genLabelMethod :: Cl.Closure -> Meth.Method
+genLabelMethod cls
     = let params = Param.newFromList [("Node","n"), ("NT","nt"), ("int","c"), ("RuleEnum","r")] in
     let m = Meth.new Private True "void" "label" params funBody in
     Meth.setComment m (Comment.new ["label():","  Label each AST node appropriately."])
@@ -120,25 +120,29 @@ genLabelMethod closures
             = "\tif (c < n.cost(nt)) {\n" ++
             "\t\tn.put(nt, new MapEntry(c, r));\n" ++
             -- only if we have a closure we emit the code for it
-            (if (closures /= [])
+            (if (not $ Cl.empty cls)
                 then closure
                 else "") ++
             "\t}"
             where
-                -- | Transitive closure: stmt = reg, reg = lab, etc...
+                -- | Transitive closures: stmt = reg, reg = lab, etc...
                 closure :: String
                 closure 
                     = "\t\tswitch (nt) {\n" ++
-                    concat 
-                        ["\t\t\tcase " ++ Cl.fromL c ++ ": {\n" ++
-                         "\t\t\t\tlabel (n, " ++ Cl.toL c ++
-                         ", n.cost(nt) " ++
-                         (if (Cost.isZero (Cl.cost c))
-                             then ", "
-                             else "+ " ++ show (Cl.cost c) ++ " , ") ++
-                        Cl.ruleL c ++ 
-                         "); break;\n\t\t\t}\n"
-                        | c <- closures ] ++ "\t\t}\n"
+                    concatMap
+                        (\fromL ->
+                            "\t\t\tcase " ++ fromL ++ ": {\n" ++
+                            concatMap
+                                (\lab ->
+                                     "\t\t\t\tlabel (n, " ++ Cl.toL lab ++
+                                     ", n.cost(nt) " ++
+                                     (if (Cost.isZero (Cl.cost lab))
+                                         then ", "
+                                         else "+ " ++ show (Cl.cost lab) ++ " , ") ++
+                                    Cl.ruleL lab ++ ");\n")
+                                (S.toList $ Cl.toLabels fromL cls)
+                            ++ "\t\t\t\tbreak;\n\t\t\t}\n")
+                        (Cl.fromLabels cls)  ++ "\t\t}\n"
 
 -- | Generates tile method as in [Cooper p.566]
 genTileMethod :: S.Set Operator -> [Int] -> Meth.Method

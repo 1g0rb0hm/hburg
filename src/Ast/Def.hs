@@ -19,11 +19,10 @@ module Ast.Def (
         -- * Construction
         new,
         -- * Functions
-        getCode, getProds, getClosures,
+        getCode, getProds,
         getNodeReturnType, getDefForProd,
         setProds,
         isNodeDefined,
-        mergeDefs,
     ) where
 
 import List (find)
@@ -38,7 +37,7 @@ import Ast.Node (Node, getTerm)
 import qualified Ast.Nt as Nt (Nt, new, getIdent, getAttr, getBinding, hasBinding)
 import Ast.Term (TermClass(..))
 import Ast.Code (Code)
-import qualified Ast.Prod as P (Production, getNode, isDefined, getProdsByIdent)
+import qualified Ast.Prod as P (Production, isDefined)
 
 import qualified Csa.Elem as E (ElemClass(..), ElemType(EDef))
 ------------------------------------------------------------------------------------
@@ -69,7 +68,7 @@ instance Show Definition where
         show 
             (map
                 (\p -> E.elemShow p)
-                (calcClosures (prods d))) ++
+                (filter (isNonTerminal) (prods d))) ++
             "\n\n " ++
             (concatMap (\p -> show p ++ "\n\n ") (prods d))
 
@@ -99,10 +98,6 @@ new i attrs c ps
 --
 getCode :: Definition -> Code
 getCode d = code d
-
--- | Array of Def nodes we have to hook up with
-getClosures :: Definition -> Closure
-getClosures d = calcClosures (prods d)
 
 getProds :: Definition -> [P.Production]
 getProds d = prods d
@@ -135,26 +130,6 @@ isNodeDefined defs n
         (find
             (\d -> (equalsNode d n) || (P.isDefined (prods d) n))
             (defs))
-
--- | Check all productions which are NonTerm productions
-calcClosures :: [P.Production] -> [P.Production]
-calcClosures [] = []
-calcClosures prods 
-    = filter (\p -> isNonTerminal p) (prods)
-
--- | Merge definitions together
-mergeDefs :: [Definition] -> Definition -> Either (Node, Node) [Definition]
-mergeDefs [] def = Right [def]
-mergeDefs defs def
-    = let prods = concatMap (\d -> getProds d) (defs) in
-    let clashes =
-            find
-                (\p -> P.isDefined prods (P.getNode p))
-                (getProds def)
-        in
-    case clashes of
-        Nothing -> Right (def:defs)
-        Just p -> Left (P.getNode (head (P.getProdsByIdent prods (P.getNode p))), P.getNode p)
 
 -- | Given all definitions and a Node, the return 'type' if the Node
 --      is calculated.

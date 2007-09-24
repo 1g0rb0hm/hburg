@@ -1,9 +1,17 @@
 generator		-- Import Statements
 declarations	-- General Declarations
 operators		-- Operators (our Node Kinds)
-	CONST
+	CONST,ADD,REG
 rules			-- Production Rules
 	test = CONST : 1.
+
+	goo = ADD (test5, test1) : 99
+	    | test1 : 1
+	    | test2 : 2
+	    | test5 : 0
+	    | test3 : 3
+	    | ADD (goo, goo, goo) : 100 -- Error Case, ADD used with different amount of parameters
+	    | test4 : 3.
 
     test1 = test : 2.
     test2 = test : 3.
@@ -12,8 +20,10 @@ rules			-- Production Rules
     test5 = test : 0
 		| test4 : 1
 		| test3 : 0
-		| test5 : 0		-- Error Case
+		| test5 : 0		-- Error Case, redefinition in terms of itself
 		| test2 : 1.
+
+
 end
 
 

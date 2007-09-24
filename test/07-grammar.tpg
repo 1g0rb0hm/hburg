@@ -1,0 +1,28 @@
+generator        -- Import Statements
+declarations    -- General Declarations
+operators        -- Operators (our Node Kinds)
+    ASGNI,ADDI,CVCI,IOI,ADDRLP,CNSTI,INDIRC
+rules            -- Production Rules
+   stmt = ASGNI(disp,reg) : 1
+        | reg : 0.
+
+    reg = ADDI(reg,rc) : 1
+        | CVCI(INDIRC(disp)) : 1
+        | IOI : 0
+        | disp : 1.
+
+   disp = ADDI(reg,con) : 1
+        | ADDRLP : 0.
+
+     rc = con : 0
+        | reg : 0.
+
+    con = CNSTI : 0
+        | IOI : 0.
+
+    ref = INDIRC(disp) : 0.
+end 
+
+
+
+

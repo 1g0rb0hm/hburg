@@ -28,7 +28,7 @@ import qualified Ast.Bind as B (new, empty, getIdent)
 import qualified Ast.Attr as A (Attr, AttrTy(..), new, ty, emptyTy)
 import qualified Ast.Code as C (Code, new, empty, isEmpty)
 import qualified Ast.Decl as Decl (new)
-import qualified Ast.Def as Def (Definition, new, mergeDefs)
+import qualified Ast.Def as Def (Definition, new)
 import qualified Ast.Nt as Nt (new)
 import qualified Ast.T as T (new)
 import Ast.Term (Term, TermClass(..), terminal, nonTerminal)
@@ -161,10 +161,7 @@ Ds :: { ([ Def.Definition ], Ctx.Ctx, OperatorMap) }
             --      would get loads of subsequent errors due to missing definitions
             --      in our Context. This would only confuse the user.
             case (Ctx.merge nctx octx) of
-                Right e -> 
-                    case Def.mergeDefs odefs ndef of
-                        Right defs -> returnP (defs, e, opmap)
-                        Left (n1, n2) -> failP (parseErrRedefinition "redefined at" (n1) (n2))
+                Right e -> returnP (ndef:odefs, e, opmap)
                 Left (el1, el2) -> failP (parseErrDupBind "Non Terminal" el1 el2)
         }
 
