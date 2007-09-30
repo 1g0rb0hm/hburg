@@ -12,7 +12,6 @@ Lexer
 ----------------------------------------------------
 
  * Handle escaped \:\) in semantic actions
- * replace '(:' with '.)' in order to be comply with Coco\R
 
 CSA
 ----------------------------------------------------
@@ -56,8 +55,6 @@ Grammar
 Testing
 ----------------------------------------------------
 
- * The only testing we do is to run a few grammars through
-    hburg when running the test Cabal 'target'. That is obviously
-    not enough. We should either use HUnit or Quickcheck in
-    some sensible way to make sure that the correct parse errors
-    and type errors are found and reported.
+ *  We should either use HUnit or Quickcheck in order to verify
+    that certain invariants are met, and that the correct parse
+    errors and type errors are found and reported.

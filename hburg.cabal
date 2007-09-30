@@ -9,23 +9,11 @@ Homepage:       http://www.bytelabs.org/hburg.html
 Category:       Code Generation
 Synopsis:       Haskell Bottom Up Rewrite Generator
 Description:
-    HBURG has been designed to produce a code generator for a
-    target machine given a specification of an abstract syntax
-    tree of a program, as well as a specification of the target
-    machine itself. Its goals are the following:
-    .
-    * Provide a powerful tree pattern matching specification 
-      language with simplicity and easy readability in mind.
-    .
-    * Perform good static analysis aiding during the design of
-      grammar specifications.
-    .
-    * Provide back-ends which generate code for various languages
-      from a specification, ready to be plugged into a back-end
-      compiler infrastructure. Currently Java Code is being generated.
-    .
-    See "Homepage" for an example on how to integrate the generated
-    code into a compiler.
+    HBURG is a program that generates tree parsers for cost-augmented
+    tree grammars. It is useful for writing code generators for compilers.
+    Given a mapping of a tree structured intermediate representation onto
+    target machine instructions, HBURG generates a code generator that can
+    be plugged into the instruction selection phase of a compiler.
 Stability:      Experimental
 build-depends:  base, haskell98, filepath, mtl
 extra-source-files:
@@ -36,11 +24,11 @@ extra-source-files:
     test/04-grammar.tpg
     test/05-grammar.tpg
     test/06-grammar.tpg
+    test/07-grammar.tpg
     test/errors/err-dupbindings.tpg
     test/errors/err-many-many-errors.tpg
     test/errors/err-manyundefined.tpg
     test/errors/err-selfredef.tpg
-    test/errors/err-termredef.tpg
     test/errors/err-typerror1.tpg
     test/errors/err-typerror2.tpg
     test/errors/err-typerror3.tpg
