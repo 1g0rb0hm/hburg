@@ -246,7 +246,7 @@ typeCheck n tymap
                                             N.showAsFun n ++
                                             "' - expected type" ++ (if (S.size p > 1) then "s" else "") ++
                                             " '" ++ show (S.toList p) ++
-                                            " but found '" ++ show (S.toList (returns ent')) ++ "'"))
+                                            "' but found '" ++ show (S.toList (returns ent')) ++ "'"))
                                         else Nothing
                                 else
                                     -- If we got in here we have encountered an undefined

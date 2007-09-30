@@ -1,14 +1,18 @@
-
-generator		-- Import Statements
-	(:	import java.util.LinkedList;
-		import comp.codegen.Reg;
-		import comp.ast.Node;							:) 
-declarations	-- General Declarations (not needed now)
-operators		-- Operators (our Node Kinds)
-	CONST(:E_CONST:), ADD(:E_ADD:), 
-	SUB(:E_SUB:), MULT(:E_MULT:),
-	MULTIBLA
+generator
+	(:	import java.util.List;  :) 
+declarations
+operators
+	CONST, ADD, OP
 rules
+    val <: out String reg, List instr :>
+    	= OP (ADD (reg <: out String r1, instr :> , 
+    				 -- XXX: the following is a type error!
+    				 val <: out String reg, List instr :>),
+    				reg <: out String reg, List instr :>)
+    		(: blabla :)
+    	:1 .
+
+
 	-- Production rules for registers:
 	--		@out: produce a result register
 	--		@in: list to add instructions to
@@ -19,31 +23,17 @@ rules
 										c1.val + "," +
 										reg);
 						 :) : 1 
-		|	ADD ( 	reg <: out String r1, instr :> , 
-					reg <: out String r2, instr :> ) 
+		| ADD (reg <: out String r1, instr :> , 
+			   reg <: out String r2, instr :> ) 
 						(: 	reg = Reg.getNextReg();
 							instr.add("add " + 
 										r1 + "," +
 										r2 + "," +
 										reg);
 						 :) : 1
-		|	SUB (	reg <: out String  r1, instr :> , 
-					reg <: out String  r2, instr :> )
-						(: 	reg = Reg.getNextReg();
-							instr.add("sub " +
-										r1 + "," +
-										r2 + "," +
-										reg);
-						 :) : 1
-		. 
-	bla <: out String reg, List instr :>
-		= MULTIBLA (
-					ADD (reg <: out String r1, instr :> , 
-						-- the following is a type error!
-						 bla <: out String reg, List instr :>),
-					bla <: out String reg, List instr :>)
-			(: blabla :)
-		:1 .
+--  XXX: The following transformation solves the previous type error
+--		| val <: out String reg, List instr :> : 0
+		.
 end 
 
 
