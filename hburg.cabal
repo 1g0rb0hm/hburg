@@ -25,6 +25,8 @@ extra-source-files:
     test/05-grammar.tpg
     test/06-grammar.tpg
     test/07-grammar.tpg
+    test/08-cisc.tpg
+    test/09-risc.tpg
     test/errors/err-dupbindings.tpg
     test/errors/err-many-many-errors.tpg
     test/errors/err-manyundefined.tpg
