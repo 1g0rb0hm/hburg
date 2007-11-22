@@ -1,6 +1,6 @@
 -- Package Stanza
 Name:           hburg
-Version:        1.1
+Version:        1.1.1
 License:        BSD3
 License-file:   LICENSE
 Author:         Igor Boehm <igor@bytelabs.org>
