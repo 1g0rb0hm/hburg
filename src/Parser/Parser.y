@@ -93,8 +93,8 @@ G :: { Ir }
             let (ops, opctx) = $6 in                    -- Operators and their Context
             let (defs, defctx, opmap) = $8 in           -- Definitions and their Context
             let debugMsg = foldr (++) "" (map (\d -> show d) defs) ++
-                        "\n\nDefinition " ++ show defctx ++
-                        "\n\nOperator " ++ show opctx
+                        "\n\nDefinition "++ show defctx ++
+                        "\n\nOperator "++ show opctx
                 in                                      -- if debug cli option is defined
             case (Ctx.merge defctx opctx) of
                 Right ctx ->
@@ -105,7 +105,7 @@ G :: { Ir }
                                               , definitions = (reverse defs)
                                               , debug = debugMsg
                                               , operatorMap = opmap }
-                        Just errors -> failP (foldr1 (\e old -> e ++ "\n" ++ old) errors)
+                        Just errors -> failP (foldr1 (\e old -> e ++"\n"++ old) errors)
                 Left (el1, el2) -> error "\nERROR: Merging of Definition and Operator Context failed!\n"
         }
 

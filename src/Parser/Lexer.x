@@ -59,10 +59,12 @@ $upperidchar = [$upper $digit]
     | rules
     | end
 
--- Attribute Specific
-$attridchar = [$idchar \< \>]
-
-@attrident = $alpha $attridchar*
+-- Attributes
+$attridchar = [$alpha $digit \_ \- \( \)] -- parentheses allow for method calls (useful for IN parameters)
+@idsep = \. $attridchar+
+@idsepseq = $attridchar+ @idsep*
+@generics = \< @idsepseq \> -- Java generics
+@attrident = @idsepseq @generics?
 
 @attrkeyword = out
 
@@ -72,8 +74,8 @@ CODEGENERATOR :-
 <0>  "--".*         { skipit }
 
 -- Return a token containing complete semantic action
-"(:"                { semanticAction }
-"(."                { semanticAction } -- like Coco/R
+"(:"                { semanticAction ':' ')' }
+"(."                { semanticAction '.' ')' } -- like Coco/R
 
 -- Go to state <attr> when encountering an attribute
 <0>"<:"             { attrStart }
@@ -111,11 +113,8 @@ data Token
     = ConToken AlexPosn TokenClass String
 
 instance Eq Token where
-    (==) (ConToken pos1 c1 str1)
-         (ConToken pos2 c2 str2)
-        = if (and [pos1 == pos2, c1 == c2, str1 == str2])
-            then True
-            else False
+    (==) (ConToken p1 c1 s1) (ConToken p2 c2 s2)
+        = and [p1 == p2, c1 == c2, s1 == s2]
 
 instance Ord Token where
     compare t1@(ConToken (AlexPn _ l1 c1) _ _)
@@ -133,7 +132,7 @@ instance Ord Token where
 
 instance Show Token where
     show (ConToken pos cl s) 
-        = (showPosn pos) ++ " - " ++ (show cl) ++ " '" ++ s
+        = (showPosn pos) ++" - "++ (show cl) ++" '"++ s
 
 instance ElemClass Token where
     elemShow t = show t
@@ -175,65 +174,63 @@ mkL c (p,_,str) len
 attrStart :: AlexInput -> Int -> Alex Token
 attrStart inp@(p,_,str) pos 
     = do
-        alexSetStartCode attr;
+        alexSetStartCode attr
         return (ConToken p TAttrStart "<:")
 
 attrEnd :: AlexInput -> Int -> Alex Token
 attrEnd inp@(p,_,str) pos 
     = do
-        alexSetStartCode 0;
+        alexSetStartCode 0
         return (ConToken p TAttrEnd ":>")
 
 -- @TODO: revert escaped \:\) which may be in semantic action
-semanticAction :: AlexInput -> Int -> Alex Token
-semanticAction _ _
-    = do {
-        input <- alexGetInput;
+semanticAction :: Char -> Char -> AlexInput -> Int -> Alex Token
+semanticAction dot end _ _
+    = do
+        input <- alexGetInput
         go 1 [] input
-    }
     where
         go :: Int -> [Char] -> AlexInput -> Alex Token
         go 0 xs input 
-            = let (p,_,str) = input in
-            do
-                alexSetInput input;
-                return (ConToken p TSemAction xs)
+            = do
+                alexSetInput input
+                return (ConToken ((\(p,_,_) -> p) input) TSemAction xs)
         go n xs input
             = do
                 case alexGetChar input of
                     Nothing -> err input
                     Just (c,input) ->
                         do
-                            case c of
-                                ':' -> isCloseParen ':' input
-                                '.' -> isCloseParen '.' input
-                                c -> go n (xs ++ [c]) input
+                            if (c == dot)
+                                then isCloseParen c input
+                                else go n (xs ++ [c]) input
             where
                 isCloseParen :: Char -> AlexInput -> Alex Token
                 isCloseParen ch input
                     = do
                         case alexGetChar input of
                             Nothing -> err input
-                            Just (')',inp) -> go 0 xs inp
-                            Just (c,inp) -> go n (xs ++ [ch] ++ [c]) inp
+                            Just (c,inp) -> if (c == end) 
+                                                then go 0 xs inp
+                                                else go n (xs ++ [ch] ++ [c]) inp
             
         err :: AlexInput -> Alex Token
         err input
             = do
-                alexSetInput input;
+                alexSetInput input
                 lexError "Lexical Error in semantic action"
 
 showPosn :: AlexPosn -> String
 showPosn (AlexPn _ line col)
-    = "[line:" ++ show line ++ " col:" ++ show col ++ "]"
+    = "[line:"++ show line ++" col:"++ show col ++"]"
 
 lexError :: String -> Alex Token
 lexError s
     = do
-        (p,c,input) <- alexGetInput;
-        alexError (s ++ " " ++ showPosn p ++ ": " ++
+        (p,c,input) <- alexGetInput
+        alexError (s ++" "++ showPosn p ++": "++
                (if (not (null input))
-                 then " at charcter " ++ show (head input)
+                 then " at charcter "++ show (head input)
                  else " at end of file"))
 
 alexEOF :: Alex Token

@@ -56,47 +56,47 @@ instance Ord Nt where
 
 instance Show Nt where
     show (Nt i b []) 
-        = "Nt[" ++ (show i) ++
+        = "Nt["++ (show i) ++
         (if (B.hasBinding b)
             then "->"
             else "") ++
-        show b ++ "]"
+        show b ++"]"
 
     show (Nt i b atts)
-        = "Nt[" ++ (show i) ++
+        = "Nt["++ (show i) ++
         (if (B.hasBinding b)
             then "->"
             else "") ++
-        show b ++ "]<:" ++
+        show b ++"]<:"++
         (stringFoldr
-            (\x y -> x ++ ", " ++ y)
-            (map (\z -> show z) atts))  ++ ":>"
+            (\x y -> x ++", "++ y)
+            (map (\z -> show z) atts))  ++":>"
 
 instance Debug Nt where
     debug (Nt i b []) 
-        = "Nt[" ++ (show i) ++
+        = "Nt["++ (show i) ++
         (if (B.hasBinding b)
             then "->" else "") ++
-        show b ++ "]"
+        show b ++"]"
 
     debug (Nt i b atts)
-        = "Nt[" ++ (show i) ++
+        = "Nt["++ (show i) ++
         (if (B.hasBinding b)
             then "->"
             else "") ++
-        show b ++ "]<:" ++
+        show b ++"]<:"++
         (stringFoldr
-            (\x y -> x ++ ", " ++ y)
-            (map (\z -> debug z) atts))  ++ ":>"
+            (\x y -> x ++", "++ y)
+            (map (\z -> debug z) atts))  ++":>"
 
 -- | A Non Terminal is also an Elem since we need to be able to type check it
 instance E.ElemClass Nt where
     elemShow (Nt i _ []) = show i
     elemShow (Nt i _ atts) 
-        = show i ++ "<:" ++
+        = show i ++"<:"++
         (stringFoldr
-             (\x y -> x ++ " param, " ++ y ++ " param")
-            (map (\z -> show (attrIsOut z)) atts)) ++ ":>"
+             (\x y -> x ++" param, "++ y ++" param")
+            (map (\z -> show (attrIsOut z)) atts)) ++":>"
     elemType _ = E.ENonTerm
     elemL (Nt i _ _) = E.elemL i
     elemC (Nt i _ _) = E.elemC i

@@ -25,12 +25,12 @@ data Comment
 
 instance Show Comment where
     show (MkJCommment []) = ""
-    show (MkJCommment (x:[])) = "// " ++ x
+    show (MkJCommment (x:[])) = "// "++ x
     show (MkJCommment xs)
-        = "/**\n * " ++
+        = "/**\n * "++
         (stringFoldr
-            (\x y -> x ++ "\n * " ++ y)
-            xs) ++ "\n */"
+            (\x y -> x ++"\n * "++ y)
+            xs) ++"\n */"
 
 -- | Constructor for building a comment
 new :: [String] -> Comment

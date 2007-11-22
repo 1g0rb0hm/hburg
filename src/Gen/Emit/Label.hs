@@ -34,25 +34,25 @@ type Suffix = String
 -- | Non terminal labels
 termToEnumLab :: TermClass a => a -> Label
 termToEnumLab t | (isTerminal t) = stringToUpper (show $ getId t)
-termToEnumLab t = "NT_" ++ stringToUpper (show $ getId t)
+termToEnumLab t = "NT_"++ stringToUpper (show $ getId t)
 
 -- | evaluation method labels
 termToEvalLab :: TermClass a => a -> Label
-termToEvalLab t | (isTerminal t) = error "\nERROR: Can not generate EVAL label for Terminal: " ++ (show (getId t))
-termToEvalLab t = "eval_" ++ (show $ getId t)
+termToEvalLab t | (isTerminal t) = error "\nERROR: Can not generate EVAL label for Terminal: "++ (show (getId t))
+termToEvalLab t = "eval_"++ (show $ getId t)
 
 
 -- | Rule labels
 prodToEnumLab :: Definition -> Production -> Suffix -> Label
 prodToEnumLab def prod suffix
-    = "R_" ++
+    = "R_"++
         stringToUpper (show $ getId def) ++
-        "_" ++ stringToUpper (show $ getId prod) ++
-        "_" ++ suffix
+        "_"++ stringToUpper (show $ getId prod) ++
+        "_"++ suffix
 
 -- | Labels for accessing child nodes:
 --      * 'n.child0()' or 'n.child1()' for left and right child
 childCallLab :: Show a => a -> String
-childCallLab str = "child" ++ (show str)
+childCallLab str = "child"++ (show str)
 
 

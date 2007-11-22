@@ -61,10 +61,10 @@ instance Eq Attr where
     (==) a1 a2 = ((isOut a1 == isOut a2) && (aty a1 == aty a2))
 
 instance Show Attr where
-    show a = show (aty a) ++ " " ++ show (ident a)
+    show a = show (aty a) ++" "++ show (ident a)
 
 instance Debug Attr where
-    debug a = show (isOut a) ++ " " ++ show (aty a) ++ " " ++ show (ident a)
+    debug a = show (isOut a) ++" "++ show (aty a) ++" "++ show (ident a)
 
 -- | Create new attribute
 new :: Id.Ident -> AttrTy -> Ty -> Attr

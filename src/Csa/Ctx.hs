@@ -31,11 +31,11 @@ data Ctx
 
 instance Show Ctx where
     show (Ctx m)
-        = "Context: \n" ++
+        = "Context: \n"++
             concatMap 
                 (\key -> 
                     let el = m M.! key in
-                    " " ++ show (elemType el) ++ show (elemShow el))
+                    " "++ show (elemType el) ++ show (elemShow el))
                 (M.keys m)
 
 -- | Constructor for creating a singleton Context

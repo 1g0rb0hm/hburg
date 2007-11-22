@@ -26,6 +26,7 @@ import Ast.Prod (getRuleLabel, getNode)
 import Ast.Def (Definition, getProds, getCode)
 import qualified Ast.Ir as Ir (Ir(..))
 
+import qualified Gen.Ident as I (Ident, rId, nId, nTy, rTy)
 import Gen.Emit.Label (termToEvalLab, termToEnumLab, childCallLab)
 
 import Gen.Emit.Class (JavaClass(..))
@@ -37,8 +38,8 @@ import qualified Gen.Emit.Java.Parameter as Parameter (Parameter, new)
 
 
 -- | This function is the top level function for generating the Target Source Code of the code emission.
-genEval :: Ir.Ir -> Java
-genEval ir
+genEval :: I.Ident -> Ir.Ir -> Java
+genEval ids ir
     = evalState
         (do
             clazz <- get
@@ -46,7 +47,7 @@ genEval ir
             clazz <- get
             put (setStatic clazz True)
             clazz <- get
-            put (setMethods clazz (genEvalMethods $ Ir.definitions ir))
+            put (setMethods clazz (genEvalMethods ids $ Ir.definitions ir))
             get)
         (java "" "Eval")
 
@@ -62,14 +63,14 @@ defineReturnVar :: Definition -> String -> String
 defineReturnVar d indent
     = case attrGetOut (getAttr d) of
         [] -> ""
-        list -> indent ++ concatMap (\x -> show x ++ ";\n") list
+        list -> indent ++ concatMap (\x -> show x ++";\n") list
 
 -- | Generates the return statement given a definition.
 returnStmt :: Definition -> String
 returnStmt d
     = case attrGetOut (getAttr d) of
         [] -> ""
-        list -> concatMap (\x -> "return " ++ show (attrId x) ++ ";\n") list
+        list -> concatMap (\x -> "return "++ show (attrId x) ++";\n") list
 
 -- | Calculates parameters for each evaluation method.
 genParameters :: Definition -> [Parameter.Parameter]
@@ -79,11 +80,11 @@ genParameters d
         list -> map (\x -> Parameter.new (show $ attrTy x) (show $ attrId x)) list
 
 -- | Generates all evaluation methods which emit code supplied by the user in semantic actions.
-genEvalMethods :: [Definition] -> [Method.Method]
-genEvalMethods defs
+genEvalMethods :: I.Ident -> [Definition] -> [Method.Method]
+genEvalMethods ids defs
     = map
         (\d ->
-            let params = [Parameter.new "Node" "n"] ++ (genParameters d) in
+            let params = [Parameter.new (I.nTy ids) (I.nId ids)] ++ (genParameters d) in
             Method.new Private True (returnType d) (termToEvalLab d) params (funBody d))
         (defs)
     where
@@ -96,32 +97,32 @@ genEvalMethods defs
         --            5. return result of this definition if present
         funBody :: Definition ->  String
         funBody d
-            = "\tRuleEnum r = n.rule(" ++ termToEnumLab d ++ ");\n" ++
-            defineReturnVar d "\t\n\t" ++
+            = "\t"++ I.rTy ids ++" "++ I.rId ids ++" = "++ I.nId ids ++".rule("++ termToEnumLab d ++");\n"++
+            defineReturnVar d "\t\n\t"++
             wrapUserCode "\t" (getCode d) ++
-            genCases d "\t\n\t" ++
+            genCases d "\t\n\t"++
             returnStmt d
 
-        -- | Wraps up user code with '(:' and ':)' so in case of compile errors,
+        -- | Wraps up user code with '(.' and '.)' so in case of compile errors,
         --  it will be a bit easier to identify automatically generated from user specified code
         wrapUserCode :: String -> C.Code -> String
         wrapUserCode _ code | C.isEmpty code
              = ""
         wrapUserCode indent code
-            = indent ++ "// (:\n" ++
+            = indent ++"// (.\n"++
             show code ++
-            "\n" ++ indent ++ "// :)\n"
+            "\n"++ indent ++"// .)\n"
 
         -- | Generates case statements for rule labels which. Within each case
         -- statement the semantic actions specifed by the user are inserted.
         genCases :: Definition -> String -> String
         genCases def indent
-            = indent ++ "switch (r) {\n" ++
+            = indent ++"switch ("++ (I.rId ids) ++") {\n"++
             cases def ++
-            indent ++ "\tdefault: {\n" ++
-            indent ++ "\t\tthrow new AssertionError(\"ERROR: Unhandeled semantic rule - \" + r +\".\");\n" ++
-            indent ++ "\t}\n" ++
-            indent ++ "}"
+            indent ++"\tdefault: {\n"++
+            indent ++"\t\tthrow new AssertionError(\"ERROR: Unhandeled semantic rule - \" + "++ (I.rId ids) ++" +\".\");\n"++
+            indent ++"\t}\n"++
+            indent ++"}"
             where
                 -- | Maps all child nodes of a definition AST to code.
                 cases :: Definition -> String
@@ -130,15 +131,15 @@ genEvalMethods defs
                         (\p ->
                             let childCalls 
                                     = mapPreOrder3
-                                        (\pos n -> "." ++ childCallLab pos ++ "()")
+                                        (\pos n -> "."++ childCallLab pos ++"()")
                                         (\path n -> genPreCode path n)
                                         (\path n -> genPostCode path n)
                                         (getNode p)
                                 in
-                            indent ++ "\tcase " ++ getRuleLabel p ++ ": {\n" ++
+                            indent ++"\tcase "++ getRuleLabel p ++": {\n"++
                             nodeBody (getNode p) (childCalls) ++
-                            indent ++ "\t\tbreak;\n" ++
-                            indent ++ "\t}\n")
+                            indent ++"\t\tbreak;\n"++
+                            indent ++"\t}\n")
                         (getProds def)
                     where
                         nodeBody :: Node -> [(String, String, Node)] -> String
@@ -158,16 +159,16 @@ genEvalMethods defs
                             (if (isNonTerminal n)
                                 then
                                     let ret = (genFunRetVal n) in
-                                    "\t\t\t" ++ 
+                                    "\t\t\t"++ 
                                     -- If there are out parameters we assign the fun call to them
                                     (if (isJust ret)
-                                        then (fst (fromJust ret)) ++ " " ++ (snd (fromJust ret)) ++ " = "
+                                        then (fst (fromJust ret)) ++" "++ (snd (fromJust ret)) ++" = "
                                         else "") ++
-                                    genFunCall n path ++ ";\n"
+                                    genFunCall n path ++";\n"
                                 else "") ++
                             -- Generate binding code if present
                             (if (hasBinding n)
-                                then "\t\t\t" ++ genBinding n path
+                                then "\t\t\t"++ genBinding n path
                                 else "") ++
                             -- Second Semantic action
                             wrapUserCode "\t\t\t" (getSemAct Pos2 n)
@@ -181,15 +182,15 @@ genEvalMethods defs
                             (if (hasLink n)
                                 then 
                                     let ret = (genFunRetVal $ getLink n) in
-                                    "\t\t\tif (n.link() != null) {\n" ++
+                                    "\t\t\tif ("++ (I.nId ids) ++".link() != null) {\n"++
                                     wrapUserCode "\t\t\t\t" (getSemAct Pos5 n) ++
                                     (if (isJust ret)
                                         then
-                                            "\t\t\t\t" ++ (fst (fromJust ret)) ++ " " ++ (snd (fromJust ret)) ++ " = "
+                                            "\t\t\t\t"++ (fst (fromJust ret)) ++" "++ (snd (fromJust ret)) ++" = "
                                         else
                                             "\t\t\t\t") ++
-                                    (genFunCall (getLink n) ".link()") ++ ";\n" ++
-                                    wrapUserCode "\t\t\t" (getSemAct Pos6 n) ++ "\t\t\t}\n"
+                                    (genFunCall (getLink n) ".link()") ++";\n"++
+                                    wrapUserCode "\t\t\t" (getSemAct Pos6 n) ++"\t\t\t}\n"
                                 else "") ++
                             -- Fourth semantic action
                             wrapUserCode "\t\t\t" (getSemAct Pos4 n)
@@ -197,7 +198,7 @@ genEvalMethods defs
                         -- | genBinding.
                         genBinding :: TermClass a => a -> String -> String
                         genBinding term path | hasBinding term
-                            = "Node " ++ (show (getBinding term)) ++ " = n" ++ path ++ ";\n"
+                            = I.nTy ids ++" "++ (show (getBinding term)) ++" = "++ I.nId ids ++ path ++";\n"
                         genBinding _ _ = ""
 
                         -- | Given a NonTerm, this function gives the the return value as a
@@ -220,9 +221,9 @@ genEvalMethods defs
                         genFunCall term path | (isNonTerminal term)
                             = let inattrs 
                                     = concatMap 
-                                        (\a -> ", " ++ show (attrId a))
+                                        (\a -> ", "++ show (attrId a))
                                         (attrGetIn (getAttr term))
                                 in
                             let funname = termToEvalLab term in
-                            funname ++ "( n" ++ path ++ inattrs ++ ")"
+                            funname ++"("++ I.nId ids ++ path ++ inattrs ++")"
                         genFunCall _ _ = ""

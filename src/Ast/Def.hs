@@ -64,13 +64,13 @@ instance E.ElemClass Definition where
 
 instance Show Definition where
     show d
-        = "\nDef: " ++ debug (nt d) ++ " @closure->" ++ 
+        = "\nDef: "++ debug (nt d) ++" @closure->"++ 
         show 
             (map
                 (\p -> E.elemShow p)
                 (filter (isNonTerminal) (prods d))) ++
-            "\n\n " ++
-            (concatMap (\p -> show p ++ "\n\n ") (prods d))
+            "\n\n "++
+            (concatMap (\p -> show p ++"\n\n ") (prods d))
 
 instance TermClass Definition where
     getId d = Nt.getIdent(nt d)

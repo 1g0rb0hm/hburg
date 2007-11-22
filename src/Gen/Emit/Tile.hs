@@ -26,8 +26,8 @@ import Ast.Prod (Production, getCost, getNode, getRuleLabel, getResultLabel, get
 import qualified Ast.Ir as Ir (Ir(..), baseRuleMap, linkSet)
 import qualified Ast.Closure as Cl (Closure, Label(..), closure, fromLabels, toLabels, empty)
 
+import qualified Gen.Ident as I (Ident, ntId, rId, nId, cId, cTy, nTy, ntTy, rTy, eTy)
 import Gen.Emit.Label (termToEnumLab, childCallLab)
-
 import Gen.Emit.Class (JavaClass(..))
 import Gen.Emit.Java.Class (Java, java)
 import qualified Gen.Emit.Java.Comment as Comment (new)
@@ -44,8 +44,8 @@ type NodeKind = String
 type Arity = Int
 
 -- | Top level function for generating tiling target source code and the appropriate node interface.
-genTiling :: String -> NodeKind -> Ir.Ir -> Java
-genTiling pkg nkind ir
+genTiling :: I.Ident -> NodeKind -> Ir.Ir -> Java
+genTiling ids nkind ir
     = let prodmap = Ir.baseRuleMap ir in
     let linkset = Ir.linkSet ir in
     let vars = genEnumSetVars ir linkset in     -- generate EnumSet variables
@@ -61,21 +61,22 @@ genTiling pkg nkind ir
             clazz <- get
             put (setMethods
                     clazz
-                    $ [  genLabelMethod closures        -- generate label() mehtod
-                      ,  genTileMethod                  -- generate tile() method [Cooper p.566]
+                    $ [  genLabelMethod ids closures    -- generate label() mehtod
+                      ,  genTileMethod ids              -- generate tile() method [Cooper p.566]
                             linkset (M.keys prodmap)]
-                      ++ genLabelSetMethods ir prodmap) -- generate label_N() methods for nodes with arity N
+                      ++ genLabelSetMethods
+                            ids ir prodmap)             -- generate label_N() methods for nodes with arity N
             get)
         (java "" "Tiling")
 
 
 -- | Generate a name for node sets based on node arity.
 genSetName :: Int -> String
-genSetName arity = "arity" ++ (show arity) ++ "Set"
+genSetName arity = "arity"++ (show arity) ++"Set"
 
 -- | Generate a name for the label method depending on the arity of the nodes.
 genLabelMethodName :: Int -> String
-genLabelMethodName arity = "label_" ++ (show arity)
+genLabelMethodName arity = "label_"++ (show arity)
 
 
 -- | Produce EnumSet variables.
@@ -95,7 +96,7 @@ genEnumSetVars ir linkset
         genVar :: String -> S.Set Operator -> Var.Variable
         genVar name opset
             = Var.new Private True "EnumSet"  name
-                    ("EnumSet.of(" ++ (transformOpSet opset) ++ ")")
+                    ("EnumSet.of("++ (transformOpSet opset) ++")")
 
         -- | Make String representation from an Operator set
         transformOpSet :: S.Set Operator -> String
@@ -103,22 +104,24 @@ genEnumSetVars ir linkset
             = (S.fold
                 (\x y -> case y of
                             [] -> show (opSem x)
-                            otherwise -> (show (opSem x)) ++ ", " ++ y )
+                            otherwise -> (show (opSem x)) ++", "++ y )
                 ""
                 opset)
 
 -- | Generates label method.
-genLabelMethod :: Cl.Closure -> Meth.Method
-genLabelMethod cls
-    = let params = Param.newFromList [("Node","n"), ("NT","nt"), ("int","c"), ("RuleEnum","r")] in
+genLabelMethod :: I.Ident -> Cl.Closure -> Meth.Method
+genLabelMethod ids cls
+    = let params = Param.newFromList
+            [(I.nTy ids, I.nId ids), (I.ntTy ids,I.ntId ids),
+             (I.cTy ids, I.cId ids), (I.rTy ids, I.rId ids)] in
     let m = Meth.new Private True "void" "label" params funBody in
     Meth.setComment m (Comment.new ["label():","  Label each AST node appropriately."])
     where
         -- | Function Body of label method
         funBody :: String
         funBody 
-            = "\tif (c < n.cost(nt)) {\n" ++
-            "\t\tn.put(nt, new MapEntry(c, r));\n" ++
+            = "\tif ("++ I.cId ids ++" < "++ I.nId ids ++".cost("++ I.ntId ids ++")) {\n\t\t"++
+            I.nId ids ++".put("++ I.ntId ids ++", new "++ I.eTy ids ++"("++ I.cId ids ++", "++ I.rId ids ++"));\n"++
             -- only if we have a closure we emit the code for it
             (if (not $ Cl.empty cls)
                 then closure
@@ -128,38 +131,37 @@ genLabelMethod cls
                 -- | Transitive closures: stmt = reg, reg = lab, etc...
                 closure :: String
                 closure 
-                    = "\t\tswitch (nt) {\n" ++
+                    = "\t\tswitch ("++ I.ntId ids ++") {\n"++
                     concatMap
                         (\fromL ->
-                            "\t\t\tcase " ++ fromL ++ ": {\n" ++
+                            "\t\t\tcase "++ fromL ++": {\n"++
                             concatMap
                                 (\lab ->
-                                     "\t\t\t\tlabel (n, " ++ Cl.toL lab ++
-                                     ", n.cost(nt) " ++
+                                     "\t\t\t\tlabel ("++ I.nId ids ++", "++ Cl.toL lab ++", "++ I.cId ids ++
                                      (if (Cost.isZero (Cl.cost lab))
                                          then ", "
-                                         else "+ " ++ show (Cl.cost lab) ++ " , ") ++
-                                    Cl.ruleL lab ++ ");\n")
+                                         else "+ "++ show (Cl.cost lab) ++" , ") ++
+                                    Cl.ruleL lab ++");\n")
                                 (S.toList $ Cl.toLabels fromL cls)
-                            ++ "\t\t\t\tbreak;\n\t\t\t}\n")
-                        (Cl.fromLabels cls)  ++ "\t\t}\n"
+                            ++"\t\t\t\tbreak;\n\t\t\t}\n")
+                        (Cl.fromLabels cls)  ++"\t\t}\n"
 
 -- | Generates tile method as in [Cooper p.566]
-genTileMethod :: S.Set Operator -> [Int] -> Meth.Method
-genTileMethod linkset sets
-    = let m = Meth.new Public True "void" "tile" [Param.new "Node" "n"] funBody in 
+genTileMethod :: I.Ident -> S.Set Operator -> [Int] -> Meth.Method
+genTileMethod ids linkset sets
+    = let m = Meth.new Public True "void" "tile" [Param.new (I.nTy ids) (I.nId ids)] funBody in 
     Meth.setComment m (Comment.new ["tile():" , "   Tile the AST as in [Cooper p.566]"])
     where
         -- | Function Body of tile method
         funBody :: String
         funBody
-            = "\tassert (n != null) : \"ERROR - Can not tile null node.\";\n" ++
+            = "\tassert ("++ I.nId ids ++" != null) : \"ERROR: tile() - node is null.\";\n"++
             -- Generate 'If' cascade to distinguish in which Set a node is in
-            ifCascade sets ++ "\n" ++
+            ifCascade sets ++"\n"++
             if (not (S.null linkset)) -- is there a linkset?
                 then
-                    "\tif (linkSet.contains(n.kind())) {\n" ++ 
-                    "\t\tNode link = n.link();\n" ++
+                    "\tif (linkSet.contains("++ I.nId ids++ ".kind())) {\n"++ 
+                    "\t\t"++ I.nTy ids ++" link = "++ I.nId ids ++".link();\n"++
                     "\t\tif (link != null) tile(link);\n\t}"
                 else ""
 
@@ -169,61 +171,62 @@ genTileMethod linkset sets
             = error "\nERROR: Can not generate tiling() method because no nodes are defined!\n"
         -- if (..) {...}
         ifCascade (x:[])
-            = "\tif (" ++ genSetName x ++ ".contains(n.kind())) {\n" ++
-            concat [ "\t\ttile(n." ++ (childCallLab pos) ++ "());\n" | pos <- [1 .. x]] ++
-            "\t\t" ++ genLabelMethodName x ++ "(n);\n\t}\n"
+            = "\tif ("++ genSetName x ++".contains("++ I.nId ids ++".kind())) {\n"++
+            concat [ "\t\ttile("++ I.nId ids ++"."++ (childCallLab pos) ++"());\n" | pos <- [1 .. x]] ++
+            "\t\t"++ genLabelMethodName x ++"(n);\n\t}\n"
         -- if (..) {...} else if (..) ... else {...}
         ifCascade (x:xs)
-            = "\tif (" ++ genSetName x ++ ".contains(n.kind())) {\n" ++
-            concat [ "\t\ttile(n." ++ (childCallLab pos) ++ "());\n" | pos <- [1 .. x]] ++
-            "\t\t" ++ genLabelMethodName x ++ "(n);\n\t} else " ++
+            = "\tif ("++ genSetName x ++".contains("++ I.nId ids ++".kind())) {\n"++
+            concat [ "\t\ttile("++ I.nId ids ++"."++ (childCallLab pos) ++"());\n" | pos <- [1 .. x]] ++
+            "\t\t"++ genLabelMethodName x ++"("++ I.nId ids ++");\n\t} else "++
             (concatMap
                 (\arity -> 
-                    "if ("++ genSetName arity ++".contains(n.kind())) {\n" ++
-                    concat [ "\t\ttile(n." ++ (childCallLab pos) ++ "());\n" | pos <- [1 .. arity]] ++
-                    "\t\t"++ genLabelMethodName arity ++"(n);\n\t} else ")
+                    "if ("++ genSetName arity ++".contains("++ I.nId ids ++".kind())) {\n"++
+                    concat [ "\t\ttile("++ I.nId ids ++"."++ (childCallLab pos) ++"());\n" | pos <- [1 .. arity]] ++
+                    "\t\t"++ genLabelMethodName arity ++"("++ I.nId ids ++");\n\t} else ")
                 (xs)) ++
-            "{\n\t\tSystem.err.println(\"ERROR: Encountered undefined node: \" + n.kind() );\n\t}\n"
+            "{\n\t\tthrow new AssertionError(\"ERROR: tile() - Encountered undefined node '\"+ "++ I.nId ids ++".kind() +\"\'.\");\n\t}\n"
 
 -- | Generate methods which do the actual labelling of AST nodes.
-genLabelSetMethods :: Ir.Ir -> M.Map Int [Production] -> [Meth.Method]
-genLabelSetMethods ir prodmap
+genLabelSetMethods :: I.Ident -> Ir.Ir -> M.Map Int [Production] -> [Meth.Method]
+genLabelSetMethods ids ir prodmap
     = map -- Iterate over all arities and generate methods
-        (\key -> genLabelSetMethod key (prodmap M.! key))
-        (M.keys prodmap)
+        (\(arity, prod) -> genLabelSetMethod arity prod)
+        (M.toList prodmap)
     where
         -- | Generate method which labels Nodes with a certain arity
         genLabelSetMethod :: Arity -> [Production] -> Meth.Method
         genLabelSetMethod arity prods
-            = let m = Meth.new Private True "void" (genLabelMethodName arity) [Param.new "Node" "n"] funBody in
-            Meth.setComment m (Comment.new [genLabelMethodName arity ++ "():" , "  Label nodes with arity " ++ show arity])
+            = let m = Meth.new Private True "void" (genLabelMethodName arity) [Param.new (I.nTy ids) (I.nId ids)] funBody in
+            Meth.setComment m (Comment.new [genLabelMethodName arity ++"():" , "  Label nodes with arity "++ show arity])
             where
                 -- | funBody. Function Body
                 funBody :: String
                 funBody
-                    =  "\tint cost;\n\tswitch (n.kind()) {" ++
+                    =  "\t"++ I.cTy ids ++" "++ I.cId ids ++";\n\tswitch ("++ I.nId ids ++".kind()) {"++
                     genCases ++
                     -- Error handling in case we are in a label method 
                     -- and encounter an unknown kind of node
-                    "\n\t\tdefault: {\n" ++
-                    "\t\t\tthrow new AssertionError(\"ERROR - " ++ 
+                    "\n\t\tdefault: {\n"++
+                    "\t\t\tthrow new AssertionError(\"ERROR - "++ 
                     (genLabelMethodName arity) ++ 
-                    "(): Unhandeled Node kind: \" + n.kind());\n\t\t}" ++
+                    "(): Unhandeled Node kind: \" + "++I.nId ids ++".kind());\n\t\t}"++
                     "\n\t} // END SWITCH"
 
                 -- | Generate case stmts. for label methods
                 genCases :: String
                 genCases
                     = M.fold
-                        (\prods old ->
+                        (\prods prev ->
                             (if ((length prods > 1))
                                 then complexCase prods
                                 else simpleCase (head prods)) 
-                            ++ old)
+                            ++ prev)
                         ""
                         (genProdMap prods)
 
-                -- | Generate map holding productions keyed by arity for faster lookup
+                -- | Generate map holding productions keyed by production identifiers
+                -- for faster lookup
                 genProdMap :: [Production] -> M.Map String [Production]
                 genProdMap prods
                     = foldr
@@ -238,22 +241,22 @@ genLabelSetMethods ir prodmap
                 -- | simpleCase.
                 simpleCase :: Production -> String
                 simpleCase p 
-                    = "\n\t\tcase " ++ termToEnumLab p ++ ": {\n" ++
-                    (costAndLabel p "\t\t\t") ++ "\n\t\t\tbreak;" ++
+                    = "\n\t\tcase "++ termToEnumLab p ++": {\n"++
+                    (costAndLabel p "\t\t\t") ++"\n\t\t\tbreak;"++
                     "\n\t\t}"
 
                 -- | complexCase.
                 complexCase :: [Production] -> String
                 complexCase prods
-                    = "\n\t\tcase " ++ termToEnumLab (head prods) ++ ": {" ++
+                    = "\n\t\tcase "++ termToEnumLab (head prods) ++": {"++
                     concatMap
                         (\p ->
                             if (getArity p > 0)
-                                then "\n\t\t\tif (" ++ iff p ++ ") {\n" ++ 
+                                then "\n\t\t\tif ("++ iff p ++") {\n"++ 
                                         (costAndLabel p "\t\t\t\t") ++ 
                                         "\n\t\t\t}"
-                                else "\n" ++ (costAndLabel p "\t\t\t"))
-                        (prods) ++ "\n\t\t\tbreak;" ++
+                                else "\n"++ (costAndLabel p "\t\t\t"))
+                        (prods) ++"\n\t\t\tbreak;"++
                     "\n\t\t}"
 
                 -- | Create "cost = ...;" and "label(...)" calls.
@@ -261,16 +264,16 @@ genLabelSetMethods ir prodmap
                 costAndLabel p indent
                     = let childCalls 
                             = N.mapChildren
-                                (\pos n -> ("." ++ childCallLab pos ++ "()", n))
+                                (\pos n -> ("."++ childCallLab pos ++"()", n))
                                 (getNode p)
                         in
-                    indent ++ "cost = " ++
+                    indent ++ I.cId ids ++" = "++
                     (if (childCalls /= [])
                         then (foldr1
-                                (\new old -> new ++ " + " ++ old)
+                                (\new old -> new ++" + "++ old)
                                 (map
                                     (\(call, n) ->
-                                            "n" ++ call ++ ".cost(" ++
+                                            I.nId ids ++ call ++".cost("++
                                             (case getNodeReturnType (Ir.definitions ir) n of
                                                 Just term -> termToEnumLab $ nonTerminal term
                                                 Nothing -> error ("\nERROR: costAndLabel() Node '"++ show n ++"' has no return type!\n")) ++
@@ -278,11 +281,11 @@ genLabelSetMethods ir prodmap
                                 childCalls)) ++
                                 if (Cost.isZero $ getCost p)
                                     then ""
-                                    else " + " ++ show (getCost p)
+                                    else " + "++ show (getCost p)
                         else show (getCost p))
-                    ++ ";\n" ++
+                    ++";\n"++
                     -- Call label
-                    indent ++ "label(n, " ++ (getResultLabel p) ++ ", cost, " ++ (getRuleLabel p) ++ ");"
+                    indent ++"label("++ I.nId ids ++", "++ (getResultLabel p) ++", "++ I.cId ids ++", "++ (getRuleLabel p) ++");"
 
                 -- | Produce code which is used within an 'if' to evaluate if a certain node should be labeled.
                 --        Example:
@@ -290,18 +293,18 @@ genLabelSetMethods ir prodmap
                 iff :: Production -> String
                 iff p = let childCalls
                                 = N.mapPreOrder2
-                                    (\pos n -> "." ++ childCallLab pos ++ "()")
+                                    (\pos n -> "."++ childCallLab pos ++"()")
                                     (\node -> node)
                                     (getNode p)
                             in
                     foldr1
-                        (\new old -> new ++ " && " ++ old)
+                        (\new old -> new ++" && "++ old)
                         (map
                             (\(call, n) ->
                                 if (isTerminal n)
-                                    then "n" ++ call ++ ".kind() == " ++ termToEnumLab n
-                                    else "n" ++ call ++ ".is(" ++ 
+                                    then I.nId ids ++ call ++".kind() == "++ termToEnumLab n
+                                    else I.nId ids ++ call ++".is("++ 
                                             (case getNodeReturnType (Ir.definitions ir) n of
                                                 Just term -> termToEnumLab $ nonTerminal term
-                                                Nothing -> error "\nERROR: iff() Node has no return type!\n") ++ ")" )
+                                                Nothing -> error "\nERROR: iff() Node has no return type!\n") ++")" )
                             (childCalls))

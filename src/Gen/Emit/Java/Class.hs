@@ -68,7 +68,7 @@ java pack n
             isStatic' = False,
             isFinal' = False,
             isIface' = False,
-            comments = Comment.new [n ++ " Class"],
+            comments = Comment.new [n ++" Class"],
             name = n,
             constructors = [],
             staticInit = "",
@@ -128,7 +128,7 @@ instance JavaClass Java where
     setUserCode c uc = c { userCode = uc }
     getUserCode (Class { userCode = uc })
         = if (uc /= "")
-            then "// @USER CODE START\n" ++ uc ++ "\n// @USER CODE END\n"
+            then "// @USER CODE START\n"++ uc ++"\n// @USER CODE END\n"
             else uc
 
 instance Emit Java where
@@ -140,50 +140,50 @@ instance Emit Java where
                     (package clazz)) 
             in
         if (dir /= [])
-            then dir ++ [pathSeparator] ++ (name clazz) ++ ".java"
-            else (name clazz) ++ ".java"
+            then dir ++ [pathSeparator] ++ (name clazz) ++".java"
+            else (name clazz) ++".java"
 
 instance Show Java where
         -- Interface.
         show clazz | (isIface clazz)
             = packageDef clazz ++ importDefs clazz ++
-            show (getComments clazz) ++ "\n" ++
-            show (getModifier clazz) ++ " interface " ++
-            getClassName clazz ++ " {\n" ++
-            (foldWith "\n" [ "\t" ++ show (Method.setIfaceDef z True) | z <- getMethods clazz])
-            ++ "\n\n} // END INTERFACE " ++ getClassName clazz ++ "\n"
+            show (getComments clazz) ++"\n"++
+            show (getModifier clazz) ++" interface "++
+            getClassName clazz ++" {\n"++
+            (foldWith "\n" [ "\t"++ show (Method.setIfaceDef z True) | z <- getMethods clazz])
+            ++"\n\n} // END INTERFACE "++ getClassName clazz ++"\n"
 
         -- Enumeration.
         show clazz | (getEnumClasses clazz /= [])
             = packageDef clazz ++ importDefs clazz ++
-            show (getComments clazz) ++ "\n" ++
+            show (getComments clazz) ++"\n"++
             -- Enumerations
-            (foldWith "\n" [ show z | z <- getEnumClasses clazz ]) ++ "\n"
+            (foldWith "\n" [ show z | z <- getEnumClasses clazz ]) ++"\n"
 
         -- Regular class.
         show clazz 
             = packageDef clazz ++ importDefs clazz ++
-            show (getComments clazz) ++ "\n" ++
+            show (getComments clazz) ++"\n"++
             -- Class name
             show (getModifier clazz) ++
-            (\b -> if (b) then " static " else " " ) (isStatic clazz)  ++ "class " ++
-            getClassName clazz ++ " {\n" ++
+            (\b -> if (b) then " static " else " " ) (isStatic clazz)  ++"class "++
+            getClassName clazz ++" {\n"++
             -- Class Constructors
-            (foldWith "\n"  [ show z | z <- getConstructors clazz ]) ++ "\n" ++
+            (foldWith "\n"  [ show z | z <- getConstructors clazz ]) ++"\n"++
             -- Static initializers
-            getStaticInitializer clazz ++ "\n" ++
+            getStaticInitializer clazz ++"\n"++
             -- User Code
             getUserCode clazz ++
             -- Class and instance variables
-            (foldWith "\n" [ show z | z <- getVariables clazz ]) ++ "\n\n" ++
+            (foldWith "\n" [ show z | z <- getVariables clazz ]) ++"\n\n"++
             -- Methods
-            (foldWith "\n\n" [ show z | z <- getMethods clazz ]) ++ "\n" ++
+            (foldWith "\n\n" [ show z | z <- getMethods clazz ]) ++"\n"++
             -- Nested Classes
-            (foldWith "\n" [ show z | z <- getNestedClasses clazz ]) ++ "\n" ++
+            (foldWith "\n" [ show z | z <- getNestedClasses clazz ]) ++"\n"++
             -- Class End
-            "\n} // END CLASS " ++ getClassName clazz ++ "\n" ++
+            "\n} // END CLASS "++ getClassName clazz ++"\n"++
             -- Additional Classes
-            (foldWith "\n" [ show z | z <- getAdditionalClasses clazz ]) ++ "\n"
+            (foldWith "\n" [ show z | z <- getAdditionalClasses clazz ]) ++"\n"
 
 -- | foldWith.
 foldWith :: String -> [String] -> String
@@ -193,9 +193,9 @@ foldWith z strs = stringFoldr (\x y -> x ++ z ++ y) (strs)
 packageDef :: Java -> String
 packageDef clazz 
     = if (getPackage clazz /= "")
-        then "package " ++ getPackage clazz ++ ";\n\n"
+        then "package "++ getPackage clazz ++";\n\n"
         else ""
 
 -- | importDefs.
 importDefs :: Java -> String
-importDefs clazz = (foldWith "\n" (getImports clazz)) ++ "\n\n"
+importDefs clazz = (foldWith "\n" (getImports clazz)) ++"\n\n"

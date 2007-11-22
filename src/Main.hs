@@ -40,7 +40,7 @@ main = getArgs >>= \args -> codeGen args
 
 usageHeader :: String -> String
 usageHeader prog
-    = "Usage: " ++ prog ++ " [OPTION...] file\n"
+    = "Usage: "++ prog ++" [OPTION...] file\n"
 
 --
 -- Various ways how we may exit
@@ -62,11 +62,11 @@ showTokens t
 
 die :: String -> IO a
 die s 
-    = hPutStr stderr (s ++ "\n") >> exitWith (ExitFailure 1)
+    = hPutStr stderr (s ++"\n") >> exitWith (ExitFailure 1)
 
 dieCodeGen :: String -> IO a
 dieCodeGen s
-    = getProgName >>= \prog -> die (prog ++ ": " ++ s)
+    = getProgName >>= \prog -> die (prog ++": "++ s)
 
 --
 -- Command line arguments
@@ -146,7 +146,7 @@ codeGen args
                                 do
                                     outputClass clazz
                                     byeStr 
-                                        ("\n#### DEBUG: Parsing START ####\n" ++
+                                        ("\n#### DEBUG: Parsing START ####\n"++
                                         Ir.debug result ++
                                         "\n\n#### DEBUG: Parsing END ####\n")
                             else

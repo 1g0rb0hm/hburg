@@ -55,10 +55,10 @@ instance Eq Production where
     (==) p1 p2 = ((pattern p1 == pattern p2) && (cost p1 == cost p1))
 
 instance Show Production where
-    show p = "Prod[" ++ show (cost p) ++ "]:\n  " ++ show (pattern p)
+    show p = "Prod["++ show (cost p) ++"]:\n  "++ show (pattern p)
 
 instance Debug Production where
-    debug p = "Prod[" ++ show (cost p) ++ "]:\n  " ++ show (pattern p)
+    debug p = "Prod["++ show (cost p) ++"]:\n  "++ show (pattern p)
 
 instance TermClass Production where
     getId p = getId (pattern p)

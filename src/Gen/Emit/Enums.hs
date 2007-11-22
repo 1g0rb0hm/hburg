@@ -24,8 +24,8 @@ import Ast.Def (Definition, getProds, setProds)
 import Ast.Prod (Production, setRuleLabel, setResultLabel)
 import qualified Ast.Ir as Ir (Ir(..))
 
+import qualified Gen.Ident as I (Ident, pkgId, ntN, rN)
 import Gen.Emit.Label (Label, prodToEnumLab, termToEnumLab)
-
 import Gen.Emit.Class (JavaClass(..))
 import Gen.Emit.Java.Class (Java, java)
 import qualified Gen.Emit.Java.Enum as Enum (Enum, new)
@@ -35,15 +35,15 @@ import Gen.Emit.Java.Modifier (Modifier(..))
 type Package = String
 
 -- | Generates all necessary enumerations.
-genEnums :: Package -> Ir.Ir -> (Ir.Ir, [Java])
-genEnums pkg ir
+genEnums :: I.Ident -> Ir.Ir -> (Ir.Ir, [Java])
+genEnums ids ir
     = -- Generate Nt enmus
-    let ntenums = Enum.new Public "NT" (map (\d -> termToEnumLab d) (Ir.definitions ir)) in
+    let ntenums = Enum.new Public (I.ntN ids) (map (\d -> termToEnumLab d) (Ir.definitions ir)) in
     -- Generate Rule enums - this operation also modifies definitions
     let (ir', rulenums) = genRuleEnums in
     -- Create the appropriate classes
-    let ntEnumClass = setEnumClasses (java pkg "NT") [ntenums] in
-    let ruleEnumClass = setEnumClasses (java pkg "RuleEnum") [rulenums] in
+    let ntEnumClass = setEnumClasses (java (I.pkgId ids) (I.ntN ids)) [ntenums] in
+    let ruleEnumClass = setEnumClasses (java (I.pkgId ids) (I.rN ids)) [rulenums] in
     (ir', [ntEnumClass, ruleEnumClass])
     where
         -- | Generates Java Enumeration for rules and store srule labels with productions.
@@ -57,7 +57,7 @@ genEnums pkg ir
                                 (setProds d prods, labs))
                             (Ir.definitions ir))
                 in
-            (ir { Ir.definitions = ndefs }, Enum.new Public "RuleEnum" (concat labels))
+            (ir { Ir.definitions = ndefs }, Enum.new Public (I.rN ids) (concat labels))
             where
                 labelProds :: Definition -> [Production] -> Int -> [(Production, Label)]
                 labelProds d [] _ = []

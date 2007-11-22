@@ -80,35 +80,35 @@ instance Eq Node where
 instance Show Node where
     show (Nil) = "Nil"
     show n
-        = show (term n) ++ ":" ++
+        = show (term n) ++":"++
         (if (hasLink n)
-            then " link->" ++ show (term (link n))
+            then " link->"++ show (term (link n))
             else " ") ++
         (showChildren (child n) "   ")
         where
             showChildren :: Node -> String -> String
             showChildren (Nil) gap = ")"
             showChildren n gap
-                = "\n" ++ gap ++ "(" ++ show (term n) ++
-                  (showChildren (child n) (gap ++ "  ")) ++
+                = "\n"++ gap ++"("++ show (term n) ++
+                  (showChildren (child n) (gap ++"  ")) ++
                   (showChildren (sibling n) gap)
 
 -- | Shows a node like a function 'name(child1, child2, etc.)'
 showAsFun :: Node -> String
 showAsFun (Nil) = ""
 showAsFun n | hasChildren n
-    = E.elemShow n ++ " (" ++
+    = E.elemShow n ++" ("++
     foldr
       (\child str ->
                (if (str /= "") 
-                    then (str ++ ", ") 
+                    then (str ++", ") 
                     else "") ++
                 (show $ getId child) ++
                 (if (isTerminal child)
                     then "(...)"
                     else ""))
       ""
-      (getChildren n) ++ ")"
+      (getChildren n) ++")"
 showAsFun n = E.elemShow n
 
 

@@ -30,7 +30,7 @@ data Parameter
 instance Show Parameter where
     show (Parameter (ty,i)) | ty == "" = i
     show (Parameter (ty,i)) | i == "" = ty
-    show (Parameter (ty,i)) = ty ++ " " ++ i
+    show (Parameter (ty,i)) = ty ++" "++ i
     
 -- | Constructor for building a new Parameter
 new :: Type -> Ident -> Parameter

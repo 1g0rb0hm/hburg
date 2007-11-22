@@ -37,11 +37,11 @@ data T
 
 instance Show T where
     show (T i b) 
-        = "T[" ++ show i ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]"
+        = "T["++ show i ++ (if (B.hasBinding b) then "->" else "") ++ show b ++"]"
 
 instance Debug T where
     debug (T i b)
-        = "T[" ++ show i ++ (if (B.hasBinding b) then "->" else "") ++ show b ++ "]"
+        = "T["++ show i ++ (if (B.hasBinding b) then "->" else "") ++ show b ++"]"
 
 instance Eq T where
     (==) (T i1 _) (T i2 _) = i1 == i2

@@ -1,0 +1,154 @@
+generator -- RISC code generator description
+(.import static sl.ir.Kind.*; // node kind enumeration
+  import sl.parser.Obj;
+  import sl.parser.SymTab;
+  import sl.ir.Node;
+  import sl.code.Lab;
+  import java.util.List;.)
+declarations
+(.private static SymTab t; // Symbol Table
+  private static Code c;.)
+operators
+  ASGN,     -- assignment
+  CNST,VAR, -- constant,variable
+  ADD,SUB,MUL,DIV,MOD,-- integer arithmetic
+  EQ,LEQ,GEQ,LTH,GTH, -- comparison operators
+  IF,IFE,EIF,WHILE,   -- contol flow
+  ENTER,RET, -- procedure defintion and return
+  PROCP,PROC,-- procedure call with or without parameters
+  FUNP,FUN,  -- function call with or without parameters
+  ROOTD,ROOT -- program with or without procedure definitions
+rules
+-- Start rule
+root <.out List<String> code, SymTab tab.>
+      (.c = new Code(); t = tab; code = c.code;.)
+  =         (.c.put(Lab.MAIN);.)
+    ROOT r (.Obj o = ((Node)r).obj; c.init(o.varSize);.) (stmtseq) :0 
+  | ROOTD r (.Obj o = ((Node)r).obj;.)
+      (fundefseq (.c.put(Lab.MAIN); c.init(o.varSize);.) ,stmtseq) :0.
+-- Sequence of procedure definitions
+fundefseq = fundef [ fundefseq ] :0.
+fundef = ENTER e 
+          (.Obj o = ((Node)e).obj;
+            c.put(Lab.funLab(o.name,o.next));
+            c.prologue(o.varSize);.)
+      (stmtseq) (.c.epilogue(o.parSize);.)
+      :0.
+-- Sequence of statements
+stmtseq = stmt [ stmtseq ] :0.
+stmt =    (.Lab t = new Lab(),f = new Lab();.)
+    IF (cond<.out Item x.> 
+          (.c.put(Op.CBR,x.r,t,f); c.freeReg(x.r);
+            c.put(t);.)
+      ,stmtseq (.c.put(f);.) )
+  :1
+  |       (.Lab end = new Lab();.)
+    IFE (eifseq<.Lab end.>,stmtseq (.c.put(end);.) )
+  :0
+  |       (.Lab loop = c.putLab(),t = new Lab(),f = new Lab();.)
+    WHILE (cond<.out Item x.>
+          (.c.put(Op.CBR,x.r,t,f); c.freeReg(x.r);
+            c.put(t);.)
+         ,stmtseq (.c.put(Op.JMP,loop); c.put(f);.) )
+  :1
+  -- Store return statement into its corresponding slot on stack
+  | RET r (.Obj o = ((Node)r).obj;.)  (reg<.out Item x.>)
+          (.c.storeRet(x.r,o.parSize,o.type.size());.)
+  :2
+  | ASGN (VAR v, reg<.out Item x.>)
+          (.Item y = c.newItem((Node)v);
+            c.put(Op.STW,x.r,y.r,y.off);
+            c.freeReg(x.r);.)
+  :2
+  -- Function call: return value is discarded because it is a stmt.
+  | FUN p (.Obj o = ((Node)p).obj;
+            c.pushRet();
+            c.put(Op.JSR,Lab.funLab(o.name,o.next));
+            c.discardRet();.)
+  :2
+  | FUNP p (.Obj o = ((Node)p).obj;
+             c.pushRet(); c.pushParams(o.parSize);.)
+      (paramseq<.t.params(o).>)
+          (.c.put(Op.JSR,Lab.funLab(o.name,o.next));
+            c.discardRet();.)
+  :4
+  -- Procedure call
+  | PROC p (.Obj o = ((Node)p).obj;
+             c.put(Op.JSR,Lab.funLab(o.name,o.next));.)
+  :1
+  | PROCP p (.Obj o = ((Node)p).obj; c.pushParams(o.parSize);.)
+      (paramseq<.t.params(o).>)
+          (.c.put(Op.JSR,Lab.funLab(o.name,o.next));.)
+  :2.
+-- Function call: return value is stored in respective slot on stack
+fun<.out Item x.> (.x = null;.)
+  = FUN p (.Obj o = ((Node)p).obj;
+            c.pushRet();
+            c.put(Op.JSR,Lab.funLab(o.name,o.next));
+            x = c.popRet();.)
+  :3
+  | FUNP p (.Obj o = ((Node)p).obj;
+             c.pushRet();
+             c.pushParams(o.parSize);.)
+      (paramseq<.t.params(o).>)
+          (.c.put(Op.JSR,Lab.funLab(o.name,o.next));
+            x = c.popRet();.)
+  :4.
+-- Function and procedure parameters are pushed on stack in reverse order
+paramseq<.List<Obj> lst.>
+  = param<.lst.get(0).> (.lst.remove(0);.) [ paramseq<.lst.> ] :0.
+param<.Obj o.>
+  = reg<.out Item x.>
+          (.c.put(Op.STW,x.r,c.SP,c.offset(o)); c.freeReg(x.r);.)  :1.
+-- Sequence of ELSIF statements
+eifseq<.Lab end.> = eif<.end.> [ eifseq<.end.> ] :0.
+eif<.Lab end.> (.Lab t = new Lab(),f = new Lab();.)
+  = EIF (cond<.out Item x.>
+          (.c.put(Op.CBR,x,t,f); c.freeReg(x.r);
+            c.put(t);.)
+        ,stmtseq (.c.put(Op.JMP,end); c.put(f);.) ) :1.
+-- Patterns returning immediate values
+imm<.out Item x.> (.x = null; Item y;.)
+  = CNST a (.x = c.newCnstItem((Node)a);.) :0
+  -- Simple constant folding
+  | ADD (imm<.out x.>,imm<.out y.>) (.c.fold(Op.ADD,x,y);.) :0
+  | SUB (imm<.out x.>,imm<.out y.>) (.c.fold(Op.SUB,x,y);.) :0
+  | MUL (imm<.out x.>,imm<.out y.>) (.c.fold(Op.MUL,x,y);.) :0
+  | DIV (imm<.out x.>,imm<.out y.>) (.c.fold(Op.DIV,x,y);.) :0
+  | MOD (imm<.out x.>,imm<.out y.>) (.c.fold(Op.MOD,x,y);.) :0.
+-- Patterns returning registers
+reg<.out Item x.> (.x = null; Item a,y; .)
+  = cond<.out x.> :0
+  | fun <.out x.> :0
+  | imm <.out x.> (.c.load(x);.) :1
+  | VAR  v (.x = c.load(c.newItem((Node)v));.) :2
+  | ADD (reg<.out x.>,reg<.out y.>) (.c.put(Op.ADD,x,y);.) :2
+  | ADD (imm<.out a.>,reg<.out x.>) (.c.put(Op.ADDI,x,a);.):1
+  | ADD (reg<.out x.>,imm<.out a.>) (.c.put(Op.ADDI,x,a);.):1
+  | SUB (reg<.out x.>,reg<.out y.>) (.c.put(Op.SUB,x,y);.) :2
+  | SUB (reg<.out x.>,imm<.out a.>) (.c.put(Op.SUBI,x,a);.):1
+  | MUL (reg<.out x.>,reg<.out y.>) (.c.put(Op.MUL,x,y);.) :2
+  | MUL (imm<.out a.>,reg<.out x.>) (.c.put(Op.MULI,x,a);.):1
+  | MUL (reg<.out x.>,imm<.out a.>)(.c.put(Op.MULI,x,a);.):1
+  | DIV (reg<.out x.>,reg<.out y.>) (.c.put(Op.DIV,x,y);.) :2
+  | DIV (reg<.out x.>,imm<.out a.>) (.c.put(Op.DIVI,x,a);.):1
+  | MOD (reg<.out x.>,reg<.out y.>) (.c.put(Op.MOD,x,y);.) :2
+  | MOD (reg<.out x.>,imm<.out a.>) (.c.put(Op.MODI,x,a);.):1.
+-- Conditionals returning result in register
+cond<.out Item x.> (.x = null; Item a,y;.)
+  = EQ  (reg<.out x.>,reg<.out y.>) (.c.put(Op.EQ,x,y);.)  :2
+  | EQ  (reg<.out x.>,imm<.out a.>) (.c.put(Op.EQI,x,a);.) :1
+  | EQ  (imm<.out a.>,reg<.out x.>) (.c.put(Op.EQI,x,a);.) :1
+  | LEQ (reg<.out x.>,reg<.out y.>) (.c.put(Op.LEQ,x,y);.) :2
+  | LEQ (imm<.out a.>,reg<.out x.>) (.c.put(Op.GTHI,x,a);.):1
+  | LEQ (reg<.out x.>,imm<.out a.>) (.c.put(Op.LEQI,x,a);.):1
+  | GEQ (reg<.out x.>,reg<.out y.>) (.c.put(Op.GEQ,x,y);.) :2
+  | GEQ (imm<.out a.>,reg<.out x.>) (.c.put(Op.LTHI,x,a);.):1
+  | GEQ (reg<.out x.>,imm<.out a.>) (.c.put(Op.GEQI,x,a);.):1
+  | LTH (reg<.out x.>,reg<.out y.>) (.c.put(Op.LTH,x,y);.) :2
+  | LTH (imm<.out a.>,reg<.out x.>) (.c.put(Op.GEQI,x,a);.):1
+  | LTH (reg<.out x.>,imm<.out a.>) (.c.put(Op.LTHI,x,a);.):1
+  | GTH (reg<.out x.>,reg<.out y.>) (.c.put(Op.GTH,x,y);.) :2
+  | GTH (imm<.out a.>,reg<.out x.>) (.c.put(Op.LEQI,x,a);.):1
+  | GTH (reg<.out x.>,imm<.out a.>) (.c.put(Op.LTHI,x,a);.):1.
+end

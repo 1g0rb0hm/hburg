@@ -24,6 +24,7 @@ import Util (stringFoldr)
 
 import qualified Ast.Ir as Ir (Ir(..), baseRuleMap, linkSet)
 
+import qualified Gen.Ident as I (Ident, new, pkgId, nId, cTy, rTy, ntTy, eN)
 import Gen.Emit.Enums (genEnums)
 import Gen.Emit.Tile (genTiling)
 import Gen.Emit.Eval (genEval)
@@ -47,12 +48,13 @@ type NodeKind = String
 -- | Generates all the code which is necessary in order to make our code generator work.
 emit :: ClassName -> PackageName -> NodeKind -> Ir.Ir -> [Java]
 emit cname pkg nkind ir
-    = let (ir', enumClasses) = genEnums pkg ir in
-    let tileClass = genTiling pkg nkind ir' in
-    let evalClass = genEval ir' in
+    = let ids = I.new pkg in
+    let (ir', enumClasses) = genEnums ids ir in
+    let tileClass = genTiling ids nkind ir' in
+    let evalClass = genEval ids ir' in
     let nodeInterface
             = genNodeInterface
-                    (pkg)
+                    (ids)
                     (fst                            -- max. amount of children node can have
                         (M.findMax $ Ir.baseRuleMap ir))
                     (not (S.null $ Ir.linkSet ir))
@@ -64,16 +66,16 @@ emit cname pkg nkind ir
                     clazz <- get
                     put (setConstructors
                             clazz
-                            [ Constructor.new Public "MapEntry" [] ""
-                            , Constructor.new Public "MapEntry"
-                                ["int c", "RuleEnum r"] "\tthis.cost = c;\n\tthis.rule = r;"])
+                            [ Constructor.new Public (I.eN ids) [] ""
+                            , Constructor.new Public (I.eN ids)
+                                [(I.cTy ids) ++" c", I.rTy ids ++" r"] "\tcost = c;\n\trule = r;"])
                     clazz <- get
                     put (setVariables
                             clazz
-                            [ Variable.new Public False "int" "cost" ""
-                            , Variable.new Public False "RuleEnum" "rule" ""])
+                            [ Variable.new Public False (I.cTy ids) "cost" ""
+                            , Variable.new Public False (I.rTy ids) "rule" ""])
                     get)
-                (java pkg "MapEntry")
+                (java (I.pkgId ids) (I.eN ids))
         in
     let codeGenClass
             = evalState
@@ -81,11 +83,8 @@ emit cname pkg nkind ir
                     clazz <- get
                     put (setImports
                                 clazz
-                                [genImport pkg "NT.*" True,
-                                 genImport pkg "RuleEnum.*" True,
-                                 genImport pkg "NT" False,
-                                 genImport pkg "RuleEnum" False,
-                                 genImport pkg "MapEntry" False,
+                                [genImport (I.ntTy ids) "*" True,
+                                 genImport (I.rTy ids) "*" True,
                                  genImport "java.util" "EnumSet" False,
                                  "// @USER INCLUDES START",
                                  (show $ Ir.include ir'),
@@ -98,29 +97,29 @@ emit cname pkg nkind ir
                     put (setNestedClasses clazz [tileClass, evalClass])
                     -- Generate Interface method to the outside world
                     clazz <- get
-                    put (setMethods clazz [genEmitFun evalClass])
+                    put (setMethods clazz [genEmitFun ids evalClass])
                     get) 
                 (java pkg cname)
         in
     -- Return generated classes
     [   codeGenClass        -- the final code generator class
-    ,   mapEntryClass       -- MapEntry class
+    ,   mapEntryClass       -- Entry class
     ,   nodeInterface]      -- Node interface
     ++  enumClasses         -- Classes holding enumerations
     where
         -- | Generate import statements
         genImport :: PackageName -> ClassName -> Bool -> ImportName
         genImport pkg cname static
-            = "import" ++
+            = "import"++
             (if (static) then " static " else " ") ++
-            (if (pkg /= "") then pkg ++ "." else "") ++
-            cname ++ ";"
+            (if (pkg /= "") then pkg ++"." else "") ++
+            cname ++";"
 
         -- | Create method in our code generator which is public and callable from the outside.
-        genEmitFun :: Java -> M.Method
-        genEmitFun evalClass
+        genEmitFun :: I.Ident -> Java -> M.Method
+        genEmitFun ids evalClass
             = let m1 = case (getMethods evalClass) of-- retrieve the entry method for evaluation
-                        [] -> error ("\nERROR: Class " ++ getClassName evalClass ++ " has no methods!\n")
+                        [] -> error ("\nERROR: Class "++ getClassName evalClass ++" has no methods!\n")
                         list -> head list
                 in
             -- given the entry method for evaluation, its parameters and return
@@ -132,13 +131,13 @@ emit cname pkg nkind ir
                 -- | Method body of emit method.
                 genBody :: M.Method -> String
                 genBody m
-                    = "\t" ++ cname ++ ".Tiling.tile(n);\n" ++
+                    = "\t"++ cname ++".Tiling.tile("++ I.nId ids ++");\n"++
                     (if (M.getRetTy m == "void")
                         then "\t"
                         else "\treturn ") ++
-                    cname ++ ".Eval." ++ (M.getName m) ++ 
-                    "(" ++
+                    cname ++".Eval."++ (M.getName m) ++ 
+                    "("++
                     (stringFoldr
-                        (\x y -> x ++ ", " ++ y)
+                        (\x y -> x ++", "++ y)
                         (map (\p -> Param.getIdent p) (M.getParams m))) ++
                     ");"

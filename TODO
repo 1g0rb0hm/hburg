@@ -22,9 +22,9 @@ CSA
 TILING
 ----------------------------------------------------
 
- * Throw assertion error in tile() instead of: 
-    'System.err.println("ERROR: Encountered undefined node: " + n.kind() );'
-
+ * Leaf nodes should not call label() but rather assign costs
+   right away since no patterns have been recorded for them
+   anyway.
 
 CODE GENERATION
 ----------------------------------------------------

@@ -17,6 +17,7 @@ module Gen.Emit.NodeIface (
 
 import Control.Monad.State
 
+import qualified Gen.Ident as I (Ident, pkgId, nN, nTy, ntTy, rTy, eTy, cTy)
 import Gen.Emit.Class (JavaClass(..))
 import Gen.Emit.Java.Class (Java, java)
 import Gen.Emit.Java.Modifier (Modifier(..))
@@ -31,8 +32,8 @@ type KindReturn = String
 type Package = String
 
 -- | Generates Java Node Interface class.
-genNodeInterface :: Package -> Children -> Link -> KindReturn -> Java
-genNodeInterface pkg children hasLnk retTy
+genNodeInterface :: I.Ident -> Children -> Link -> KindReturn -> Java
+genNodeInterface ids children hasLnk retTy
     = evalState
         (do
             clazz <- get
@@ -40,58 +41,58 @@ genNodeInterface pkg children hasLnk retTy
             clazz <- get
             put (setIface clazz True)
             clazz <- get
-            put (setComments clazz genComments)
+            put (setComments clazz $ genComments ids)
             clazz <- get
             put (setMethods
-                    clazz $ genChildMethods children
+                    clazz $ (genChildMethods ids children)
                             ++ genKindMethod retTy
-                            ++ genMapEntryMethods
-                            ++ (if (hasLnk) then genLinkMethod else []))
+                            ++ genEntryMethods ids
+                            ++ (if (hasLnk) then genLinkMethod ids else []))
             get)
-        (java pkg "Node")
+        (java (I.pkgId ids) (I.nN ids))
 
 -- | Generate Child Node access methods.
-genChildMethods :: Children -> [Method.Method]
-genChildMethods children
+genChildMethods :: I.Ident -> Children -> [Method.Method]
+genChildMethods ids children
     = map
         (\arity ->
-            Method.new Public False "Node" ("child" ++ show arity) [] "")
+            Method.new Public False (I.nTy ids) ("child"++ show arity) [] "")
         ([1 .. children])
 
 -- | genLinkMethod.
-genLinkMethod :: [Method.Method]
-genLinkMethod = [Method.new Public False "Node" "link" [] ""]
+genLinkMethod :: I.Ident -> [Method.Method]
+genLinkMethod ids = [Method.new Public False (I.nTy ids) "link" [] ""]
 
 -- | Generate link node access method interface
 genKindMethod :: KindReturn -> [Method.Method]
 genKindMethod ty = [Method.new Public False ty "kind" [] ""]
 
--- | Generate Java MapEntry manipulation method interfaces
-genMapEntryMethods :: [Method.Method]
-genMapEntryMethods
-    = [Method.new Public False "boolean"  "is"   (Parameter.newFromList [("NT","nt")]) ""] ++
-    [Method.new Public False "MapEntry" "put"  (Parameter.newFromList [("NT","nt"),("MapEntry","entry")]) ""] ++
-    [Method.new Public False "MapEntry" "get"  (Parameter.newFromList [("NT","nt")]) ""] ++
-    [Method.new Public False "int"      "cost" (Parameter.newFromList [("NT","nt")]) ""] ++
-    [Method.new Public False "RuleEnum" "rule" (Parameter.newFromList [("NT","nt")]) ""]
+-- | Generate Java Entry manipulation method interfaces
+genEntryMethods :: I.Ident -> [Method.Method]
+genEntryMethods ids
+    = [Method.new Public False "boolean"  "is"   (Parameter.newFromList [(I.ntTy ids,"nt")]) ""] ++
+    [Method.new Public False (I.eTy ids)  "put"  (Parameter.newFromList [(I.ntTy ids,"nt"),(I.eTy ids,"entry")]) ""] ++
+    [Method.new Public False (I.eTy ids)  "get"  (Parameter.newFromList [(I.ntTy ids,"nt")]) ""] ++
+    [Method.new Public False (I.cTy ids)  "cost" (Parameter.newFromList [(I.ntTy ids,"nt")]) ""] ++
+    [Method.new Public False (I.rTy ids)  "rule" (Parameter.newFromList [(I.ntTy ids,"nt")]) ""]
 
-genComments :: Comment.Comment
-genComments
+genComments :: I.Ident -> Comment.Comment
+genComments ids
     = Comment.new [
     "Node Interface Implementation:",
     "",
     "\t- Create the following instance Variable:",
-    "\t  // Map from Key:Nt -> Value:(RuleEnum: rule, int: cost)",
-    "\t  private EnumMap<NT, MapEntry> table = new EnumMap<NT, MapEntry>(NT.class);",
+    "\t  // Map from Key:"++I.ntTy ids++" -> Value:("++I.rTy ids++": rule, int: cost)",
+    "\t  private EnumMap<"++I.ntTy ids++", Entry> table = new EnumMap<"++I.ntTy ids++", Entry>("++I.ntTy ids++".class);",
     "",
     "\t- The is(), put(), get(), cost(), and rule() methods have the following implementations:",
-    "\t\tis():\n\t\tpublic boolean is(NT nt) {\n\t\t\treturn this.table.containsKey(nt);\n\t\t}",
+    "\t\tis():\n\t\tpublic boolean is("++I.ntTy ids++" nt) {\n\t\t\treturn this.table.containsKey(nt);\n\t\t}",
     "",
-    "\t\tput():\n\t\tpublic MapEntry put(NT nt, MapEntry entry) {\n\t\t\treturn this.table.put(nt, entry);\n\t\t}",
+    "\t\tput():\n\t\tpublic "++I.eTy ids++" put("++I.ntTy ids++" nt, "++I.eTy ids++" entry) {\n\t\t\treturn this.table.put(nt, entry);\n\t\t}",
     "",
-    "\t\tget():\n\t\tpublic MapEntry get(NT nt) {\n\t\t\treturn this.table.get(nt);\n\t\t}",
+    "\t\tget():\n\t\tpublic "++I.eTy ids++" get("++I.ntTy ids++" nt) {\n\t\t\treturn this.table.get(nt);\n\t\t}",
     "",
-    "\t\tcost():\n\t\tpublic int cost(NT nt) {\n\t\t\tMapEntry e = this.table.get(nt);\n\t\t\treturn (e != null) ? e.cost : Integer.MAX_VALUE;\n\t\t}",
+    "\t\tcost():\n\t\tpublic "++I.cTy ids++" cost("++I.ntTy ids++" nt) {\n\t\t\tEntry e = this.table.get(nt);\n\t\t\treturn (e != null) ? e.cost : Integer.MAX_VALUE;\n\t\t}",
     "",
-    "\t\trule():\n\t\tpublic RuleEnum rule(NT nt) {\n\t\t\treturn (this.table.get(nt)).rule;\n\t\t}"
+    "\t\trule():\n\t\tpublic "++I.rTy ids++" rule("++I.ntTy ids++" nt) {\n\t\t\treturn (this.table.get(nt)).rule;\n\t\t}"
     ]

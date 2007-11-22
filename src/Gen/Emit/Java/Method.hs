@@ -51,13 +51,13 @@ instance Eq Method where
 instance Show Method where
     -- Interface definition.
     show m | (isIface m)
-        = genMethodSig m ++ ";"
+        = genMethodSig m ++";"
 
     -- Regular method.
     show m
-        = genMethodSig m ++ " {\n" ++
+        = genMethodSig m ++" {\n"++
         (body m) ++                            -- method body
-        "\n} // END METHOD " ++ (name m) ++ "()"
+        "\n} // END METHOD "++ (name m) ++"()"
 
 -- | Constructor for building a Method.
 new :: Modifier -> Bool -> Type -> String -> [Parameter] -> Body -> Method
@@ -92,12 +92,12 @@ setIfaceDef m bool = m { isIface = bool }
 genMethodSig :: Method -> String
 genMethodSig m
     = -- Method comments
-    show (comment m) ++ "\n" ++
+    show (comment m) ++"\n"++
     -- Actual method
     show (modifier m) ++                     -- public|private|...
     (if (isStatic m) then " static " else " ") ++
-    (retTy m) ++ " " ++                        -- return type
-    (name m) ++ " (" ++                        -- method identifier
+    (retTy m) ++" "++                        -- return type
+    (name m) ++" ("++                        -- method identifier
     (stringFoldr                            -- parameters
-        (\x y -> x ++ ", " ++ y)
-        (map (\z -> show z) (params m))) ++ ")"
+        (\x y -> x ++", "++ y)
+        (map (\z -> show z) (params m))) ++")"

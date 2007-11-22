@@ -35,7 +35,7 @@ instance Show Code where
 
 instance Debug Code where
     debug (MkEmptyCode) = "Nil"
-    debug (MkCode str) = "Code: " ++ str
+    debug (MkCode str) = "Code: "++ str
 
 new :: String -> Code
 new str = MkCode str

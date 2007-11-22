@@ -15,7 +15,7 @@ Description:
     target machine instructions, HBURG generates a code generator that can
     be plugged into the instruction selection phase of a compiler.
 Stability:      Experimental
-build-depends:  base, haskell98, filepath, mtl
+cabal-version: >=1.2
 extra-source-files:
     TODO
     test/01-grammar.tpg
@@ -35,56 +35,67 @@ extra-source-files:
     test/errors/err-useundefined.tpg
     test/errors/err-varyingparams.tpg
 
--- Executable Stanza
-executable:     hburg
-main-is:        Main.hs
--- Optional Stuff in the executable stanza
-hs-source-dirs: src
-other-modules:
-    Util
-    Debug
-    Ast.Attr
-    Ast.Bind
-    Ast.Code
-    Ast.Closure
-    Ast.Cost
-    Ast.Decl
-    Ast.Def
-    Ast.Ident
-    Ast.Incl
-    Ast.Ir
-    Ast.Node
-    Ast.Nt
-    Ast.Op
-    Ast.Prod
-    Ast.T
-    Ast.Term
-    Csa.Csa
-    Csa.Ctx
-    Csa.Elem
-    Gen.Emit
-    Gen.Backend
-    Gen.Emit.Enums
-    Gen.Emit.Eval
-    Gen.Emit.NodeIface
-    Gen.Emit.Tile
-    Gen.Emit.Class
-    Gen.Emit.Label
-    Gen.Emit.Java.Class
-    Gen.Emit.Java.Comment
-    Gen.Emit.Java.Constructor
-    Gen.Emit.Java.Enum
-    Gen.Emit.Java.Method
-    Gen.Emit.Java.Modifier
-    Gen.Emit.Java.Parameter
-    Gen.Emit.Java.Variable
-    Parser.Lexer
-    Parser.Parser
-    Parser.ParseErr
-ghc-options: -O
-    -funbox-strict-fields 
-    -fglasgow-exts 
-    -fwarn-unused-imports 
-    -fwarn-duplicate-exports 
-    -fwarn-incomplete-patterns 
-    -fwarn-overlapping-patterns
+flag small_base
+  description: Choose the new smaller, split-up base package.
+
+executable hburg
+    executable: hburg
+    main-is: Main.hs
+    hs-source-dirs: src
+
+    if flag(small_base)
+      build-depends: base >= 3, containers, array
+    else
+      build-depends: base >= 1.0
+
+    build-depends: haskell98 >= 1.0, filepath, mtl
+
+  other-modules:
+      Util
+      Debug
+      Ast.Attr
+      Ast.Bind
+      Ast.Code
+      Ast.Closure
+      Ast.Cost
+      Ast.Decl
+      Ast.Def
+      Ast.Ident
+      Ast.Incl
+      Ast.Ir
+      Ast.Node
+      Ast.Nt
+      Ast.Op
+      Ast.Prod
+      Ast.T
+      Ast.Term
+      Csa.Csa
+      Csa.Ctx
+      Csa.Elem
+      Gen.Emit
+      Gen.Backend
+      Gen.Ident
+      Gen.Emit.Enums
+      Gen.Emit.Eval
+      Gen.Emit.NodeIface
+      Gen.Emit.Tile
+      Gen.Emit.Class
+      Gen.Emit.Label
+      Gen.Emit.Java.Class
+      Gen.Emit.Java.Comment
+      Gen.Emit.Java.Constructor
+      Gen.Emit.Java.Enum
+      Gen.Emit.Java.Method
+      Gen.Emit.Java.Modifier
+      Gen.Emit.Java.Parameter
+      Gen.Emit.Java.Variable
+      Parser.Lexer
+      Parser.Parser
+      Parser.ParseErr
+  ghc-options: -O
+      -funbox-strict-fields 
+      -fglasgow-exts 
+      -fwarn-unused-imports 
+      -fwarn-duplicate-exports 
+      -fwarn-incomplete-patterns 
+      -fwarn-overlapping-patterns

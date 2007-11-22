@@ -32,11 +32,11 @@ data Enum
 
 instance Show Enum where
     show (MkEnum modifier ident enums)
-        = " " ++ (show modifier) ++ " enum " ++ -- Modifier
-        ident ++ " {\n" ++                      -- Identifier
+        = " "++ (show modifier) ++" enum "++ -- Modifier
+        ident ++" {\n"++                      -- Identifier
         (stringFoldr
-            (\x y -> "\t" ++ x ++ ",\n" ++ y)
-            enums) ++ "};\n"                    -- Enumeration
+            (\x y -> "\t"++ x ++",\n"++ y)
+            enums) ++"};\n"                    -- Enumeration
 
 -- | Constructor for building a Modifier
 new :: Modifier -> String -> [String] -> Enum

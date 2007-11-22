@@ -114,9 +114,9 @@ computeTyMap ds
         computeTypeSet d ds set
             = let result 
                     = L.find
-                        (\d ->
+                        (\d' ->
                             isJust (L.find
-                                    (\p -> getId d == getId p)
+                                    (\p -> getId d' == getId p)
                                     (D.getProds d)))
                         (ds)
                 in
@@ -150,7 +150,7 @@ checkDef d
     case clash of
         Nothing -> Nothing
         Just p -> Just (parseErrElem (Elem.new (P.getNode p))
-                ("'" ++ Elem.elemShow (Elem.new (P.getNode p)) ++ "' can not be defined in terms of itself."))
+                ("'"++ Elem.elemShow (Elem.new (P.getNode p)) ++"' can not be defined in terms of itself."))
 
 
 -- | Checks whether all uses of a production have the same amount of parameters
@@ -202,15 +202,15 @@ checkCtx defs ctx
                                                                 then Nothing
                                                                 else -- Whoops! Check of link failed
                                                                     Just (parseErrElem (Elem.new (N.getLink n)) (show (Elem.elemType (N.getLink n)) ++
-                                                                        " '" ++ Elem.elemShow (N.getLink n) ++ "' is undefined."))
+                                                                        " '"++ Elem.elemShow (N.getLink n) ++"' is undefined."))
                                                 else -- Whoops! Type Check failed
                                                     typeError
                                         else -- Whoops! Check failed
-                                            Just (parseErrElem (Elem.new n) (show (Elem.elemType n) ++ " '" ++
-                                                N.showAsFun n ++ "' is undefined."))
+                                            Just (parseErrElem (Elem.new n) (show (Elem.elemType n) ++" '"++
+                                                N.showAsFun n ++"' is undefined."))
                                 else -- Whoops! Check failed
-                                    Just (parseErrElem (Elem.new n) (show (Elem.elemType n) ++ " '" ++
-                                        Elem.elemShow n ++ "' is undefined.")))
+                                    Just (parseErrElem (Elem.new n) (show (Elem.elemType n) ++" '"++
+                                        Elem.elemShow n ++"' is undefined.")))
                         (p))
                 (pnodes)
         in
@@ -242,11 +242,11 @@ typeCheck n tymap
                                     let ent' = tymap M.! (getId n') in
                                     -- Intersection of parameter and return set must not be empty
                                     if (S.null (S.intersection p (returns ent')))
-                                        then Just (typeError (Elem.new n) i (show (Elem.elemType n) ++ " '" ++
+                                        then Just (typeError (Elem.new n) i (show (Elem.elemType n) ++" '"++
                                             N.showAsFun n ++
-                                            "' - expected type" ++ (if (S.size p > 1) then "s" else "") ++
-                                            " '" ++ show (S.toList p) ++
-                                            "' but found '" ++ show (S.toList (returns ent')) ++ "'"))
+                                            "' - expected type"++ (if (S.size p > 1) then "s" else "") ++
+                                            " '"++ show (S.toList p) ++
+                                            "' but found '"++ show (S.toList (returns ent')) ++"'"))
                                         else Nothing
                                 else
                                     -- If we got in here we have encountered an undefined

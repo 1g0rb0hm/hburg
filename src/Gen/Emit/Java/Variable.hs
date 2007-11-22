@@ -34,13 +34,13 @@ data Variable
 
 instance Show Variable where
     show (MkVariable modifier isStat ty ident constructor) 
-        = " " ++ (show modifier) ++ " " ++          -- modifier
+        = " "++ (show modifier) ++" "++          -- modifier
         (if (isStat) then "static " else " ") ++    -- is it static ?
-        ty ++ " " ++                                -- type
+        ty ++" "++                                -- type
         ident ++ 
         if (constructor /= [])
-            then " = " ++                           -- identifier
-                constructor ++ ";"                  -- how to construct it?
+            then " = "++                           -- identifier
+                constructor ++";"                  -- how to construct it?
             else ";"
 
 -- | Constructor for building a new Variable

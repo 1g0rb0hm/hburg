@@ -42,14 +42,14 @@ instance Eq Constructor where
 instance Show Constructor where
     show (MkConstructor comments m ident params body)
         = -- Comments
-        show comments ++ "\n" ++
+        show comments ++"\n"++
         -- Constructor
-        show m ++ " " ++                -- public|private|...
-        ident ++ " (" ++                -- method identifier
+        show m ++" "++                -- public|private|...
+        ident ++" ("++                -- method identifier
         (stringFoldr                    -- method body
-            (\x y -> x ++ ", " ++ y)
-            params) ++ ") {\n" ++
-        body ++ "\n} // END CONSTRUCTOR " ++ ident ++ "()"
+            (\x y -> x ++", "++ y)
+            params) ++") {\n"++
+        body ++"\n} // END CONSTRUCTOR "++ ident ++"()"
 
 -- | Create a new constructor
 new :: Modifier -> String -> [Parameter] -> Body -> Constructor
