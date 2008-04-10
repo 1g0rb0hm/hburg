@@ -13,7 +13,8 @@ Description:
     tree grammars. It is useful for writing code generators for compilers.
     Given a mapping of a tree structured intermediate representation onto
     target machine instructions, HBURG generates a code generator that can
-    be plugged into the instruction selection phase of a compiler.
+    be plugged into the instruction selection phase of a compiler. For more
+    information see "http://www.bytelabs.org/pub/papers/hburg07.pdf".
 Stability:      Experimental
 cabal-version: >=1.2
 extra-source-files:

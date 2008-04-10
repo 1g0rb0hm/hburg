@@ -40,21 +40,26 @@ data Ident = Id { pkgid     :: String   -- package identifier
                 , ety       :: String } -- entry type
 
 new :: String -> Ident
-new p = Id { pkgid = p
+new p =
+    let sep = if (not (null p) && last p /= '.')
+          then "."
+          else ""
+    in
+    Id { pkgid = p
            , nid = "_n"
            , nn  = "Node"
-           , nty = p ++".Node"
+           , nty = p ++ sep ++ "Node"
            , ntid = "_nt"
            , ntn = "Nt"
-           , ntty = p ++".Nt"
+           , ntty = p ++ sep ++ "Nt"
            , rid = "_r"
            , rn = "Rule"
-           , rty = p ++".Rule"
+           , rty = p ++ sep ++ "Rule"
            , cid = "_c"
            , cn = ""
            , cty = "int"
            , en = "Entry"
-           , ety = p ++".Entry" }
+           , ety = p ++ sep ++ "Entry" }
 
 
 pkgId,nId,ntId,rId,cId :: Ident -> String
