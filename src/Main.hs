@@ -20,6 +20,8 @@ import IO
 import System
 import System.Console.GetOpt
 
+import qualified Debug as Debug (Level(..), Entry, new, filter, format)
+
 import Parser.Lexer (Token, scanner)
 import Parser.Parser (ParseResult(..), parse)
 
@@ -144,19 +146,16 @@ codeGen args
                         if (OptDebug `elem` cli)
                             then 
                                 do
-                                    outputClass clazz
-                                    byeStr 
-                                        ("\n#### DEBUG: Parsing START ####\n"++
-                                        Ir.debug result ++
-                                        "\n\n#### DEBUG: Parsing END ####\n")
+                                    outputFiles clazz
+                                    byeStr $ Debug.format $ Debug.filter Debug.All $ Ir.debug result
                             else
                                 do
-                                    outputClass clazz
+                                    outputFiles clazz
                                     bye
-                    Left (err, debugMsg) | OptDebug `elem` cli ->
-                        dieCodeGen (err ++ debugMsg)
-                    Left (err, _) ->
-                        dieCodeGen err
+                    Left err | OptDebug `elem` cli ->
+                        dieCodeGen $ Debug.format $ Debug.filter Debug.All err
+                    Left err ->
+                        dieCodeGen $ Debug.format $ Debug.filter Debug.Error err
         (_,_,errors) ->
             do
                 prog <- getProgName
@@ -164,26 +163,26 @@ codeGen args
                      usageInfo (usageHeader prog) argInfo)
 
 -- | Runs the Lexer and Parser
-runParse :: String -> Either (String, String) Ir.Ir
+runParse :: String -> Either [Debug.Entry] Ir.Ir
 runParse input =
     -- Scan using our scanner
     case (scanner input) of
-        Left e -> Left (e, "")
+        Left e -> Left [Debug.new Debug.Error e]
         -- Parse using our parser
         Right lexx -> case parse lexx of
             -- Parse was Ok, we can continue....
             ParseOk result ->
                     Right result
             -- There were errors...
-            ParseErr errs result ->
-                    Left (concat errs, Ir.debug result)
+            ParseErr errors result ->
+                    Left (Ir.debug result ++ errors)
             -- The parse failed due to some serious error...
-            ParseFail s ->
-                    Left (s, "")
+            ParseFail failed ->
+                    Left failed
 
 -- | Output generated class into a file
-outputClass :: E.Emit a => [a] -> IO [()]
-outputClass classes
+outputFiles :: E.Emit a => [a] -> IO [()]
+outputFiles classes
     = mapM
-        (\clazz -> writeFile (E.emitTo clazz) (E.emit clazz))
+        (\c -> writeFile (E.emitTo c) (E.emit c))
         (classes)

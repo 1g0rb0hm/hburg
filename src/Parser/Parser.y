@@ -21,6 +21,8 @@ import Maybe (isJust, fromJust)
 
 import Util (stringToInt)
 
+import qualified Debug as Debug (Level(..), Entry, new)
+
 import Ast.Op (Operator, op, opMap)
 import qualified Ast.Incl as Incl (Include, new)
 import qualified Ast.Ident as Id (toIdent)
@@ -92,10 +94,10 @@ G :: { Ir }
         {%
             let (ops, opctx) = $6 in                    -- Operators and their Context
             let (defs, defctx, opmap) = $8 in           -- Definitions and their Context
-            let debugMsg = foldr (++) "" (map (\d -> show d) defs) ++
-                        "\n\nDefinition "++ show defctx ++
-                        "\n\nOperator "++ show opctx
-                in                                      -- if debug cli option is defined
+            let entries = (map (\d -> Debug.new Debug.Debug (show d)) defs) -- debug entries
+                    ++ [Debug.new Debug.Debug ("Definition-" ++ show defctx)]
+                    ++ [Debug.new Debug.Debug ("Operator-" ++ show opctx)]
+              in
             case (Ctx.merge defctx opctx) of
                 Right ctx ->
                     case Csa.checkCtx defs ctx of
@@ -103,7 +105,7 @@ G :: { Ir }
                                               , declaration = Decl.new $4
                                               , operators = ops
                                               , definitions = (reverse defs)
-                                              , debug = debugMsg
+                                              , debug = entries
                                               , operatorMap = opmap }
                         Just errors -> failP (foldr1 (\e old -> e ++"\n"++ old) errors)
                 Left (el1, el2) -> error "\nERROR: Merging of Definition and Operator Context failed!\n"
@@ -211,10 +213,10 @@ Prod :: { (Production, OperatorMap) }
              M.singleton 0 $ S.singleton $ op (getId $2)) }
     | Sem T Sem '[' Sem Nt Sem ']' Sem ':' Cost
         {%
-            let link = (N.new $6 C.empty C.empty N.empty C.empty N.empty C.empty) in
-            let n = (N.new $2 $1 $3 N.empty C.empty N.empty $9) in
+            let link = N.new $6 C.empty C.empty N.empty C.empty N.empty C.empty in
+            let n = N.new $2 $1 $3 N.empty C.empty N.empty $9 in
             let p = prod (N.setLink (N.addLinkCode n $5 $7) link) $11 in
-            let opmap = M.singleton 0 $ S.singleton $ op (getId $2) in
+            let opmap = M.singleton 0 $ S.singleton $ op $ getId $2 in
             -- CSA: check duplicate bindings for T and Nt
             if (equalBindings $2 $6)
                 then errP (parseErrDupBind "Binding"
@@ -410,9 +412,9 @@ type P a = ParseResult a
 
 -- | ParseResult type
 data ParseResult a
-    = ParseOk a             -- ^ Successful parse
-    | ParseErr [String] a   -- ^ Parse contained errors
-    | ParseFail String      -- ^ Fatal error happened
+    = ParseOk a                 -- ^ Successful parse
+    | ParseErr  [Debug.Entry] a -- ^ Parse contained errors
+    | ParseFail [Debug.Entry]   -- ^ Fatal error happened
     deriving (Show, Eq, Ord)
 
 thenP :: P a -> (a -> P b) -> P b
@@ -423,20 +425,20 @@ m `thenP` k
             case k a of
                 ParseOk a -> ParseErr err a
                 ParseErr nerr a -> ParseErr (err ++ nerr) a
-                ParseFail errmsg -> ParseFail (concat (err ++ [errmsg]))
-        ParseFail err -> ParseFail err  -- Indicates a serious CSA error
+                ParseFail failed -> ParseFail (err ++ failed)
+        ParseFail failed -> ParseFail failed  -- Indicates non-recoverable CSA error
 
 returnP :: a -> P a
 returnP ok
     = ParseOk ok
 
 failP :: String -> P a
-failP err
-    = ParseFail err
+failP msg
+    = ParseFail [Debug.new Debug.Error msg]
 
 errP :: String -> a -> P a
-errP errmsg rest
-    = ParseErr [ errmsg ] rest
+errP msg rest
+    = ParseErr [ Debug.new Debug.Error msg ] rest
 
 updateOpMap :: N.Node -> OperatorMap -> OperatorMap
 updateOpMap n opmap
@@ -450,7 +452,7 @@ updateOpMap n opmap
 
 -- Called by Happy if a parse error occurs
 happyError :: [Token] -> P a
-happyError [] = failP ("\nParse Error at unknown token? Sorry!\n")
+happyError [] = failP ("Parse Error at unknown token? Sorry!")
 happyError (tok:toks) 
     = failP (parseErrTok tok (show (Id.toIdent tok)))
 }

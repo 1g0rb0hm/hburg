@@ -82,16 +82,16 @@ instance Show Node where
     show n
         = show (term n) ++":"++
         (if (hasLink n)
-            then " link->"++ show (term (link n))
+            then " {Link: "++ show (term (link n)) ++ "}"
             else " ") ++
-        (showChildren (child n) "   ")
+        (showChildren (child n) 1)
         where
-            showChildren :: Node -> String -> String
-            showChildren (Nil) gap = ")"
-            showChildren n gap
-                = "\n"++ gap ++"("++ show (term n) ++
-                  (showChildren (child n) (gap ++"  ")) ++
-                  (showChildren (sibling n) gap)
+            showChildren :: Node -> Int -> String
+            showChildren (Nil) _ = ""
+            showChildren n lvl
+                = "\n"++ (concatMap (\_ -> "   ") [0..lvl]) ++ show (term n) ++
+                  (showChildren (child n) (succ lvl)) ++
+                  (showChildren (sibling n) lvl)
 
 -- | Shows a node like a function 'name(child1, child2, etc.)'
 showAsFun :: Node -> String

@@ -20,7 +20,6 @@ module Ast.Code (
         isEmpty,
     ) where
 
-import Debug (Debug(..))
 ------------------------------------------------------------------------------------
 
 -- | Code data type
@@ -32,10 +31,6 @@ data Code
 instance Show Code where
     show (MkEmptyCode) = ""
     show (MkCode str) = str
-
-instance Debug Code where
-    debug (MkEmptyCode) = "Nil"
-    debug (MkCode str) = "Code: "++ str
 
 new :: String -> Code
 new str = MkCode str

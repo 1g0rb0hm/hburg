@@ -27,9 +27,9 @@ import qualified Csa.Elem as E (ElemClass(..), Elem, new)
 -- | typeError. Produces error message upon type error.
 typeError :: E.Elem -> Int -> String -> String
 typeError e i msg
-    = "\nType error at [line:"++ show (E.elemL e) ++
-        " col:"++ show (E.elemC e) ++"] parameter "++ 
-        show i ++" of "++ msg ++"\n"
+    = "[line:"++ show (E.elemL e) ++
+        " col:"++ show (E.elemC e) ++"] Type error: parameter "++ 
+        show i ++" of "++ msg
 
 -- | parseErrRedefinition. Produces error message upon the
 --      redefinition of a Node.
@@ -60,5 +60,5 @@ parseErrTok tok msg = parseErrElem (E.new tok) msg
 -- | parseErrElem. Generic error message.
 parseErrElem :: E.Elem -> String -> String
 parseErrElem e msg
-    = "\nParse error at [line:"++ show (E.elemL e) ++
-        " col:"++ show (E.elemC e) ++"]: "++ msg ++"\n"
+    = "[line:"++ show (E.elemL e) ++
+        " col:"++ show (E.elemC e) ++"] Parse Error: "++ msg

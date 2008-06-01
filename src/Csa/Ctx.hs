@@ -35,7 +35,7 @@ instance Show Ctx where
             concatMap 
                 (\key -> 
                     let el = m M.! key in
-                    " "++ show (elemType el) ++ show (elemShow el))
+                    " ("++ show (elemType el) ++ ": " ++ elemShow el ++ ")")
                 (M.keys m)
 
 -- | Constructor for creating a singleton Context

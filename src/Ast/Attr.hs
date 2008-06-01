@@ -22,8 +22,6 @@ module Ast.Attr (
         attrEqualInOut,
     ) where
 
-import Debug (Debug(..))
-
 import qualified Ast.Ident as Id (Ident)
 ------------------------------------------------------------------------------------
 
@@ -62,9 +60,6 @@ instance Eq Attr where
 
 instance Show Attr where
     show a = show (aty a) ++" "++ show (ident a)
-
-instance Debug Attr where
-    debug a = show (isOut a) ++" "++ show (aty a) ++" "++ show (ident a)
 
 -- | Create new attribute
 new :: Id.Ident -> AttrTy -> Ty -> Attr

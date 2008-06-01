@@ -28,8 +28,6 @@ module Ast.Def (
 import List (find)
 import Maybe (isJust)
 
-import Debug (Debug(..))
-
 import qualified Ast.Ident as Id (Ident)
 import Ast.Attr (Attr, attrEqualInOut)
 import qualified Ast.Bind as B (empty)
@@ -64,13 +62,11 @@ instance E.ElemClass Definition where
 
 instance Show Definition where
     show d
-        = "\nDef: "++ debug (nt d) ++" @closure->"++ 
-        show 
-            (map
-                (\p -> E.elemShow p)
-                (filter (isNonTerminal) (prods d))) ++
-            "\n\n "++
-            (concatMap (\p -> show p ++"\n\n ") (prods d))
+        = "Def := "++ show (nt d) ++" {Closure: "
+        ++ show (map -- non-terminals that must be included in closure
+                  (\p -> E.elemShow p)
+                  (filter (isNonTerminal) (prods d))) ++ "}\n "
+        ++ concatMap (\p -> show p ++"\n\n ") (prods d)
 
 instance TermClass Definition where
     getId d = Nt.getIdent(nt d)

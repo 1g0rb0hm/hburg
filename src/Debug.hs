@@ -6,16 +6,46 @@
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
 --
 --
--- Data which can output debugging information about itself should implement
--- the Debug(..) class.
+-- Store and manipulate debugging output.
+--
 -----------------------------------------------------------------------------
 
 module Debug (
-        -- * Classes
-        Debug(..),
+        -- * Types
+        Level(..),Entry,
+        -- * Functions
+        new, filter, format,
     ) where
+
+import Prelude hiding (filter)
+import qualified Data.List as List (filter)
 
 -----------------------------------------------------------------------------
 
-class (Show a) => Debug a where
-    debug :: a -> String
+-- | Debugging level
+data Level
+  = Info
+  | Debug
+  | Warn
+  | Error
+  | All
+  deriving (Eq, Ord, Show)
+  
+
+-- | Debugging entry
+data Entry = Entry Level String
+  deriving (Eq,Ord,Show)
+
+-- | Construct a debug entry
+new :: Level -> String -> Entry
+new lvl e = Entry lvl e
+
+-- | Filter debug entries according to level
+filter :: Level -> [Entry] -> [Entry]
+filter All es = es
+filter lvl es = List.filter (\(Entry l _) -> l /= lvl) es
+
+-- | Formats debug entries
+format :: [Entry] -> String
+format [] = ""
+format es = "\n" ++ concatMap (\(Entry _ msg) -> msg ++ "\n") es

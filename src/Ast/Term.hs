@@ -19,8 +19,6 @@ module Ast.Term (
         terminal, nonTerminal,
     ) where
 
-import Debug(Debug(..))
-
 import qualified Ast.Ident as Id (Ident)
 import Ast.Bind (Binding)
 import Ast.Attr (Attr)
@@ -85,10 +83,6 @@ instance E.ElemClass Term where
 instance Show Term where
     show (Terminal t) = show t
     show (NonTerm nt) = show nt
-
-instance Debug Term where
-    debug (Terminal t) = debug t
-    debug (NonTerm nt) = debug nt
 
 instance TermClass Term where
     getId (Terminal t) = T.getIdent t

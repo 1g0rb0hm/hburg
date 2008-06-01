@@ -40,7 +40,7 @@ instance Show ElemType where
     show ENonTerm = "NonTerm"
 
 -- | Elements in an ElemClass must implement the following
-class (Eq a, Ord a, Show a) => ElemClass a where
+class (Eq a, Ord a,  Show a) => ElemClass a where
     -- | uniqueley identifies an Element
     elemId :: a -> String
     elemId a = elemShow a

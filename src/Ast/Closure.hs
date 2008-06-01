@@ -6,15 +6,18 @@
 -- Author      :  Igor Böhm  <igor@bytelabs.org>
 --
 --
--- @TODO: Write short summary
--- 
+-- In order to be able to generate code that fires chain rules we want
+-- to know which non-terminals fire chain rules, and for a given non-terminal
+-- that fires a chain rule we want to know the set of other non-terminals
+-- that can be derived via those chain rules. This module contains the data
+-- structure (i.e. Closure) that holds such information.
 --
 -----------------------------------------------------------------------------
 
 module Ast.Closure (
-		-- * Types
+        -- * Types
         Closure, Label(..),
-		-- * Functions
+        -- * Functions
         closure, empty,
         fromLabels, toLabels,
 	) where
@@ -32,17 +35,21 @@ import qualified Gen.Emit.Label as L (termToEnumLab)
 
 -----------------------------------------------------------------------------
 
+-- | Non-terminal that fires chain rules
 type Key = String
 
+-- | This record encodes a a chain rules
 data Label = L { toL   :: String     -- ^ to label
                , ruleL :: String     -- ^ rule label
                , cost  :: C.Cost }   -- ^ cost
         deriving(Eq,Ord)
 
--- | A closure consists of three labels and a cost
+-- | A closure is a map containing the non-terminal that fires a chain rule as key
+--    and contains a set of chain rules that are fired by the non-terminal as value
 data Closure = Closure (M.Map Key (S.Set Label))
 
--- | Calculate necessary values for target code closure function.
+-- | Calculate necessary values for target code closure function (i.e. final label() method)
+--    that fires chain rules
 closure :: [Def.Definition] -> Closure
 closure defs
     = Closure
@@ -60,6 +67,7 @@ closure defs
                     (L.termToEnumLab p) -- alter at key
                     m) -- map to alter
             M.empty -- start with empty map
+            -- filter out productions that form chain rules
             (concatMap (\d -> filter (Term.isNonTerminal) (Def.getProds d)) defs))
 
 -- | Given a closure, return non-terminals that derive other non-terminals

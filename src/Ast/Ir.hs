@@ -12,9 +12,9 @@
 -----------------------------------------------------------------------------
 
 module Ast.Ir (
-		-- * Types
+        -- * Types
         Ir(..), OperatorMap,
-		-- * Functions
+        -- * Functions
         baseRuleMap, linkSet,
 	) where
 
@@ -22,6 +22,7 @@ import Maybe (fromJust, isJust)
 import qualified Data.Map as M
 import qualified Data.Set as S
 
+import qualified Debug as Debug (Entry)
 import qualified Ast.Incl as Incl (Include)
 import qualified Ast.Op as Op (Operator)
 import qualified Ast.Decl as Decl (Declaration)
@@ -41,7 +42,7 @@ data Ir
           , declaration   :: Decl.Declaration     -- ^ declarations
           , operators     :: [Op.Operator]        -- ^ operator definitions
           , definitions   :: [Def.Definition]     -- ^ rewrite rule definitions
-          , debug         :: String               -- ^ debug messages
+          , debug         :: [Debug.Entry]        -- ^ debug entries
           , operatorMap   :: OperatorMap }        -- ^ map holding operators keyed by arity
 
 
