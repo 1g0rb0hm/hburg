@@ -30,7 +30,6 @@ data Level
   | Error
   | All
   deriving (Eq, Ord, Show)
-  
 
 -- | Debugging entry
 data Entry = Entry Level String
@@ -43,7 +42,7 @@ new lvl e = Entry lvl e
 -- | Filter debug entries according to level
 filter :: Level -> [Entry] -> [Entry]
 filter All es = es
-filter lvl es = List.filter (\(Entry l _) -> l /= lvl) es
+filter lvl es = List.filter (\(Entry l _) -> l == lvl) es
 
 -- | Formats debug entries
 format :: [Entry] -> String

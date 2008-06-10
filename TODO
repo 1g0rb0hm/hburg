@@ -1,13 +1,3 @@
-Design Issues
-----------------------------------------------------
- * Create SourceCode class and make every Constructor,
-    Method, Variable etc. an instance of it. That way there
-    is a unified way to add comments to any piece of emitted
-    source code.
-
-    class SourceCode a where
-        sourceAddComment :: (Show b) => a -> b -> a
-
 Lexer
 ----------------------------------------------------
 

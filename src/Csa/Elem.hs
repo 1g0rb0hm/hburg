@@ -54,14 +54,13 @@ class (Eq a, Ord a,  Show a) => ElemClass a where
     -- | convey at which column this element was defined
     elemC :: a -> Int
 
--- | Use 'existential type' in order to be able to package heterogenous values
---    together with a bunch of functions that manipulate them, and then treat that
---    collection of packages in a uniform manner. In our case we want to stick different
---    'things' into Contexts, and all these 'things' implement ElemClass functions.
---    This is how it would work in the OO world and of course Haskell can do this as well ;-)
---    <http://www.haskell.org/haskellwiki/Existential_types>
+-- | We want to stick different 'things' into contexts, and all these
+--    'things' implement ElemClass functions. First we used the following Existential Type
+--    definition (<http://www.haskell.org/haskellwiki/Existential_types>):
+--      * data Elem = forall a. ElemClass a => Elem a
+--    But with the advent of GADTs we can write the following:
 data Elem
-    = forall a. ElemClass a => Elem a
+  where Elem :: ElemClass a => a -> Elem
 
 instance Eq Elem where
     (==) a1 a2 = elemId a1 == elemId a2

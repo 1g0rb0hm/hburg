@@ -14,7 +14,7 @@
 --        * feeds the code generator and emits its result to a file
 -----------------------------------------------------------------------------
 
-module Main where
+module Main (main) where
 
 import IO
 import System
@@ -22,7 +22,7 @@ import System.Console.GetOpt
 
 import qualified Debug as Debug (Level(..), Entry, new, filter, format)
 
-import Parser.Lexer (Token, scanner)
+import Parser.Lexer (scanner)
 import Parser.Parser (ParseResult(..), parse)
 
 import qualified Ast.Ir as Ir (Ir(..))
@@ -37,38 +37,18 @@ main :: IO ()
 main = getArgs >>= \args -> codeGen args
 
 --
--- Display information about ourselves
---
-
-usageHeader :: String -> String
-usageHeader prog
-    = "Usage: "++ prog ++" [OPTION...] file\n"
-
---
 -- Various ways how we may exit
 --
 
-byeStr :: String -> IO a
-byeStr s = putStr s >> exitWith ExitSuccess
-
-bye :: IO a
-bye = exitWith ExitSuccess
-
-showTokens :: [Token] -> IO a
-showTokens t
-    = byeStr (outToken t)
-    where
-        outToken :: [Token] -> String
-        outToken [] = ""
-        outToken (x:xs) = (show x) ++ outToken xs
+bye :: String -> IO a
+bye s = do
+  putStrLn s
+  exitWith (ExitSuccess)
 
 die :: String -> IO a
-die s 
-    = hPutStr stderr (s ++"\n") >> exitWith (ExitFailure 1)
-
-dieCodeGen :: String -> IO a
-dieCodeGen s
-    = getProgName >>= \prog -> die (prog ++": "++ s)
+die s = do
+  hPutStrLn stderr s
+  exitWith (ExitFailure 1)
 
 --
 -- Command line arguments
@@ -98,6 +78,9 @@ argInfo
         , Option [ 't' ] ["type"] (ReqArg OptNodeKindType "Type")
             "Java datatype which discriminates IR nodes (default: NodeKind)"
         ]
+
+usage :: String -> String
+usage prog = "Usage: "++ prog ++" [OPTION...] file"
 
 --
 -- Extract various command line options
@@ -130,37 +113,33 @@ codeGen args
     = case getOpt Permute argInfo (constArgs ++ args) of
         (cli,_,[]) | OptHelp `elem` cli ->
             do
-                prog <- getProgName
-                byeStr (usageInfo (usageHeader prog) argInfo)
+              prog <- getProgName
+              bye (usageInfo (usage prog) argInfo)
         (cli,[fname],[]) ->
             do
-                content <- readFile fname
-                outclass <- getOutputClassName cli
-                outpkg <- getOutputPackage cli
-                ntype <- getNodeKindType cli
-                -- Run Our Parser
-                case runParse content of
-                    -- If the result or the parser is Right we emit code for it
-                    Right result ->
-                        let clazz = B.emit outclass outpkg ntype result in
+              content <- readFile fname
+              class' <- getOutputClassName cli
+              pkg <- getOutputPackage cli
+              type' <- getNodeKindType cli
+              -- Run Parser
+              case runParse content of
+                  -- Successful Parse
+                  Right result ->
+                      do
+                        outputFiles $ B.emit class' pkg type' result
                         if (OptDebug `elem` cli)
-                            then 
-                                do
-                                    outputFiles clazz
-                                    byeStr $ Debug.format $ Debug.filter Debug.All $ Ir.debug result
-                            else
-                                do
-                                    outputFiles clazz
-                                    bye
-                    Left err | OptDebug `elem` cli ->
-                        dieCodeGen $ Debug.format $ Debug.filter Debug.All err
-                    Left err ->
-                        dieCodeGen $ Debug.format $ Debug.filter Debug.Error err
+                          then bye $ Debug.format $ Debug.filter Debug.All $ Ir.debug result
+                          else bye ""
+                  -- Parse Errors
+                  Left err | OptDebug `elem` cli ->
+                      die $ Debug.format $ Debug.filter Debug.All err
+                  Left err ->
+                      die $ Debug.format $ Debug.filter Debug.Error err
         (_,_,errors) ->
             do
-                prog <- getProgName
-                die (concat errors ++
-                     usageInfo (usageHeader prog) argInfo)
+              prog <- getProgName
+              die (concat errors ++
+                   usageInfo (usage prog) argInfo)
 
 -- | Runs the Lexer and Parser
 runParse :: String -> Either [Debug.Entry] Ir.Ir
@@ -169,20 +148,13 @@ runParse input =
     case (scanner input) of
         Left e -> Left [Debug.new Debug.Error e]
         -- Parse using our parser
-        Right lexx -> case parse lexx of
-            -- Parse was Ok, we can continue....
-            ParseOk result ->
-                    Right result
-            -- There were errors...
-            ParseErr errors result ->
-                    Left (Ir.debug result ++ errors)
-            -- The parse failed due to some serious error...
-            ParseFail failed ->
-                    Left failed
+        Right lexx ->
+          case parse lexx of
+            ParseOk result -> Right result
+            ParseErr errors result -> Left (Ir.debug result ++ errors)
+            ParseFail failed -> Left failed
 
--- | Output generated class into a file
-outputFiles :: E.Emit a => [a] -> IO [()]
-outputFiles classes
-    = mapM
-        (\c -> writeFile (E.emitTo c) (E.emit c))
-        (classes)
+-- | Output generated code to file
+outputFiles :: E.Emit a => [a] -> IO ()
+outputFiles es
+    = mapM_ (\e -> writeFile (E.emitTo e) (E.emit e)) es
