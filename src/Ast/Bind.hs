@@ -2,9 +2,8 @@
 -- |
 -- Module      :  Bind
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
--- License     :  BSD-style (see the file LICENSE) 
+-- License     :  BSD-style (see the file LICENSE)
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
---
 --
 -- Terminals and NonTerminals can be refered to in Semantic Actions by
 -- supplying binding identifiers:
@@ -14,27 +13,29 @@
 -----------------------------------------------------------------------------
 
 module Ast.Bind (
-        -- * Types
-        Binding,
-        -- * Construction
-        new,empty,
-        -- * Functions
-        hasBinding, getIdent,
-    ) where
+  -- Types
+  Binding,
+  -- Functions
+  new,empty,
+  hasBinding, getIdent,
+) where
 
+{- unqualified imports  -}
+
+{- qualified imports  -}
 import qualified Ast.Ident as Id (Ident)
 
 ------------------------------------------------------------------------------------
 
--- | Bindings for Terminals and NonTerminals
-data Binding
-    = MkBind Id.Ident
-    | MkEmptyBind
-    deriving (Eq)
+{- | Bindings for Terminals and NonTerminals -}
+data Binding =
+  MkBind Id.Ident
+  | MkEmptyBind
+  deriving (Eq)
 
 instance Show Binding where
-    show (MkBind i) = show i
-    show (MkEmptyBind) = ""
+  show (MkBind i) = show i
+  show (MkEmptyBind) = ""
 
 new :: Id.Ident -> Binding
 new i = MkBind i
@@ -43,11 +44,11 @@ empty :: Binding
 empty = MkEmptyBind
 
 hasBinding :: Binding -> Bool
-hasBinding b
-    = case b of 
-        MkEmptyBind -> False
-        otherwise -> True
+hasBinding MkEmptyBind = False
+hasBinding _ = True
 
 getIdent :: Binding -> Id.Ident
 getIdent (MkBind i) = i
 getIdent MkEmptyBind = error "\nERROR: getBinding() called on empty Binding"
+
+------------------------------------------------------------------------------------

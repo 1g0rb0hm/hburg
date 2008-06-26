@@ -2,7 +2,7 @@
 -- |
 -- Module      :  Decl
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
--- License     :  BSD-style (see the file LICENSE) 
+-- License     :  BSD-style (see the file LICENSE)
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
 --
 --
@@ -11,19 +11,25 @@
 -----------------------------------------------------------------------------
 
 module Ast.Decl (
-        -- * Introduction
-        Declaration,
-        -- * Construction
-        new,
-    ) where
+  -- Types
+  Declaration,
+  -- Functions
+  new,
+) where
 
+{- unqualified imports  -}
 import Ast.Code(Code)
+
+{- qualified imports  -}
+
 -----------------------------------------------------------------------------
 
 data Declaration = Decl Code
 
 instance Show Declaration where
-    show (Decl c) = show c
+  show (Decl c) = show c
 
 new :: Code -> Declaration
 new c = Decl c
+
+-----------------------------------------------------------------------------

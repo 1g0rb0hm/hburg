@@ -2,24 +2,28 @@
 -- |
 -- Module      :  Main
 -- Copyright   :  Copyright (c) 2008 Igor Boehm - Bytelabs.org. All rights reserved.
--- License     :  BSD-style (see the file LICENSE) 
+-- License     :  BSD-style (see the file LICENSE)
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
 --
 -- Run hburg on all test grammars that are available in order to spot regressions.
 -- These tests are very basic and only check HBURGs exit status.
---
 -----------------------------------------------------------------------------
 
 module Main (main) where
 
-import qualified Distribution.Simple as Cabal (defaultMainArgs)
-import qualified System.Cmd as Cmd (system)
+{- unqualified imports  -}
 import System.Console.GetOpt
 import System.Directory
 import System.Environment
 import System.Exit
 import Data.List
 import Control.Monad
+
+{- qualified imports  -}
+import qualified Distribution.Simple as Cabal (defaultMainArgs)
+import qualified System.Cmd as Cmd (system)
+
+-----------------------------------------------------------------------------
 
 type Suffix = String
 type Grammar = String
@@ -79,8 +83,8 @@ build args =
 -- | Print usage
 usage :: IO ()
 usage = do
-    prog <- getProgName
-    putStrLn $ "Usage: runghc "++ prog ++" (clean|configure|build|test|help|?)"
+  prog <- getProgName
+  putStrLn $ "Usage: runghc "++ prog ++" (clean|configure|build|test|help|?)"
 
 -- | Setup directory for tests
 setupTest :: IO ()
@@ -117,3 +121,5 @@ runTests :: [Grammar] -> ExitCode -> IO [String]
 runTests grams code = do
   retVal <- mapM (runTest code) grams
   return (map (snd) $ filter (\r -> code /= fst r) retVal)
+
+-----------------------------------------------------------------------------

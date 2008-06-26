@@ -3,25 +3,26 @@
 -- |
 -- Module      :  Lexer
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
--- License     :  BSD-style (see the file LICENSE) 
+-- License     :  BSD-style (see the file LICENSE)
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
---
 --
 -- Tree pattern matching language ALEX lexer specification.
 -----------------------------------------------------------------------------
 
 module Parser.Lexer (
-        -- * Classes
-        TokenClass(..),
-        -- * Types
-        Token(..),
-        -- * Functions
-        scanner
-    ) where
+  -- * Types
+  TokenClass(..),
+  Token(..),
+  -- * Functions
+  scanner
+) where
+
+{- unqualified imports  -}
+import Csa.Elem (ElemClass(..))
+
+{- qualified imports  -}
 
 -----------------------------------------------------------------------------
-
-import Csa.Elem (ElemClass(..))
 
 }
 
@@ -109,39 +110,37 @@ CODEGENERATOR :-
 
 
 -- | Token Datatype
-data Token 
-    = ConToken AlexPosn TokenClass String
+data Token = ConToken AlexPosn TokenClass String
 
 instance Eq Token where
-    (==) (ConToken p1 c1 s1) (ConToken p2 c2 s2)
-        = and [p1 == p2, c1 == c2, s1 == s2]
+  (==) (ConToken p1 c1 s1) (ConToken p2 c2 s2) =
+    and [p1 == p2, c1 == c2, s1 == s2]
 
 instance Ord Token where
-    compare t1@(ConToken (AlexPn _ l1 c1) _ _)
-            t2@(ConToken (AlexPn _ l2 c2) _ _)
-        = if (t1 == t2)
-            then EQ
-            else if (l1 < l2)
-                    then LT
-                    else if (l1 == l2)
-                            then 
-                                if (c1 < c2)
-                                    then LT
-                                    else GT
-                            else GT
+  compare t1@(ConToken (AlexPn _ l1 c1) _ _)
+          t2@(ConToken (AlexPn _ l2 c2) _ _) =
+    if (t1 == t2)
+      then EQ
+      else if (l1 < l2)
+        then LT
+        else if (l1 == l2)
+          then 
+            if (c1 < c2)
+              then LT
+              else GT
+          else GT
 
 instance Show Token where
-    show (ConToken pos cl s) 
-        = (showPosn pos) ++" - "++ (show cl) ++" '"++ s
+  show (ConToken pos cl s) = (showPosn pos) ++" - "++ (show cl) ++" '"++ s
 
 instance ElemClass Token where
-    elemShow t = show t
-    elemL (ConToken (AlexPn _ line _) _ _) = line
-    elemC (ConToken (AlexPn _ _ col) _ _) = col
+  elemShow t = show t
+  elemL (ConToken (AlexPn _ line _) _ _) = line
+  elemC (ConToken (AlexPn _ _ col) _ _) = col
 
 -- | Token Classes
-data TokenClass
-  = TCost
+data TokenClass =
+  TCost
   | TSemAction
   | TKeyword
   | TIdent
@@ -168,70 +167,60 @@ data TokenClass
 
 -- | Easily create 'Alex Token'
 mkL :: TokenClass -> AlexInput -> Int -> Alex Token
-mkL c (p,_,str) len 
-    = return (ConToken p c (take len str))
+mkL c (p,_,str) len = return (ConToken p c (take len str))
 
 attrStart :: AlexInput -> Int -> Alex Token
-attrStart inp@(p,_,str) pos 
-    = do
-        alexSetStartCode attr
-        return (ConToken p TAttrStart "<:")
+attrStart inp@(p,_,str) pos = do
+  alexSetStartCode attr
+  return (ConToken p TAttrStart "<:")
 
 attrEnd :: AlexInput -> Int -> Alex Token
-attrEnd inp@(p,_,str) pos 
-    = do
-        alexSetStartCode 0
-        return (ConToken p TAttrEnd ":>")
+attrEnd inp@(p,_,str) pos = do
+  alexSetStartCode 0
+  return (ConToken p TAttrEnd ":>")
 
 -- @TODO: revert escaped \:\) which may be in semantic action
 semanticAction :: Char -> Char -> AlexInput -> Int -> Alex Token
-semanticAction dot end _ _
-    = do
-        input <- alexGetInput
-        go 1 [] input
-    where
-        go :: Int -> [Char] -> AlexInput -> Alex Token
-        go 0 xs input 
-            = do
-                alexSetInput input
-                return (ConToken ((\(p,_,_) -> p) input) TSemAction xs)
-        go n xs input
-            = do
-                case alexGetChar input of
-                    Nothing -> err input
-                    Just (c,input) ->
-                        do
-                            if (c == dot)
-                                then isCloseParen c input
-                                else go n (xs ++ [c]) input
-            where
-                isCloseParen :: Char -> AlexInput -> Alex Token
-                isCloseParen ch input
-                    = do
-                        case alexGetChar input of
-                            Nothing -> err input
-                            Just (c,inp) -> if (c == end) 
-                                                then go 0 xs inp
-                                                else go n (xs ++ [ch] ++ [c]) inp
-            
-        err :: AlexInput -> Alex Token
-        err input
-            = do
-                alexSetInput input
-                lexError "Lexical Error in semantic action"
+semanticAction dot end _ _ = do
+  input <- alexGetInput
+  go 1 [] input
+  where
+    go :: Int -> [Char] -> AlexInput -> Alex Token
+    go 0 xs input = do
+      alexSetInput input
+      return (ConToken ((\(p,_,_) -> p) input) TSemAction xs)
+    go n xs input = do
+      case alexGetChar input of
+        Nothing -> err input
+        Just (c,input) -> do
+          if (c == dot)
+            then isCloseParen c input
+            else go n (xs ++ [c]) input
+      where
+        isCloseParen :: Char -> AlexInput -> Alex Token
+        isCloseParen ch input = do
+          case alexGetChar input of
+            Nothing -> err input
+            Just (c,inp) ->
+              if (c == end)
+                then go 0 xs inp
+                else go n (xs ++ [ch] ++ [c]) inp
+        
+    err :: AlexInput -> Alex Token
+    err input = do
+      alexSetInput input
+      lexError "Lexical Error in semantic action"
 
 showPosn :: AlexPosn -> String
-showPosn (AlexPn _ line col)
-    = "[line:"++ show line ++" col:"++ show col ++"]"
+showPosn (AlexPn _ line col) = "[line:"++ show line ++" col:"++ show col ++"]"
 
 lexError :: String -> Alex Token
-lexError s
-    = do
-        (p,c,input) <- alexGetInput
-        alexError (s ++" "++ showPosn p ++": "++
-               (if (not (null input))
-                 then " at charcter "++ show (head input)
-                 else " at end of file"))
+lexError s = do
+  (p,c,input) <- alexGetInput
+  alexError (s ++" "++ showPosn p ++": "++
+    (if (not $ null input)
+      then " at charcter "++ show (head input)
+      else " at end of file"))
 
 alexEOF :: Alex Token
 alexEOF = return (ConToken undefined TEOF "")
@@ -243,32 +232,31 @@ alexEOF = return (ConToken undefined TEOF "")
 
 -- | scanner. Tokenizes a String into an array of tokens
 scanner :: String -> Either String [Token]
-scanner str
-    = runAlex str $
-        do
-            let accum xs = do {
-                tok@(ConToken p cl s) <- monadScan;
-                if cl == TEOF
-                    then return xs
-                    else do { accum (xs ++ [tok]) }
-                }
-            accum []
+scanner str =
+  runAlex str $
+    do
+      let accum xs =
+            do
+              tok@(ConToken p cl s) <- monadScan;
+              if cl == TEOF
+                then return xs
+                else do { accum (xs ++ [tok]) }
+      (accum [])
 
 skipit :: AlexInput -> Int -> Alex Token
 skipit input len = monadScan
 
 monadScan :: Alex Token
-monadScan
-    = do
-        inp@(p,c,input) <- alexGetInput
-        sc <- alexGetStartCode
-        case alexScan inp sc of
-            AlexEOF -> alexEOF
-            AlexError inp' -> lexError "Lexical Error at "
-            AlexSkip  inp' len -> do
-                            alexSetInput inp'
-                            monadScan
-            AlexToken inp' len action -> do
-                            alexSetInput inp'
-                            action inp len
+monadScan = do
+  inp@(p,c,input) <- alexGetInput
+  sc <- alexGetStartCode
+  case alexScan inp sc of
+    AlexEOF -> alexEOF
+    AlexError inp' -> lexError "Lexical Error at "
+    AlexSkip  inp' len -> do
+      alexSetInput inp'
+      monadScan
+    AlexToken inp' len action -> do
+      alexSetInput inp'
+      action inp len
 }

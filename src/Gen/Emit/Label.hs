@@ -2,14 +2,12 @@
 -- |
 -- Module      :  Label
 -- Copyright   :  Copyright (c) 2007 Igor Boehm - Bytelabs.org. All rights reserved.
--- License     :  BSD-style (see the file LICENSE) 
+-- License     :  BSD-style (see the file LICENSE)
 -- Author      :  Igor Boehm  <igor@bytelabs.org>
---
 --
 -- Non terminals defined in our tree pattern matching language, as well as
 -- rule labels generated during the tiling phase, and others use these 
--- functions in order to guarantee consistent naming.
---
+-- functions in order to guarantee consistent naming conventions.
 -----------------------------------------------------------------------------
 
 module Gen.Emit.Label (
@@ -19,40 +17,44 @@ module Gen.Emit.Label (
         termToEnumLab, prodToEnumLab,
         termToEvalLab,
         childCallLab,
-    ) where
+) where
 
+{- unqualified imports  -}
 import Util (stringToUpper)
 
 import Ast.Term (TermClass(..))
 import Ast.Def (Definition)
 import Ast.Prod (Production)
+
+{- qualified imports  -}
+
 ------------------------------------------------------------------------------------
 
 type Label = String
 type Suffix = String
 
--- | Non terminal labels
+{- | Non terminal labels. -}
 termToEnumLab :: TermClass a => a -> Label
 termToEnumLab t | (isTerminal t) = stringToUpper (show $ getId t)
 termToEnumLab t = "NT_"++ stringToUpper (show $ getId t)
 
--- | evaluation method labels
+{- | Evaluation method labels. -}
 termToEvalLab :: TermClass a => a -> Label
-termToEvalLab t | (isTerminal t) = error "\nERROR: Can not generate EVAL label for Terminal: "++ (show (getId t))
+termToEvalLab t | (isTerminal t) =
+  error "\nERROR: Can not generate EVAL label for Terminal: "++ (show (getId t))
 termToEvalLab t = "eval_"++ (show $ getId t)
 
-
--- | Rule labels
+{- | Rule labels. -}
 prodToEnumLab :: Definition -> Production -> Suffix -> Label
-prodToEnumLab def prod suffix
-    = "R_"++
-        stringToUpper (show $ getId def) ++
-        "_"++ stringToUpper (show $ getId prod) ++
-        "_"++ suffix
+prodToEnumLab def prod suffix =
+  "R_"++
+  stringToUpper (show $ getId def) ++
+  "_"++ stringToUpper (show $ getId prod) ++
+  "_"++ suffix
 
--- | Labels for accessing child nodes:
---      * 'n.child0()' or 'n.child1()' for left and right child
+{- | Labels for accessing child nodes:
+      * 'n.child0()' or 'n.child1()' for left and right child -}
 childCallLab :: Show a => a -> String
 childCallLab str = "child"++ (show str)
 
-
+------------------------------------------------------------------------------------

@@ -78,23 +78,18 @@ executable hburg
       Gen.Emit
       Gen.Backend
       Gen.Ident
-      Gen.Emit.Enums
-      Gen.Emit.Eval
-      Gen.Emit.NodeIface
-      Gen.Emit.Tile
-      Gen.Emit.Class
       Gen.Emit.Label
-      Gen.Emit.Java.Class
-      Gen.Emit.Java.Comment
-      Gen.Emit.Java.Constructor
       Gen.Emit.Java.Enum
+      Gen.Emit.Java.Eval
+      Gen.Emit.Java.Tile
+      Gen.Emit.Java.Class
       Gen.Emit.Java.Method
       Gen.Emit.Java.Modifier
-      Gen.Emit.Java.Parameter
-      Gen.Emit.Java.Variable
+      Gen.Emit.Java.Param
+      Gen.Emit.Java.Var
       Parser.Lexer
       Parser.Parser
-      Parser.ParseErr
+      Parser.Messages
   ghc-options: -O
       -funbox-strict-fields 
       -fglasgow-exts 
