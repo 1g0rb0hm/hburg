@@ -17,6 +17,7 @@ Description:
     information see "http://www.bytelabs.org/pub/papers/hburg07.pdf".
 Stability:      Experimental
 cabal-version: >=1.2
+build-type: Simple
 extra-source-files:
     TODO
     test/01-grammar.tpg
@@ -91,9 +92,10 @@ executable hburg
       Parser.Lexer
       Parser.Parser
       Parser.Messages
-  ghc-options: -O
+  Extensions:
+      GADTs
+  ghc-options:
       -funbox-strict-fields 
-      -fglasgow-exts 
       -fwarn-unused-imports 
       -fwarn-duplicate-exports 
       -fwarn-incomplete-patterns 
