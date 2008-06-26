@@ -1,6 +1,6 @@
 -- Package Stanza
 Name:           hburg
-Version:        1.1.1
+Version:        1.1.2
 License:        BSD3
 License-file:   LICENSE
 Author:         Igor Boehm <igor@bytelabs.org>
@@ -79,6 +79,7 @@ executable hburg
       Gen.Backend
       Gen.Ident
       Gen.Emit.Label
+      Gen.Emit.Java.Generator
       Gen.Emit.Java.Enum
       Gen.Emit.Java.Eval
       Gen.Emit.Java.Tile
