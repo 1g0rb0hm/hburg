@@ -42,10 +42,10 @@ main = do
       if (not $ null $ filter (isSuffixOf "test") args)
         then do
           -- run valid grammars
-          good <- liftM id $ inputFiles "test/" ".tpg"
+          good <- inputFiles "test/" ".tpg"
           resultGood <- runTests good ExitSuccess
           -- run grammars that should trigger errors
-          bad <- liftM id $ inputFiles "test/errors/" ".tpg"
+          bad <- inputFiles "test/errors/" ".tpg"
           resultBad <- runTests bad (ExitFailure 1)
           putStrLn $ seperator ++ "\n"
           -- print out summary
