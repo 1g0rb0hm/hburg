@@ -29,7 +29,7 @@ import qualified Csa.Elem as E (ElemClass(..), Elem, new)
 {- | typeErr. Produces error message upon type error. -}
 typeErr :: E.Elem -> Int -> String -> String
 typeErr e i msg = "[line:"++ show (E.elemL e) ++
-  " col:"++ show (E.elemC e) ++"] Type error: parameter "++
+  " col:"++ show (E.elemC e) ++"] Type Error: parameter "++
   show i ++" of "++ msg
 
 {- | parseErrRedef. Produces error message upon the
@@ -61,6 +61,6 @@ parseErrTok tok msg = parseErrElem (E.new tok) msg
 {- | parseErrElem. Generic error message. -}
 parseErrElem :: E.Elem -> String -> String
 parseErrElem e msg = "[line:"++ show (E.elemL e) ++
-  " col:"++ show (E.elemC e) ++"] Parse Error: "++ msg
+  " col:"++ show (E.elemC e) ++"] Error: "++ msg
 
 -----------------------------------------------------------------------------

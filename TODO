@@ -16,12 +16,21 @@ TILING
    right away since no patterns have been recorded for them
    anyway.
 
+ERROR HANDLING
+----------------------------------------------------
+
+ * Provide hooks to register custom error handling functions
+   in case of errors when 'tiling' or 'evaluating' the IR.
+   Currently this is hard coded.
+
 CODE GENERATION
 ----------------------------------------------------
 
  * Provide more cues as comments in the generated code
-    in order to aid the user while pin pointing bugs in
-    semantic actions to actually generated code.
+   in order to aid the user while pin pointing bugs in
+   semantic actions to actually generated code.
+
+ * Use pretty-printer library in code generator.
 
 Grammar
 ----------------------------------------------------
@@ -40,7 +49,7 @@ Grammar
 
     -> Status Quo: the first production is used as the start symbol.
         PROS: No new keywords must be defined.
-        CONS: Rule order is matters for the first production.
+        CONS: Rule order matters for the first production.
 
 Testing
 ----------------------------------------------------

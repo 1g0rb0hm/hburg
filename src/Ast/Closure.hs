@@ -62,7 +62,8 @@ closure defs =
           (\a -> -- alter function
             let r = L { toL = P.getResultLabel p
                       , ruleL = P.getRuleLabel p
-                      , cost = P.getCost p} in
+                      , cost = P.getCost p}
+            in
             if (isJust a)
                 then Just $ S.insert r (fromJust a)
                 else Just $ S.singleton r)

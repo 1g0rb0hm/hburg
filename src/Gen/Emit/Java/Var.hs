@@ -16,6 +16,9 @@ module Gen.Emit.Java.Var (
 ) where
 
 {- unqualified imports  -}
+import Text.PrettyPrint
+
+import Gen.Document (Document(..))
 import Gen.Emit.Java.Modifier (Modifier)
 
 {- qualified imports  -}
@@ -26,26 +29,34 @@ type Type = String
 type Constructor = String
 
 data Var =
-  MkVar
-    Modifier    -- private|public|protected modifier
-    Bool        -- is it static?
-    Type        -- variable type
-    String      -- variable identifier
-    Constructor -- how to construct the variable (e.g. new EnumSet.of(blablabla))
+  Var { modifier  :: Modifier     -- private|public|protected modifier
+      , isStatic  :: Bool         -- is it static?
+      , type'     :: Type         -- variable type
+      , ident     :: String       -- variable identifier
+      , construct :: Constructor} -- how to construct the variable (e.g. new EnumSet.of(blablabla))
   deriving (Eq)
 
 instance Show Var where
-    show (MkVar modifier isStat ty ident constructor) =
-      " "++ (show modifier) ++" "++           -- modifier
-      (if (isStat) then "static " else " ") ++  -- is it static ?
-      ty ++" "++                                -- type
-      ident ++                                  -- identifier
-      if (null constructor)
-        then ";"
-        else " = "++ constructor ++";"        -- how to construct it?
+    show v = render . toDoc $ v
+
+instance Document Var where
+  toDoc v = toDoc (modifier v)    -- modifier
+    <+> (if (isStatic v)          -- is it statis?
+      then text "static"
+      else empty)
+    <+> (text $ type' v)          -- type
+    <+> (text $ ident v)          -- identifier
+    <+> (if (null $ construct v)  -- do we need to construct it?
+      then semi
+      else equals <+> (text . construct $ v) <> semi)
 
 -- | Constructor for building a new Var
 new :: Modifier -> Bool -> Type -> String -> Constructor -> Var
-new m stat ty i con = MkVar m stat ty i con
+new m stat ty i con =
+  Var { modifier = m
+      , isStatic = stat
+      , type' = ty
+      , ident = i
+      , construct = con}
 
 ------------------------------------------------------------------------------------

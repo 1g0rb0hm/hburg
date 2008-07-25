@@ -72,15 +72,16 @@ computeTyMap ds =
             let typeSet =
                   S.insert
                     (getId d)
-                    (computeTypeSet d (filter (\x -> x /= d) ds) S.empty) in
+                    (computeTypeSet d (filter (\x -> x /= d) ds) S.empty)
             -- 1.1 Insert non terminal being defined into TyMap
-            let m'' =
+                m'' =
                   if (M.notMember (getId d) m')
                     then M.insert (getId d) (tyEntry N.empty typeSet []) m'
                     else let ent = m' M.! (getId d) in
                       M.insert
                         (getId d)
-                        (tyEntry (node ent) (S.union typeSet (returns ent)) (params ent)) m' in
+                        (tyEntry (node ent) (S.union typeSet (returns ent)) (params ent)) m'
+            in
             -- 1.2 Insert productions (a.k.a. right hand sides of definitions) into TyMap
             foldr
               (\p m''' ->
@@ -155,10 +156,11 @@ checkDef d =
 checkProd :: [P.Production] -> P.Production -> Either (N.Node, N.Node) [P.Production]
 checkProd [] _ = Right []
 checkProd prods p =
-  let new = P.getNode p in
-  let errProd = find
-                  (\n -> (P.getNode n) /= new) 
-                  (P.getProdsByIdent prods new) in
+  let new = P.getNode p
+      errProd = find
+                  (\n -> (P.getNode n) /= new)
+                  (P.getProdsByIdent prods new)
+  in
   case errProd of
     Nothing -> Right (p:prods)
     Just err -> Left (new, P.getNode err)
@@ -169,10 +171,10 @@ checkProd prods p =
 checkCtx :: [D.Definition] -> Ctx.Ctx -> Maybe [String]
 checkCtx [] ctx = Nothing
 checkCtx defs ctx =
-  let tymap = computeTyMap defs in
-  let pnodes = concatMap (\x -> (map (P.getNode) (D.getProds x))) (defs) in
-  let results =
-        concatMap -- traverse AST in preorder an collect CSA results
+  let tymap = computeTyMap defs
+      pnodes = concatMap (\x -> (map (P.getNode) (D.getProds x))) (defs)
+      results =
+        concatMap -- traverse AST in preorder and collect CSA results
           (\p ->
             N.mapPreOrder
               (\n -> -- 1. Check if node is in Context
@@ -202,9 +204,10 @@ checkCtx defs ctx =
                     Just (parseErrElem (E.new n) (show (E.elemType n) ++" '"++
                         E.elemShow n ++"' is undefined.")))
               p)
-          pnodes in
-  -- Evaluate CSA results
-  let errors = map (fromJust) (filter (isJust) (results)) in
+          pnodes
+      -- Evaluate CSA results
+      errors = map (fromJust) (filter (isJust) (results))
+  in
   -- In case there are errors return them
   if (null errors)
     then Nothing
@@ -217,13 +220,13 @@ typeCheck n _ | (N.isNil n) = Nothing
 typeCheck n tymap =
   if (isTerminal n) -- Only T's are of interest for type checking.
     then
-      let ent = tymap M.! (getId n) in
-      {- A Terminal can be regarded as a function that has parameters. We must
-        check that the supplied parameters are in line with what the Terminal (i.e. function)
-        expects. We do this by looking at the child nodes of the Terminal in our
-        and comparing their return types to the expected parameter types of the
-        Terminal. -}
-      let results =
+      let ent = tymap M.! (getId n)
+          {- A Terminal can be regarded as a function that has parameters. We must
+            check that the supplied parameters are in line with what the Terminal (i.e. function)
+            expects. We do this by looking at the child nodes of the Terminal in our
+            and comparing their return types to the expected parameter types of the
+            Terminal. -}
+          results =
             map
               (\(p, n', i) -> -- triple containing parameter, actual node in AST, its index
                 if (M.member (getId n') tymap)
@@ -245,9 +248,10 @@ typeCheck n tymap =
                     Nothing)
               (zip3 (params ent)
                     (N.getChildren n)
-                    ((\x -> reverse $ take (length x) [1..]) (params ent))) in
-      -- Evaluate errors
-      let errors = map (fromJust) (filter (isJust) (results)) in
+                    ((\x -> reverse $ take (length x) [1..]) (params ent)))
+          -- Evaluate errors
+          errors = map (fromJust) (filter (isJust) (results))
+      in
       -- In case there are errors return them
       if (null errors)
         then Nothing

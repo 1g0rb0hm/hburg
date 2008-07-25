@@ -63,7 +63,7 @@ data CLIFlags =
   | OptDebug
   deriving (Eq)
 
-{- | Command line infor for arguments -}
+{- | Command line info for arguments -}
 argInfo :: [OptDescr CLIFlags]
 argInfo =
   [Option [ '?' ] ["help"] (NoArg OptHelp)

@@ -17,6 +17,9 @@ module Gen.Emit.Java.Param (
 ) where
 
 {- unqualified imports  -}
+import Text.PrettyPrint
+
+import Gen.Document (Document(..))
 
 {- qualified imports  -}
 
@@ -29,9 +32,12 @@ data Param = Param (Type, Ident)
   deriving (Eq)
 
 instance Show Param where
-  show (Param (ty,i)) | (ty == "") = i
-  show (Param (ty,i)) | (i == "") = ty
-  show (Param (ty,i)) = ty ++" "++ i
+  show p = render . toDoc $ p
+
+instance Document Param where
+  toDoc (Param ([],i))  = text i
+  toDoc (Param (ty,[])) = text ty
+  toDoc (Param (ty,i))  = text ty <+> text i
 
 -- | Constructor for building a new Param
 new :: Type -> Ident -> Param

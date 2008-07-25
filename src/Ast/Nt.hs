@@ -17,7 +17,6 @@ module Ast.Nt (
 ) where
 
 {- unqualified imports  -}
-import Util (stringFoldr)
 
 import Ast.Attr(Attr, attrIsOut)
 
@@ -66,7 +65,7 @@ instance Show Nt where
       then " "
       else "") ++
     show b ++"]<."++
-    (stringFoldr
+    (foldr1
       (\x y -> x ++", "++ y)
       (map (show) atts))  ++".>"
 
@@ -75,7 +74,7 @@ instance E.ElemClass Nt where
   elemShow (Nt i _ []) = show i
   elemShow (Nt i _ atts)  =
     show i ++"<."++
-    (stringFoldr
+    (foldr1
       (\x y -> x ++" param, "++ y ++" param")
       (map (\z -> show (attrIsOut z)) atts)) ++".>"
   elemType _ = E.ENonTerm

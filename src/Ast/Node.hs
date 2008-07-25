@@ -81,19 +81,20 @@ instance Eq Node where
   (==) _ _ = False
 
 instance Show Node where
-  show (Nil) = "Nil"
-  show n = show (term n) ++":"++
+  showsPrec _ (Nil) = showString ""
+  showsPrec _ n =
+    shows (term n) . (':' :) .
     (if (hasLink n)
-      then " {Link: "++ show (term (link n)) ++ "}"
-      else " ") ++
-    (showChildren (child n) 1)
+      then showString " { Link: " . shows (term $ link n) . ('}' :)
+      else (' ' :)) .
+    showsChildren (child n) 2
     where
-      showChildren :: Node -> Int -> String
-      showChildren (Nil) _ = ""
-      showChildren n lvl = 
-          "\n"++ (concat $ take lvl $ repeat "   ") ++ show (term n) ++
-          (showChildren (child n) (succ lvl)) ++
-          (showChildren (sibling n) lvl)
+      showsChildren :: Node -> Int -> ShowS
+      showsChildren (Nil) _ = showString ""
+      showsChildren n lvl =
+        ('\n' :) . showString (take (2 * lvl) . repeat $ ' ') . shows (term n) .
+        showsChildren (child n) (succ lvl) .
+        showsChildren (sibling n) lvl
 
 {- | Shows a node like a function 'name(child1, child2, etc.)' -}
 showAsFun :: Node -> String
@@ -255,8 +256,9 @@ mapPreOrder2 f g n =
       [(accum ++ (f pos n), g n)]
     -- Case where Node has children
     accumMap f g pos accum n =
-      let children = (zip [1 .. (length (getChildren n))]  (getChildren n)) in
-      let current = accum ++ (f pos n) in
+      let children = (zip [1 .. (length (getChildren n))]  (getChildren n))
+          current = accum ++ (f pos n)
+      in
       (current, g n) : concat [ accumMap f g index current node  | (index, node) <- children ]
 
 
@@ -286,11 +288,12 @@ mapPreOrder3 path pre post n =
       [(curpath, (pre curpath n) ++ (post curpath n), n)]
     -- Case where Node has children
     accumMap path pre post pos accum n =
-      let children = (zip [1 .. (length (getChildren n))]  (getChildren n)) in
-      let curpath = accum ++ (path pos n) in
-      let precode = pre curpath n in
-      let postcode = post curpath n in
-      let between = concat [ accumMap path pre post index curpath node  | (index, node) <- children ] in
+      let children = (zip [1 .. (length (getChildren n))]  (getChildren n))
+          curpath = accum ++ (path pos n)
+          precode = pre curpath n
+          postcode = post curpath n
+          between = concat [ accumMap path pre post index curpath node  | (index, node) <- children ]
+      in
       [(curpath, precode, n)] ++ between ++ [(curpath, postcode, n)]
 
 -----------------------------------------------------------------------------

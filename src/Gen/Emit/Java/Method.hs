@@ -16,8 +16,9 @@ module Gen.Emit.Java.Method (
 ) where
 
 {- unqualified imports  -}
-import Util (stringFoldr)
+import Text.PrettyPrint
 
+import Gen.Document (Document(..))
 import Gen.Emit.Java.Modifier (Modifier)
 import Gen.Emit.Java.Param (Param)
 
@@ -26,7 +27,7 @@ import Gen.Emit.Java.Param (Param)
 -----------------------------------------------------------------------------
 
 type Type = String
-type Body = String
+type Body = Doc
 
 data Method =
   Method { modifier    :: Modifier -- ^ public|private|protected modifiers
@@ -43,15 +44,38 @@ instance Eq Method where
     ((ty1 == ty2 && n1 == n2) && p1 == p2)
 
 instance Show Method where
+  show m = render . toDoc $ m
+
+instance Document Method where
   -- Interface definition.
-  show m | (isIface m) = getSignature m ++";"
-  
+  toDoc m | (isIface m) = getSignature m <> semi
   -- Regular method.
-  show m =
-    getSignature m ++" {\n"++
-    -- method body
-    (body m) ++
-    "\n} // END METHOD "++ (name m) ++"()"
+  toDoc m =
+      getSignature m
+      <+>
+        lbrace -- method body
+          $+$ (nest 2 $ body $ m) $+$
+        rbrace
+      <+> text "// END METHOD"
+      <+> text (name m)
+
+-- | getSignature. Generate method signature.
+getSignature :: Method -> Doc
+getSignature m =
+  (text . show $ modifier m)    -- public|private|...
+  <+> (if (isStatic m)
+    then text "static"
+    else empty)
+  <+> text (retTy m)            -- return type
+  <+> text (name  m)            -- method identifier
+  <>  lparen <>                 -- parameters
+        (if (null $ params m)
+          then empty
+          else
+            foldr1
+              (\p1 p2 -> p1 <> comma <+> p2)
+              (map (toDoc) $ params m)) <>
+      rparen
 
 -- | Constructor for building a Method.
 new :: Modifier -> Bool -> Type -> String -> [Param] -> Body -> Method
@@ -63,16 +87,5 @@ new m static ty str ps b =
          , name = str
          , params = ps
          , body = b}
-
--- | getSignature. Generate method signature.
-getSignature :: Method -> String
-getSignature m =
-  show (modifier m) ++                -- public|private|...
-  (if (isStatic m) then " static " else " ") ++
-  (retTy m) ++" "++                   -- return type
-  (name m) ++" ("++                   -- method identifier
-  (stringFoldr                        -- parameters
-    (\x y -> x ++", "++ y)
-    (map (show) $ params m)) ++")"
 
 -----------------------------------------------------------------------------

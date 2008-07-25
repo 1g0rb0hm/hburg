@@ -18,7 +18,9 @@ module Gen.Emit.Java.Enum (
 {- unqualified imports  -}
 import Prelude hiding (Enum)
 
-import Util (stringFoldr)
+import Text.PrettyPrint
+
+import Gen.Document (Document(..))
 
 import Gen.Emit.Java.Modifier(Modifier)
 
@@ -34,12 +36,23 @@ data Enum =
   deriving (Eq)
 
 instance Show Enum where
-  show (MkEnum modifier ident enums) =
-    " "++ (show modifier) ++" enum "++  -- Modifier
-    ident ++" {\n"++                    -- Identifier
-    (stringFoldr
-      (\x y -> "\t"++ x ++",\n"++ y)
-      enums) ++"};\n"                   -- Enumeration
+  show e = render . toDoc $ e
+
+instance Document Enum where
+  toDoc (MkEnum modifier ident enums) =
+    toDoc modifier <+> text "enum"    -- Modifier
+    <+> text ident                    -- Identifier
+    <+> 
+      lbrace
+        $+$
+        (if (null enums)              -- Enumeration
+          then empty
+          else
+            foldr1
+              (\e1 e2 -> nest 2 e1 <> comma $+$ nest 2 e2)
+              (map (text) enums))
+        $+$
+      rbrace
 
 -- | Constructor for building a Modifier
 new :: Modifier -> String -> [String] -> Enum

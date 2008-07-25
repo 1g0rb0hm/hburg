@@ -17,9 +17,12 @@ module Gen.Emit.Java.Class (
 ) where
 
 {- unqualified imports  -}
-import Util (stringFoldr)
+
+import Text.PrettyPrint
 
 import System.FilePath.Posix (pathSeparator)
+
+import Gen.Document (Document(..))
 
 import Gen.Emit (Emit(emit,emitTo))
 import Gen.Emit.Java.Enum as E (Enum)
@@ -33,34 +36,34 @@ import qualified Gen.Emit.Java.Method as M (Method(..))
 
 type Package = String
 type Name = String
-type Import = String
-type StaticInit = String
-type NestedClass = Class
-type AdditionalClass = Class
-type UserCode = String
+type Import = Doc
 
 -- | Java Class Type
 data Class =
-  Class { package       :: Package            -- ^ package in which this Java file resides
-        , imports       :: [Import]           -- ^ java import statements
-        , enumerations  :: [E.Enum]           -- ^ defined enumerations
-        , modifier      :: Modifier           -- ^ private|public|protected modifier
-        , isStatic      :: Bool
-        , isFinal       :: Bool
-        , isIface       :: Bool
-        , name          :: Name               -- ^ class name
-        , constructors  :: [M.Method]         -- ^ constructors
-        , staticInit    :: StaticInit         -- ^ static initializer block
-        , variables     :: [Var]              -- ^ java variables
-        , methods       :: [M.Method]         -- ^ java methods
-        , nestedClasses :: [NestedClass]      -- ^ nested classes
-        , moreClasses   :: [AdditionalClass]  -- ^ additional classes
-        , userCode      :: UserCode}          -- ^ user code as defined in the 'declerations' section
+  Class { package       :: Package      -- ^ package in which this Java file resides
+        , imports       :: [Import]     -- ^ java import statements
+        , enumerations  :: [E.Enum]     -- ^ defined enumerations
+        , modifier      :: Modifier     -- ^ private|public|protected modifier
+        , isStatic      :: Bool         
+        , isFinal       :: Bool         
+        , isIface       :: Bool         
+        , name          :: Name         -- ^ class name
+        , constructors  :: [M.Method]   -- ^ constructors
+        , staticInit    :: Doc          -- ^ static initializer block
+        , variables     :: [Var]        -- ^ java variables
+        , methods       :: [M.Method]   -- ^ java methods
+        , nestedClasses :: [Class]      -- ^ nested classes
+        , moreClasses   :: [Class]      -- ^ additional classes
+        , userCode      :: Doc}         -- ^ user code as defined in the 'declerations' section
 
--- | new. Smart constructor.
+{- | Shortcut -}
+t :: String -> Doc
+t = text
+
+{- | new. Smart constructor. -}
 new :: Package -> Name -> Class
-new pack n =
-  Class { package = pack
+new p n =
+  Class { package = p
         , imports = []
         , enumerations = []
         , modifier = Public
@@ -69,75 +72,86 @@ new pack n =
         , isIface  = False
         , name = n
         , constructors = []
-        , staticInit = ""
+        , staticInit = empty
         , variables = []
         , methods = []
         , nestedClasses = []
         , moreClasses = []
-        , userCode = ""
-        }
+        , userCode = empty}
 
 instance Emit Class where
-  emit clazz = show clazz
-  emitTo clazz =
+  emit c = show c
+  emitTo c =
     let dir = map
-                (\c -> if (c == '.') then pathSeparator else c)
-                (package clazz) in
-    if (not $ null dir)
-      then dir ++ [pathSeparator] ++ (name clazz) ++".java"
-      else (name clazz) ++".java"
+                (\c' ->
+                  if (c' == '.')
+                    then pathSeparator
+                    else c')
+                (package c) in
+    if (null dir)
+      then (name c) ++".java"
+      else dir ++ [pathSeparator] ++ (name c) ++".java"
 
 instance Show Class where
-  -- Interface.
-  show clazz | (isIface clazz) =
-    packageDef clazz ++ importDefs clazz ++
-    show (modifier clazz) ++" interface "++
-    name clazz ++" {\n"++
-    (foldWith "\n" [ "\t"++ show (z { M.isIface = True }) | z <- methods clazz])
-    ++"\n\n} // END INTERFACE "++ name clazz ++"\n"
-  
-  -- Enumeration.
-  show clazz | (enumerations clazz /= []) =
-    packageDef clazz ++ importDefs clazz ++
-    -- Enumerations
-    (foldWith "\n" [ show z | z <- enumerations clazz ]) ++"\n"
-  
-  -- Regular class.
-  show clazz =
-    packageDef clazz ++ importDefs clazz ++
-    -- Class name
-    show (modifier clazz) ++
-    (\b -> if (b) then " static " else " " ) (isStatic clazz)  ++"class "++
-    name clazz ++" {\n"++
-    -- Class Constructors
-    (foldWith "\n"  [ show z | z <- constructors clazz ]) ++"\n"++
-    -- Static initializers
-    staticInit clazz ++"\n"++
-    -- User Code
-    userCode clazz ++
-    -- Class and instance variables
-    (foldWith "\n" [ show z | z <- variables clazz ]) ++"\n\n"++
-    -- Methods
-    (foldWith "\n\n" [ show z | z <- methods clazz ]) ++"\n"++
-    -- Nested Classes
-    (foldWith "\n" [ show z | z <- nestedClasses clazz ]) ++"\n"++
-    -- Class End
-    "\n} // END CLASS "++ name clazz ++"\n"++
-    -- Additional Classes
-    (foldWith "\n" [ show z | z <- moreClasses clazz ]) ++"\n"
+  show c = render . toDoc $ c
 
--- | foldWith.
-foldWith :: String -> [String] -> String
-foldWith z strs = stringFoldr (\x y -> x ++ z ++ y) (strs)
+instance Document Class where
+  -- Interface
+  toDoc c
+    | isIface c =
+      packageDef c
+      $+$ (vcat . imports $ c)
+      $+$ toDoc (modifier c) <+> t "interface" <+> t (name c)
+      <+> lbrace
+        $+$ nest 2 (
+          vcat (map
+                (\z -> toDoc z { M.isIface = True})
+                (methods c)))
+      $+$ rbrace <+> t "// END INTERFACE"
+      
+  -- Enumeration
+  toDoc c
+    | not . null . enumerations $ c =
+      packageDef c
+      $+$ (vcat . imports $ c)
+      $+$ vcat (map (toDoc) (enumerations c))
+  
+  -- Class
+  toDoc c = packageDef c
+    $+$ (vcat . imports $ c)
+    -- Class name
+    $+$ (toDoc . modifier $ c)
+    <+> (if (isStatic c)
+      then t "static"
+      else empty)
+    <+> t "class" <+> t (name c)
+    <+> lbrace
+      $+$ nest 2 (
+        -- Class constructorcs
+        (vcat . toDocs . constructors $ c)
+        -- Static initializers
+        $+$ staticInit c
+        -- User code
+        $+$ (if (isEmpty $ userCode c)
+          then empty
+          else t "// @USER CODE START"
+            $+$ userCode c 
+            $+$ t "// @USER CODE END")
+        -- Class and instance variables
+        $+$ (vcat . toDocs . variables $ c)
+        -- Methods
+        $+$ (vcat . toDocs . methods $ c)
+        -- Nested classes
+        $+$ (vcat . toDocs . nestedClasses $ c))
+    $+$ rbrace <+> t "// END CLASS" <+> t (name c)
+    -- Additional classes
+    $+$ (vcat . toDocs . moreClasses $ c)
 
 -- | packageDef.
-packageDef :: Class -> String
-packageDef clazz = if (null $ package clazz)
-        then ""
-        else "package "++ package clazz ++";\n\n"
-
--- | importDefs.
-importDefs :: Class -> String
-importDefs clazz = (foldWith "\n" (imports clazz)) ++"\n\n"
+packageDef :: Class -> Doc
+packageDef c =
+  if (null $ package c)
+    then empty
+    else t "package" <+> t (package c) <> semi
 
 -----------------------------------------------------------------------------

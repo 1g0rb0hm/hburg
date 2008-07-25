@@ -14,6 +14,9 @@ module Gen.Emit.Java.Modifier (
 ) where
 
 {- unqualified imports  -}
+import Text.PrettyPrint
+
+import Gen.Document (Document(..))
 
 {- qualified imports  -}
 
@@ -28,9 +31,12 @@ data Modifier =
   deriving (Eq)
 
 instance Show Modifier where
-  show (Protected) = "protected"
-  show (Public) = "public"
-  show (Private) = "private"
-  show (NoModifier) = ""
+  show m = render . toDoc $ m
+
+instance Document Modifier where
+  toDoc (Protected) = text "protected"
+  toDoc (Public) = text "public"
+  toDoc (Private) = text "private"
+  toDoc (NoModifier) = empty
 
 -----------------------------------------------------------------------------

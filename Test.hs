@@ -35,6 +35,7 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
+    [] -> usage
     xs | not $ null $ filter (\x -> "help" `isSuffixOf` x || "?" `isSuffixOf` x) xs
       -> usage
     _ -> do
@@ -49,13 +50,13 @@ main = do
           resultBad <- runTests bad (ExitFailure 1)
           putStrLn $ seperator ++ "\n"
           -- print out summary
-          if (null $ resultBad ++ resultGood)
+          let results = resultBad ++ resultGood
+          if (null results)
             then
               -- success case
               putStrLn $ (show $ length $ good ++ bad) ++ " Tests Successful!\n"
             else
               -- some tests failed
-              let results = resultGood ++ resultBad in
               do
                 putStrLn $ (show $ length results) ++ " of " ++
                            (show $ length $ good ++ bad) ++ " Tests Failed!\n"

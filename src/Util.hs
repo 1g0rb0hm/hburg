@@ -10,13 +10,12 @@
 
 module Util (
    -- Functions
-   stringToInt,
-   stringToUpper,
-   stringFoldr,
+   toInt,
+   toUpper,
 ) where
 
 {- unqualified imports  -}
-import Data.Char
+import qualified Data.Char as C (ord, toUpper)
 
 {- qualified imports  -}
 
@@ -32,25 +31,20 @@ stToInt base digits =
     splitSign ds         = ( 1  , ds)
     (sign, digits1)      = splitSign digits
     digToInt c  | c >= '0' && c <= '9'
-                      = [ord c - ord '0']
+                      = [C.ord c - C.ord '0']
                 | c >= 'A' && c <= 'Z'
-                      =  [ord c - ord 'A' + 10]
+                      =  [C.ord c - C.ord 'A' + 10]
                 | c >= 'a' && c <= 'z'
-                      =  [ord c - ord 'a' + 10]
+                      =  [C.ord c - C.ord 'a' + 10]
                 | otherwise = []
     acc i1 i0 = i1 * base + i0
 
-{- | stringToInt. Convert String to Int. -}
-stringToInt :: String -> Int
-stringToInt str = stToInt 10 str
+{- | toInt. Convert String to Int. -}
+toInt :: String -> Int
+toInt str = stToInt 10 str
 
-{- | stringToUpper. -}
-stringToUpper :: String -> String
-stringToUpper str = map (toUpper) (str)
-
-{- | stringFoldr. -}
-stringFoldr :: (String -> String -> String) -> [String] -> String
-stringFoldr f [] = ""
-stringFoldr f xs = foldr1 f xs
+{- | toUpper. Convert String to upper case String -}
+toUpper :: String -> String
+toUpper str = map (C.toUpper) (str)
 
 ------------------------------------------------------------------------------------

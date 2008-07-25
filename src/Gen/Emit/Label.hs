@@ -20,7 +20,7 @@ module Gen.Emit.Label (
 ) where
 
 {- unqualified imports  -}
-import Util (stringToUpper)
+import Util (toUpper)
 
 import Ast.Term (TermClass(..))
 import Ast.Def (Definition)
@@ -35,21 +35,21 @@ type Suffix = String
 
 {- | Non terminal labels. -}
 termToEnumLab :: TermClass a => a -> Label
-termToEnumLab t | (isTerminal t) = stringToUpper (show $ getId t)
-termToEnumLab t = "NT_"++ stringToUpper (show $ getId t)
+termToEnumLab t | (isTerminal t) = toUpper . show $ getId t
+termToEnumLab t = "NT_"++ (toUpper . show $ getId t)
 
 {- | Evaluation method labels. -}
 termToEvalLab :: TermClass a => a -> Label
 termToEvalLab t | (isTerminal t) =
-  error "\nERROR: Can not generate EVAL label for Terminal: "++ (show (getId t))
+  error "\nERROR: Can not generate EVAL label for Terminal: "++ (show $ getId t)
 termToEvalLab t = "eval_"++ (show $ getId t)
 
 {- | Rule labels. -}
 prodToEnumLab :: Definition -> Production -> Suffix -> Label
 prodToEnumLab def prod suffix =
   "R_"++
-  stringToUpper (show $ getId def) ++
-  "_"++ stringToUpper (show $ getId prod) ++
+  (toUpper . show $ getId def) ++
+  "_"++ (toUpper . show $ getId prod) ++
   "_"++ suffix
 
 {- | Labels for accessing child nodes:

@@ -52,7 +52,7 @@ executable hburg
     else
       build-depends: base >= 1.0
 
-    build-depends: haskell98 >= 1.0, filepath, mtl
+    build-depends: haskell98 >= 1.0, filepath, mtl, pretty
 
   other-modules:
       Util
@@ -79,6 +79,7 @@ executable hburg
       Gen.Emit
       Gen.Backend
       Gen.Ident
+      Gen.Document
       Gen.Emit.Label
       Gen.Emit.Java.Generator
       Gen.Emit.Java.Enum

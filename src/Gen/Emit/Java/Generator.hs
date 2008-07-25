@@ -22,7 +22,8 @@ module Gen.Emit.Java.Generator (
 
 {- unqualified imports  -}
 import Control.Monad.State
-import Util (stringFoldr)
+
+import Text.PrettyPrint
 
 import Ast.Def (Definition, getProds, setProds)
 import Ast.Prod (Production, setRuleLabel, setResultLabel)
@@ -55,21 +56,23 @@ type PackageName = String
 type Children = Int
 type Link = Bool
 type KindReturn = String
+type Package = I.Ident
 
 -- | generate. Generate all necessary classes and interfaces
-generate :: ClassName -> I.Ident -> NodeKind -> Ir.Ir -> [C.Class]
-generate cname ids nkind ir =
-  let (ir', enums) = enumerationClasses ids ir in -- enum classes (sideffect on Ir)
-  let tile = Tile.tile ids nkind ir' in           -- tiling class
-  let eval = Eval.eval ids ir' in                 -- eval class
-  let nodeInterface = nodeInterfaceClass          -- node interface class
-                (ids)
-                -- max. amount of children node can have
-                (fst (M.findMax $ Ir.baseRuleMap ir))
-                (not (S.null $ Ir.linkSet ir))
-                nkind in
-  let mapEntry = mapEntryClass ids in             -- mapEntry class
-  let codeGenerator = codeGeneratorClass cname ids tile eval ir' in
+generate :: ClassName -> Package -> NodeKind -> Ir.Ir -> [C.Class]
+generate cname pkg ntype ir =
+  let (ir', enums) = enumerationClasses pkg ir  -- enum classes (sideffect on Ir)
+      tile = Tile.tile pkg ntype ir'            -- tiling class
+      eval = Eval.eval pkg ir'                  -- eval class
+      nodeInterface =
+        nodeInterfaceClass                      -- node interface class
+          (pkg)
+          (fst (M.findMax $ Ir.baseRuleMap ir)) -- max. amount of children node can have
+          (not (S.null $ Ir.linkSet ir))        -- is it a tree with links?
+          ntype                                 -- Node tyoe
+      mapEntry = mapEntryClass pkg              -- mapEntry class
+      codeGenerator = codeGeneratorClass cname pkg tile eval ir'
+  in
   -- return generated classes
   [  codeGenerator  -- Code generator class
   ,  mapEntry       -- Entry class
@@ -81,18 +84,19 @@ generate cname ids nkind ir =
 --   productions in the IR.
 enumerationClasses :: I.Ident -> Ir.Ir -> (Ir.Ir, [C.Class])
 enumerationClasses ids ir =
-  let ntClass = C.new (I.pkgId ids) (I.ntN ids) in
-  let ruleClass = C.new (I.pkgId ids) (I.rN ids) in
-  let (ir', rules) = genRuleEnums in
+  let ntClass = C.new (I.pkgId ids) (I.ntN ids)
+      ruleClass = C.new (I.pkgId ids) (I.rN ids)
+      (ir', rules) = ruleEnums
+  in
   -- return modified IR and enumeration Classes
-  (ir', [ntClass {C.enumerations = [genNtEnums]}, ruleClass {C.enumerations = [rules]}])
+  (ir', [ntClass {C.enumerations = [ntEnums]}, ruleClass {C.enumerations = [rules]}])
   where
     -- | Generates Java Enumeration for NonTerminals
-    genNtEnums :: E.Enum
-    genNtEnums = E.new Public (I.ntN ids) (map (termToEnumLab) (Ir.definitions ir))
+    ntEnums :: E.Enum
+    ntEnums = E.new Public (I.ntN ids) (map (termToEnumLab) (Ir.definitions ir))
     -- | Generates Java Enumeration for rules and stores rule labels with productions.
-    genRuleEnums :: (Ir.Ir, E.Enum)
-    genRuleEnums =
+    ruleEnums :: (Ir.Ir, E.Enum)
+    ruleEnums =
       let (ndefs, labels) =
             unzip
               (map
@@ -105,13 +109,13 @@ enumerationClasses ids ir =
         labelProds :: Definition -> [Production] -> Int -> [(Production, Label)]
         labelProds d [] _ = []
         labelProds d (p:ps) num =
-          let label = prodToEnumLab d p (show num) in
-          let prod = evalState
+          let label = prodToEnumLab d p (show num)
+              prod = execState
                           (do
                               modify (\p -> setRuleLabel p label)
-                              modify (\p -> setResultLabel p $ termToEnumLab d)
-                              get)
-                          (p) in
+                              modify (\p -> setResultLabel p $ termToEnumLab d))
+                          (p)
+          in
           (prod, label) : (labelProds d ps (succ num))
 
 
@@ -119,112 +123,113 @@ enumerationClasses ids ir =
 nodeInterfaceClass :: I.Ident -> Children -> Link -> KindReturn -> C.Class
 nodeInterfaceClass ids children hasLnk retTy =
   let methods =
-        genChildMethods ids children ++
-        genKindMethod retTy ++
-        genEntryMethods ids ++
-        (if (hasLnk) then genLinkMethod ids else []) in
-  evalState
+        childMethods ids children ++
+        entryMethods ids ++
+        kindMethod retTy ++
+        (if (hasLnk) then linkMethod ids else []) in
+  execState
     (do
-      modify (\c -> c { C.modifier = Public,
+      modify $ \c -> c {C.modifier = Public,
                         C.isIface = True,
                         C.methods = methods})
-      get)
     (C.new (I.pkgId ids) (I.nN ids))
   where
     -- | Generate Child Node access methods.
-    genChildMethods :: I.Ident -> Children -> [M.Method]
-    genChildMethods ids children =
+    childMethods :: I.Ident -> Children -> [M.Method]
+    childMethods ids children =
       map
         (\arity ->
-          M.new Public False (I.nTy ids) ("child"++ show arity) [] "")
-        ([1 .. children])
+          M.new Public False (I.nTy ids) ("child"++ show arity) [] empty)
+        ([1..children])
 
-    -- | genLinkMethod.
-    genLinkMethod :: I.Ident -> [M.Method]
-    genLinkMethod ids = [M.new Public False (I.nTy ids) "link" [] ""]
+    -- | linkMethod.
+    linkMethod :: I.Ident -> [M.Method]
+    linkMethod ids = [M.new Public False (I.nTy ids) "link" [] empty]
 
     -- | Generate link node access method interface
-    genKindMethod :: KindReturn -> [M.Method]
-    genKindMethod ty = [M.new Public False ty "kind" [] ""]
+    kindMethod :: KindReturn -> [M.Method]
+    kindMethod ty = [M.new Public False ty "kind" [] empty]
 
     -- | Generate Java MapEntry manipulation method interfaces
-    genEntryMethods :: I.Ident -> [M.Method]
-    genEntryMethods ids =
-      [M.new Public False "boolean"    "is"   (P.newFromList [(I.ntTy ids,"nt")]) ""] ++
-      [M.new Public False (I.eTy ids)  "put"  (P.newFromList [(I.ntTy ids,"nt"), (I.eTy ids,"entry")]) ""] ++
-      [M.new Public False (I.eTy ids)  "get"  (P.newFromList [(I.ntTy ids,"nt")]) ""] ++
-      [M.new Public False (I.cTy ids)  "cost" (P.newFromList [(I.ntTy ids,"nt")]) ""] ++
-      [M.new Public False (I.rTy ids)  "rule" (P.newFromList [(I.ntTy ids,"nt")]) ""]
+    entryMethods :: I.Ident -> [M.Method]
+    entryMethods ids =
+      [M.new Public False "boolean"    "is"   (P.newFromList [(I.ntTy ids,"nt")]) empty] ++
+      [M.new Public False (I.eTy ids)  "put"  (P.newFromList [(I.ntTy ids,"nt"), (I.eTy ids,"entry")]) empty] ++
+      [M.new Public False (I.eTy ids)  "get"  (P.newFromList [(I.ntTy ids,"nt")]) empty] ++
+      [M.new Public False (I.cTy ids)  "cost" (P.newFromList [(I.ntTy ids,"nt")]) empty] ++
+      [M.new Public False (I.rTy ids)  "rule" (P.newFromList [(I.ntTy ids,"nt")]) empty]
 
 
 -- | mapEntryClass. Generate MapEntry Class.
 mapEntryClass :: I.Ident -> C.Class
 mapEntryClass ids =
-  evalState
+  execState
     (do
-      modify (\c -> c {C.methods =
-                          [ M.new Public False "" (I.eN ids) [] ""
+      modify $ \c -> c {C.methods =
+                          [ M.new Public False "" (I.eN ids) [] empty
                           , M.new Public False "" (I.eN ids)
-                              (P.newFromList [(I.cTy ids, " c"), (I.rTy ids," r")])
-                              "\tcost = c;\n\trule = r;"] ,
-                       C.variables =
+                              (P.newFromList [(I.cTy ids, "c"), (I.rTy ids,"r")])
+                              (text "cost = c;" $+$ text "rule = r;")] ,
+                        C.variables =
                           [ V.new Public False (I.cTy ids) "cost" ""
                           , V.new Public False (I.rTy ids) "rule" ""]})
-      get)
     (C.new (I.pkgId ids) (I.eN ids))
 
 -- | codeGeneratorClass.
 codeGeneratorClass :: ClassName -> I.Ident -> C.Class -> C.Class -> Ir.Ir -> C.Class
 codeGeneratorClass cname ids tClass eClass ir =
-  evalState
+  execState
     (do
-      modify (\c -> c { C.imports = -- Set imports
-                          [genImport (I.ntTy ids) "*" True,
-                           genImport (I.rTy ids) "*" True,
-                           genImport "java.util" "EnumSet" False,
-                           "// @USER INCLUDES START",
-                           (show $ Ir.include ir),
-                           "// @USER INCLUDES END"],
+      modify $ \c -> c {C.imports = -- Set imports
+                            [import' (I.ntTy ids) "*" True,
+                             import' (I.rTy ids) "*" True,
+                             import' "java.util" "EnumSet" False,
+                             text "// @USER INCLUDES START",
+                             text . show . Ir.include $ ir,
+                             text "// @USER INCLUDES END"],
                         -- Set code defined in 'declarations' section
-                        C.userCode = show $ Ir.declaration ir,
+                        C.userCode = text . show . Ir.declaration $ ir,
                         -- Add 'tiling' and 'eval' classes as nested classes
                         C.nestedClasses = [tClass, eClass],
                         -- Generate Interface method to the outside world
-                        C.methods = [genEmitFun] })
-      get)
+                        C.methods = [emitMethod] })
     (C.new (I.pkgId ids) cname)
   where
     -- | Generate import statements
-    genImport :: PackageName -> ClassName -> Bool -> ImportName
-    genImport pkg cname static =
-      "import"++
-      (if (static) then " static " else " ") ++
-      (if (pkg /= "") then pkg ++"." else "") ++
-      cname ++";"
+    import' :: PackageName -> ClassName -> Bool -> Doc
+    import' p name static = text "import"
+      <+> (if (static)
+            then text "static"
+            else empty)
+      <+> (if (null p) then empty else text p <> text ".")
+      <>  text name <> semi
 
     -- | Create method in our code generator which is public and callable from the outside.
-    genEmitFun ::M.Method
-    genEmitFun = 
+    emitMethod :: M.Method
+    emitMethod =
       let m = case (C.methods eClass) of -- retrieve the entry method for evaluation
                 [] -> error ("\nERROR: Class "++ C.name eClass ++" has no methods!\n")
                 list -> head list in
       -- given the entry method for evaluation, its parameters and return
       -- type, generate the emit method which serves as an entry point
       -- to our code generator
-      M.new Public True (M.retTy m) "emit" (M.params m) (genBody m)
+      M.new Public True (M.retTy m) "emit" (M.params m) (body m)
       where
         -- | Method body of emit method.
-        genBody :: M.Method -> String
-        genBody m =
-          "\t"++ cname ++".Tiling.tile("++ I.nId ids ++");\n"++
-          (if (M.retTy m == "void")
-            then "\t"
-            else "\treturn ") ++
-          cname ++".Eval."++ (M.name m) ++
-          "("++
-          (stringFoldr
-            (\x y -> x ++", "++ y)
-            (map (P.getIdent) (M.params m))) ++
-          ");"
+        body :: M.Method -> Doc
+        body m = text cname <> text ".Tiling.tile"
+            <>  parens ( text $ I.nId ids ) <> semi
+            $+$ (if (M.retTy m == "void")
+                  then empty
+                  else text "return")
+            <+> text cname <> text ".Eval." <> text (M.name m) <>
+                lparen <>                      -- parameters
+                  (if (null $ M.params m)
+                      then empty
+                      else
+                        foldr1
+                          (\p1 p2 -> p1 <> comma <+> p2)
+                          (map (text . P.getIdent) $ M.params m)) <>
+                rparen <> semi
 
 -----------------------------------------------------------------------------
