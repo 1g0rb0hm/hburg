@@ -46,9 +46,9 @@ instance Document Enum where
       lbrace $+$
         (if (null enums)              -- Enumeration
           then empty
-          else
+          else nest 2 $
             foldr1
-              (\e1 e2 -> nest 2 e1 <> comma $+$ nest 2 e2)
+              (\e1 e2 -> e1 <> comma $+$ e2)
               (map (text) enums))
       $+$ rbrace
 

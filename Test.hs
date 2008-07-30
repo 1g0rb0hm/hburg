@@ -54,12 +54,12 @@ main = do
           if (null results)
             then
               -- success case
-              putStrLn $ (show $ length $ good ++ bad) ++ " Tests Successful!\n"
+              putStrLn $ (show . length $ good ++ bad) ++ " Tests Successful!\n"
             else
               -- some tests failed
               do
-                putStrLn $ (show $ length results) ++ " of " ++
-                           (show $ length $ good ++ bad) ++ " Tests Failed!\n"
+                putStrLn $ (show . length $ results) ++ " of " ++
+                           (show . length $ good ++ bad) ++ " Tests Failed!\n"
                 mapM_ (\r -> putStrLn $ "Failed Test: " ++ r) results
                 putStr "\n"
         else
@@ -69,7 +69,7 @@ main = do
 inputFiles :: FilePath -> Suffix -> IO [String]
 inputFiles path sfx = do
   contents <- getDirectoryContents path
-    `catch` (\e -> do {putStrLn $ show e; return []})
+    `catch` (\e -> do {putStrLn . show $ e; return []})
   return $ map (path ++) $ filter (isSuffixOf sfx) contents
 
 -- | Build HBURG by running specified Cabal targets
@@ -91,13 +91,13 @@ usage = do
 setupTest :: IO ()
 setupTest = do
   createDirectoryIfMissing True "test/target" 
-    `catch` (\e -> putStrLn $ show e)
+    `catch` (putStrLn . show)
 
 -- | Cleanup after test
 cleanUpTest :: IO ()
 cleanUpTest = do
   removeDirectoryRecursive "test/target"
-    `catch` (\e -> putStrLn $ show e)
+    `catch` (putStrLn . show)
 
 -- | Run our test case
 runTest :: ExitCode -> Grammar -> IO (ExitCode, String)
@@ -110,7 +110,7 @@ runTest code gram =
     putStrLn $ "Output Start>>"
     exitCode <- Cmd.system cmd
       `catch` (\e -> do {
-          putStrLn $ show e;
+          putStrLn . show $ e;
           return (ExitFailure 2)})
     cleanUpTest
     putStrLn "<<Output End"
