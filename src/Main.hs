@@ -23,20 +23,20 @@ import IO
 import System
 import System.Console.GetOpt
 
-import Parser.Lexer (scanner)
-import Parser.Parser (ParseResult(..), parse)
+import Hburg.Parse.Lexer (scanner)
+import Hburg.Parse.Parser (ParseResult(..), parse)
 
 {- qualified imports  -}
-import qualified Debug as D (Level(..), Entry, new, filter, format)
+import qualified Hburg.Debug as D (Level(..), Entry, new, filter, format)
 
-import qualified Ast.Ir as Ir (Ir(..))
+import qualified Hburg.Ast.Ir as Ir (Ir(..))
 
-import qualified Gen.Backend as B (emit)
-import qualified Gen.Emit as E (Emit(..))
+import qualified Hburg.Gen.Backend as B (emit)
+import qualified Hburg.Gen.Emit as E (Emit(..))
 
 ------------------------------------------------------------------------------------
 
-{- | main. Read arguments and start code generator -}
+{- | Read arguments and start code generator -}
 main :: IO ()
 main = do
   args <- getArgs
@@ -84,6 +84,7 @@ usage prog = "Usage: "++ prog ++" [OPTION...] file"
 --
 -- Extract various command line options
 --
+
 getOutputClassName :: [CLIFlags] -> IO (String)
 getOutputClassName cli =
   case [ s | (OptOutputClass s) <- cli ] of

@@ -55,44 +55,45 @@ executable hburg
     build-depends: haskell98 >= 1.0, filepath, mtl, pretty
 
   other-modules:
-      Util
-      Debug
-      Ast.Attr
-      Ast.Bind
-      Ast.Code
-      Ast.Closure
-      Ast.Cost
-      Ast.Decl
-      Ast.Def
-      Ast.Ident
-      Ast.Incl
-      Ast.Ir
-      Ast.Node
-      Ast.Nt
-      Ast.Op
-      Ast.Prod
-      Ast.T
-      Ast.Term
-      Csa.Csa
-      Csa.Ctx
-      Csa.Elem
-      Gen.Emit
-      Gen.Backend
-      Gen.Ident
-      Gen.Document
-      Gen.Emit.Label
-      Gen.Emit.Java.Generator
-      Gen.Emit.Java.Enum
-      Gen.Emit.Java.Eval
-      Gen.Emit.Java.Tile
-      Gen.Emit.Java.Class
-      Gen.Emit.Java.Method
-      Gen.Emit.Java.Modifier
-      Gen.Emit.Java.Param
-      Gen.Emit.Java.Var
-      Parser.Lexer
-      Parser.Parser
-      Parser.Messages
+      Hburg.Ast.Attr
+      Hburg.Ast.Bind
+      Hburg.Ast.Closure
+      Hburg.Ast.Code
+      Hburg.Ast.Cost
+      Hburg.Ast.Decl
+      Hburg.Ast.Def
+      Hburg.Ast.Ident
+      Hburg.Ast.Incl
+      Hburg.Ast.Ir
+      Hburg.Ast.Node
+      Hburg.Ast.Nt
+      Hburg.Ast.Op
+      Hburg.Ast.Prod
+      Hburg.Ast.T
+      Hburg.Ast.Term
+      Hburg.Csa.Csa
+      Hburg.Csa.Ctx
+      Hburg.Csa.Elem
+      Hburg.Debug
+      Hburg.Gen.Backend
+      Hburg.Gen.Doc
+      Hburg.Gen.Emit
+      Hburg.Gen.Ident
+      Hburg.Gen.Java.Class
+      Hburg.Gen.Java.Enum
+      Hburg.Gen.Java.Eval
+      Hburg.Gen.Java.Gen
+      Hburg.Gen.Java.Method
+      Hburg.Gen.Java.Modifier
+      Hburg.Gen.Java.Param
+      Hburg.Gen.Java.Tile
+      Hburg.Gen.Java.Var
+      Hburg.Gen.Label
+      Hburg.Parse.Lexer
+      Hburg.Parse.Msg
+      Hburg.Parse.Parser
+      Hburg.Util
+
   Extensions:
       GADTs
   ghc-options:

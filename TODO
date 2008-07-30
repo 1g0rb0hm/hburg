@@ -30,8 +30,6 @@ CODE GENERATION
    in order to aid the user while pin pointing bugs in
    semantic actions to actually generated code.
 
- * Use pretty-printer library in code generator.
-
 Grammar
 ----------------------------------------------------
 
