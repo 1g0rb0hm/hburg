@@ -49,6 +49,6 @@ hasBinding _ = True
 
 getIdent :: Binding -> Id.Ident
 getIdent (MkBind i) = i
-getIdent MkEmptyBind = error "\nERROR: getBinding() called on empty Binding"
+getIdent MkEmptyBind = error "\nERROR: getBinding() called on empty Binding."
 
 ------------------------------------------------------------------------------------

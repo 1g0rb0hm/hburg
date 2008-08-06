@@ -102,7 +102,7 @@ cleanUpTest = do
 -- | Run our test case
 runTest :: ExitCode -> Grammar -> IO (ExitCode, String)
 runTest code gram =
-  let cmd = "dist/build/hburg/hburg -p test.target " ++ gram in
+  let cmd = "dist/build/hburg/hburg -p test.target -l Java " ++ gram in
   do
     setupTest
     putStrLn seperator

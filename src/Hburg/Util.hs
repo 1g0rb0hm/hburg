@@ -12,12 +12,16 @@ module Hburg.Util (
    -- Functions
    toInt,
    toUpper,
+   bye,
+   die,
 ) where
 
 {- unqualified imports  -}
-import qualified Data.Char as C (ord, toUpper)
+import IO
+import System
 
 {- qualified imports  -}
+import qualified Data.Char as C (ord, toUpper)
 
 ------------------------------------------------------------------------------------
 
@@ -46,5 +50,17 @@ toInt str = stToInt 10 str
 {- | Convert String to upper case String -}
 toUpper :: String -> String
 toUpper str = map (C.toUpper) (str)
+
+{- | Successful Exit -}
+bye :: String -> IO a
+bye s = do
+  putStrLn s
+  exitWith (ExitSuccess)
+
+{- | Exit upon failure -}
+die :: String -> IO a
+die s = do
+  hPutStrLn stderr s
+  exitWith (ExitFailure 1)
 
 ------------------------------------------------------------------------------------

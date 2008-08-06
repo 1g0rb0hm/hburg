@@ -49,8 +49,8 @@ termToEval t = "eval_"++ (show $ getId t)
 prodToEnum :: Definition -> Production -> Suffix -> Label
 prodToEnum def prod suffix =
   "R_"++
-  (toUpper . show $ getId def) ++
-  "_"++ (toUpper . show $ getId prod) ++
+  (toUpper . show . getId $ def) ++
+  "_"++ (toUpper . show . getId $ prod) ++
   "_"++ suffix
 
 {- | Labels for accessing child nodes:

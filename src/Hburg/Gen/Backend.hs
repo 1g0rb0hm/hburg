@@ -11,11 +11,15 @@
 -----------------------------------------------------------------------------
 
 module Hburg.Gen.Backend (
+  -- * Types
+  Language(..),
   -- * Functions
   emit,
+  toLang,
 ) where
 
 {- unqualified imports  -}
+import Hburg.Util (die)
 
 {- qualified imports  -}
 import qualified Hburg.Ast.Ir as Ir (Ir(..))
@@ -31,8 +35,28 @@ type Class = String
 type Package = String
 type NodeKind = String
 
+{- | Supported target languages -}
+data Language =
+  Java 
+  | Csharp
+  | Undefined String
+  deriving (Eq)
+
+{- | Convert a String to a supported language -}
+toLang :: String -> Language
+toLang "Java" =  Java
+toLang "C#" = Csharp
+toLang s = Undefined s
+
 -- | Generates all the code which is necessary in order to make our code generator work.
-emit :: Class -> Package -> NodeKind -> Ir.Ir -> [C.Class]
-emit cname pkg nkind ir = J.generate cname (I.new pkg) nkind ir
+emit :: Language -> Class -> Package -> NodeKind -> Ir.Ir -> IO [C.Class]
+emit lang cname pkg nkind ir =
+  case lang of
+    Java ->
+      return $ J.generate cname (I.new pkg) nkind ir
+    Csharp ->
+      die "C# target language not supported!"
+    Undefined s ->
+      die $ s ++ " target language not supported!"
 
 -----------------------------------------------------------------------------

@@ -114,7 +114,7 @@ enumerationClasses ids ir =
                           (do
                               modify (\p -> setRuleLabel p label)
                               modify (\p -> setResultLabel p $ Lab.termToEnum d))
-                          (p)
+                          p
           in
           (prod, label) : (labelProds d ps (succ num))
 
@@ -132,7 +132,7 @@ nodeInterfaceClass ids children hasLnk retTy =
       modify $ \c -> c {C.modifier = Public,
                         C.isIface = True,
                         C.methods = methods})
-    (C.new (I.pkgId ids) (I.nN ids))
+    $ C.new (I.pkgId ids) (I.nN ids)
   where
     -- | Generate Child Node access methods.
     childMethods :: I.Ident -> Children -> [M.Method]
@@ -173,7 +173,7 @@ mapEntryClass ids =
                         C.variables =
                           [ V.new Public False (I.cTy ids) "cost" ""
                           , V.new Public False (I.rTy ids) "rule" ""]})
-    (C.new (I.pkgId ids) (I.eN ids))
+    $ C.new (I.pkgId ids) (I.eN ids)
 
 -- | codeGeneratorClass.
 codeGeneratorClass :: ClassName -> I.Ident -> C.Class -> C.Class -> Ir.Ir -> C.Class
@@ -193,7 +193,7 @@ codeGeneratorClass cname ids tClass eClass ir =
                         C.nestedClasses = [tClass, eClass],
                         -- Generate Interface method to the outside world
                         C.methods = [emitMethod] })
-    (C.new (I.pkgId ids) cname)
+    $ C.new (I.pkgId ids) cname
   where
     -- | Generate import statements
     import' :: PackageName -> ClassName -> Bool -> Doc

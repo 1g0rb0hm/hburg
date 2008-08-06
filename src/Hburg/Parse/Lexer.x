@@ -11,7 +11,7 @@
 
 module Hburg.Parse.Lexer (
   -- * Types
-  TokenClass(..),
+  TokenTy(..),
   Token(..),
   -- * Functions
   scanner
@@ -29,7 +29,6 @@ import Hburg.Csa.Elem (ElemClass(..))
 %wrapper "monad"
 
 $digit = 0-9
-
 $comma      = \,
 $or         = \|
 $openparen  = \(
@@ -39,116 +38,89 @@ $closebox   = \]
 $assign     = \=
 $colon      = \:
 $period     = \.
-
 $lower = [a-z]
 $upper = [A-Z]
 $alpha = [$lower $upper]
 
 $idchar = [$alpha $digit \_ \-]
 $upperidchar = [$upper $digit]
+-- parentheses allow for method calls (useful for IN parameters)
+$attridchar = [$alpha $digit \_ \- \( \)] 
 
--- terminals are all upper case plus digits and '-' '_'
 @term = $upper [$upper \_ \- $digit]*
-
--- identifiers must start with a lower case character
 @ident = $lower $idchar*
-
-@keywords 
-    = generator
-    | declarations
-    | operators
-    | rules
-    | end
+@keywords =
+  generator
+  | declarations
+  | operators
+  | rules
+  | end
 
 -- Attributes
-$attridchar = [$alpha $digit \_ \- \( \)] -- parentheses allow for method calls (useful for IN parameters)
 @idsep = \. $attridchar+
 @idsepseq = $attridchar+ @idsep*
 @generics = \< @idsepseq \> -- Java generics
 @attrident = @idsepseq @generics?
-
 @attrkeyword = out
 
-
+-----------------------------------------------------------------------------
 CODEGENERATOR :-
-<0>  $white+        { skipit }
-<0>  "--".*         { skipit }
+  <0>  $white+        ;
+  <0>  "--".*         ;
 
--- Return a token containing complete semantic action
-"(:"                { semanticAction ':' ')' }
-"(."                { semanticAction '.' ')' } -- like Coco/R
+  -- Return a token containing complete semantic action
+  "(:"                { semAction ':' }
+  "(."                { semAction '.' } -- like Coco/R
 
--- Go to state <attr> when encountering an attribute
-<0>"<:"             { attrStart }
-<0>"<."             { attrStart } -- like Coco/R
-<attr> $white+      { skipit }
-<attr> @attrkeyword { mkL TAttrKeyword }
-<attr> @attrident   { mkL TAttrIdent }
-<attr> $comma       { mkL TComma }
-<attr> ":>"         { attrEnd }
-<attr> ".>"         { attrEnd } -- like Coco/R
+  -- Go to state <attr> when encountering an attribute
+  <0>"<:"             { attrStart }
+  <0>"<."             { attrStart } -- like Coco/R
+  <attr> $white+      ;
+  <attr> @attrkeyword { \t@(_,_,s) n -> mkT (TAttrKeyword $ take n s) t n }
+  <attr> @attrident   { \t@(_,_,s) n -> mkT (TAttrIdent $ take n s) t n }
+  <attr> $comma       { mkT TComma }
+  <attr> ":>"         { attrEnd }
+  <attr> ".>"         { attrEnd } -- like Coco/R
 
-<0> @keywords       { mkL TKeyword }
+  <0> @keywords       { \t@(_,_,s) n -> mkT (TKeyword $ take n s) t n }
 
-<0> $comma          { mkL TComma }
-<0> $or             { mkL TOr }
-<0> $openparen      { mkL TParenOpen }
-<0> $closeparen     { mkL TParenClose }
-<0> $openbox        { mkL TBoxOpen }
-<0> $closebox       { mkL TBoxClose }
-<0> $assign         { mkL TAssign }
-<0> $colon          { mkL TColon }
-<0> $period         { mkL TPeriod }
+  <0> $comma          { mkT TComma }
+  <0> $or             { mkT TOr }
+  <0> $openparen      { mkT TParenOpen }
+  <0> $closeparen     { mkT TParenClose }
+  <0> $openbox        { mkT TBoxOpen }
+  <0> $closebox       { mkT TBoxClose }
+  <0> $assign         { mkT TAssign }
+  <0> $colon          { mkT TColon }
+  <0> $period         { mkT TPeriod }
 
-<0> @term           { mkL TTerm }
-<0> @ident          { mkL TIdent }
+  <0> @term           { \t@(_,_,s) n -> mkT (TTerm  $ take n s) t n }
+  <0> @ident          { \t@(_,_,s) n -> mkT (TIdent $ take n s) t n }
 
-<0> $digit+         { mkL TCost}
+  <0> $digit+         { \t@(_,_,s) n -> mkT (TCost  $ take n s) t n }
 
 {
--- Each right-hand side has type :: AlexInput -> Int -> Alex result
+-----------------------------------------------------------------------------
 
+{- | Easily create 'Alex Token's -}
+mkT :: TokenTy -> AlexInput -> Int -> Alex Token
+mkT tok (pos,_,_) _ = return $ MkToken pos tok
 
--- | Token Datatype
-data Token = ConToken AlexPosn TokenClass String
+-----------------------------------------------------------------------------
 
-instance Eq Token where
-  (==) (ConToken p1 c1 s1) (ConToken p2 c2 s2) =
-    and [p1 == p2, c1 == c2, s1 == s2]
+{- data AlexPosn = AlexPn address::!Int line::!Int col::!Int -}
 
-instance Ord Token where
-  compare t1@(ConToken (AlexPn _ l1 c1) _ _)
-          t2@(ConToken (AlexPn _ l2 c2) _ _) =
-    if (t1 == t2)
-      then EQ
-      else if (l1 < l2)
-        then LT
-        else if (l1 == l2)
-          then 
-            if (c1 < c2)
-              then LT
-              else GT
-          else GT
-
-instance Show Token where
-  show (ConToken pos cl s) = (showPosn pos) ++" - "++ (show cl) ++" '"++ s
-
-instance ElemClass Token where
-  elemShow t = show t
-  elemL (ConToken (AlexPn _ line _) _ _) = line
-  elemC (ConToken (AlexPn _ _ col) _ _) = col
-
--- | Token Classes
-data TokenClass =
-  TCost
-  | TSemAction
-  | TKeyword
-  | TIdent
+-- | Token Type
+data TokenTy =
+  TCost String
+  | TSemAction String
+  | TKeyword String
+  | TIdent String
   | TAttrStart
   | TAttrEnd
-  | TAttrKeyword
-  | TAttrIdent
-  | TTerm
+  | TAttrKeyword String
+  | TAttrIdent String
+  | TTerm String
   | TComma
   | TOr
   | TParenOpen
@@ -159,104 +131,134 @@ data TokenClass =
   | TColon
   | TPeriod
   | TEOF
-  deriving (Eq, Show)
+  deriving (Eq,Ord)
 
----------------------------------------------------------
--- Lexer Utility functions
----------------------------------------------------------
+{- | Token Datatype -}
+data Token =
+  MkToken
+    AlexPosn -- ^ token position information
+    TokenTy  -- ^ token
 
--- | Easily create 'Alex Token'
-mkL :: TokenClass -> AlexInput -> Int -> Alex Token
-mkL c (p,_,str) len = return (ConToken p c (take len str))
+-----------------------------------------------------------------------------
+
+instance Show TokenTy where
+  show (TCost s) = s
+  show (TSemAction s) = s
+  show (TKeyword s) = s
+  show (TIdent s) = s
+  show (TAttrKeyword s) = s
+  show (TAttrIdent s) = s
+  show (TTerm s) = s
+  show TAttrStart = "<."
+  show TAttrEnd = ".>"
+  show TComma = ","
+  show TOr = "|"
+  show TParenOpen = "("
+  show TParenClose = ")"
+  show TBoxOpen = "["
+  show TBoxClose = "]"
+  show TAssign = "="
+  show TColon = ":"
+  show TPeriod = "."
+  show TEOF = "EOF"
+
+instance Show Token where
+  show (MkToken pos tok) = showPosn pos ++" - "++ show tok
+
+instance Eq Token where
+  (==) (MkToken p1 t1) (MkToken p2 t2) = p1 == p2 && t1 == t2
+
+instance Ord Token where
+  compare t1@(MkToken (AlexPn _ l1 c1) _)
+          t2@(MkToken (AlexPn _ l2 c2) _) =
+    if (t1 == t2)
+      then EQ
+      else if (l1 < l2)
+        then LT
+        else if (l1 == l2)
+          then if (c1 < c2) then LT else GT
+          else GT
+
+instance ElemClass Token where
+  elemShow t = show t
+  elemL (MkToken (AlexPn _ l _) _) = l
+  elemC (MkToken (AlexPn _ _ c) _) = c
+
+-----------------------------------------------------------------------------
 
 attrStart :: AlexInput -> Int -> Alex Token
-attrStart inp@(p,_,str) pos = do
+attrStart (p,_,_) _ = do
   alexSetStartCode attr
-  return (ConToken p TAttrStart "<:")
+  return $ MkToken p TAttrStart
 
 attrEnd :: AlexInput -> Int -> Alex Token
-attrEnd inp@(p,_,str) pos = do
+attrEnd (p,_,_) _ = do
   alexSetStartCode 0
-  return (ConToken p TAttrEnd ":>")
+  return $ MkToken p TAttrEnd
 
 -- @TODO: revert escaped \:\) which may be in semantic action
-semanticAction :: Char -> Char -> AlexInput -> Int -> Alex Token
-semanticAction dot end _ _ = do
-  input <- alexGetInput
-  go 1 [] input
+semAction :: Char -> AlexInput -> Int -> Alex Token
+semAction dot _ _ = do
+  inp <- alexGetInput
+  scan [] inp
   where
-    go :: Int -> [Char] -> AlexInput -> Alex Token
-    go 0 xs input = do
-      alexSetInput input
-      return (ConToken ((\(p,_,_) -> p) input) TSemAction xs)
-    go n xs input = do
-      case alexGetChar input of
-        Nothing -> err input
-        Just (c,input) -> do
-          if (c == dot)
-            then isCloseParen c input
-            else go n (xs ++ [c]) input
-      where
-        isCloseParen :: Char -> AlexInput -> Alex Token
-        isCloseParen ch input = do
-          case alexGetChar input of
-            Nothing -> err input
-            Just (c,inp) ->
-              if (c == end)
-                then go 0 xs inp
-                else go n (xs ++ [ch] ++ [c]) inp
-        
-    err :: AlexInput -> Alex Token
-    err input = do
-      alexSetInput input
-      lexError "Lexical Error in semantic action"
+    scan :: [Char] -> AlexInput -> Alex Token
+    scan cs inp = do
+      case alexGetChar inp of
+        Just (c1,inp)
+          | c1 == dot ->
+          case alexGetChar inp of
+            Just (c2,inp)
+              | c2 == ')' -> done cs inp
+            Just (c2,inp) -> scan (c2:c1:cs) inp
+            Nothing -> semError inp
+        Just (c1,inp) -> scan (c1:cs) inp
+        Nothing -> semError inp
+
+    done :: [Char] -> AlexInput -> Alex Token
+    done cs inp@(p,_,_) = do
+      alexSetInput inp
+      return $ MkToken p $ TSemAction $ reverse cs
+
+    semError :: AlexInput -> Alex Token
+    semError inp = do
+      alexSetInput inp
+      alexError' "Lexical Error in semantic action"
 
 showPosn :: AlexPosn -> String
-showPosn (AlexPn _ line col) = "[line:"++ show line ++" col:"++ show col ++"]"
+showPosn (AlexPn _ l c) = "[line:"++ show l ++" col:"++ show c ++"]"
 
-lexError :: String -> Alex Token
-lexError s = do
-  (p,c,input) <- alexGetInput
-  alexError (s ++" "++ showPosn p ++": "++
-    (if (not $ null input)
-      then " at charcter "++ show (head input)
-      else " at end of file"))
+alexError' :: String -> Alex Token
+alexError' s = do
+  (p,_,inp) <- alexGetInput
+  alexError $ s ++" "++ showPosn p ++": "++
+    (if (null inp)
+      then " at EOF"
+      else " at charcter "++ take 1 inp)
 
 alexEOF :: Alex Token
-alexEOF = return (ConToken undefined TEOF "")
+alexEOF = return $ MkToken undefined TEOF
 
-{-
-    newtype Alex a = Alex { runAlex :: AlexState -> Either String (AlexState, a) }
-    runAlex :: String -> Alex a -> Either String a
--}
-
--- | scanner. Tokenizes a String into an array of tokens
+{- | Tokenize String into [Token]s -}
 scanner :: String -> Either String [Token]
 scanner str =
-  runAlex str $
-    do
-      let accum xs =
-            do
-              tok@(ConToken p cl s) <- monadScan;
-              if cl == TEOF
-                then return xs
-                else do { accum (xs ++ [tok]) }
-      (accum [])
+  let accum ts =
+        do
+          t@(MkToken _ tok) <- monadScan
+          if tok == TEOF
+            then return . reverse $ ts
+            else accum (t:ts)
+  in
+  runAlex str $ accum []
 
-skipit :: AlexInput -> Int -> Alex Token
-skipit input len = monadScan
-
+{- | Custom monadScan version  -}
 monadScan :: Alex Token
 monadScan = do
-  inp@(p,c,input) <- alexGetInput
-  sc <- alexGetStartCode
+  inp <- alexGetInput
+  sc  <- alexGetStartCode
   case alexScan inp sc of
     AlexEOF -> alexEOF
-    AlexError inp' -> lexError "Lexical Error at "
-    AlexSkip  inp' len -> do
-      alexSetInput inp'
-      monadScan
-    AlexToken inp' len action -> do
-      alexSetInput inp'
-      action inp len
+    AlexError inp' -> alexError' "Lexical Error at "
+    AlexSkip  inp' _ -> do {alexSetInput inp'; monadScan}
+    AlexToken inp' len action -> do {alexSetInput inp'; action inp len}
 }

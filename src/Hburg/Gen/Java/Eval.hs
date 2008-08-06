@@ -50,7 +50,7 @@ eval ids ir =
                 c { Class.modifier = Private
                   , Class.isStatic = True
                   , Class.methods = evalMethods ids $ Ir.definitions ir })
-    (Class.new "" "Eval")
+    $ Class.new "" "Eval"
 
 {- | Short cut -}
 t :: String -> Doc

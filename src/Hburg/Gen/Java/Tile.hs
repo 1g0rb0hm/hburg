@@ -69,7 +69,7 @@ tile ids nkind ir =
             [ labClosureMethod ids closure              -- generate label() mehtod
             , tileMethod ids linkset (M.keys prodmap)]  -- generate tile() method [Cooper p.566]
             ++ labMethods ids ir prodmap})      -- generate label_N() methods for nodes with arity N
-    (Class.new "" "Tiling")
+    $ Class.new "" "Tiling"
 
 {- | Short cut -}
 t :: String -> Doc

@@ -33,28 +33,28 @@ data Ident =
   | MkIdent String  -- ^ regular strings are identifiers as well
 
 instance E.ElemClass Ident where
-  elemShow (MkTokId (ConToken _ _ str)) = str
+  elemShow (MkTokId (MkToken _ tok)) = show tok
   elemShow (MkIdent str) = str
   elemType _ = E.EIdent
-  elemL (MkTokId t@(ConToken _ _ _)) = E.elemL t
+  elemL (MkTokId t@(MkToken _ _)) = E.elemL t
   elemL _ = -1
-  elemC (MkTokId t@(ConToken _ _ _)) = E.elemC t
+  elemC (MkTokId t@(MkToken _ _)) = E.elemC t
   elemC _ = -1
 
 instance Eq Ident where
-  (==) (MkTokId (ConToken _ _ i1)) (MkTokId (ConToken _ _ i2)) = i1 == i2
-  (==) (MkTokId (ConToken _ _ i1)) (MkIdent i2) = i1 == i2
-  (==) (MkIdent i1) (MkTokId (ConToken _ _ i2)) = i1 == i2
+  (==) (MkTokId (MkToken _ t1)) (MkTokId (MkToken _ t2)) = t1 == t2
+  (==) (MkTokId (MkToken _ t)) (MkIdent i) = show t == i
+  (==) (MkIdent i) (MkTokId (MkToken _ t)) = i == show t
   (==) (MkIdent i1) (MkIdent i2) = i1 == i2
 
 instance Ord Ident where
-  compare (MkTokId (ConToken _ _ i1)) (MkTokId (ConToken _ _ i2)) = compare i1 i2
-  compare (MkTokId (ConToken _ _ i1)) (MkIdent i2) = compare i1 i2
-  compare (MkIdent i1) (MkTokId (ConToken _ _ i2)) = compare i1 i2
+  compare (MkTokId (MkToken _ t1)) (MkTokId (MkToken _ t2)) = compare t1 t2
+  compare (MkTokId (MkToken _ t)) (MkIdent i) = compare (show t) i
+  compare (MkIdent i) (MkTokId (MkToken _ t)) = compare i (show t)
   compare (MkIdent i1) (MkIdent i2) = compare i1 i2
 
 instance Show Ident where
-  show (MkTokId (ConToken _ _ i)) = i
+  show (MkTokId (MkToken _ t)) = show t
   show (MkIdent i) = i
 
 new :: String -> Ident

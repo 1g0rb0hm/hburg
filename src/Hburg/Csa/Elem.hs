@@ -64,7 +64,7 @@ class (Eq a, Ord a,  Show a) => ElemClass a where
         * data Elem = forall a. ElemClass a => Elem a
      But with the advent of GADTs we can write the following: -}
 data Elem
-  where Elem :: ElemClass a => a -> Elem
+  where Elem :: (ElemClass a) => a -> Elem
 
 instance Eq Elem where
   (==) a1 a2 = elemId a1 == elemId a2

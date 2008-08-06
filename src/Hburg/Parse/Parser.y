@@ -24,7 +24,7 @@ import Hburg.Ast.Op (Operator, op, opMap)
 import Hburg.Ast.Term (Term, TermClass(..), terminal, nonTerminal)
 import Hburg.Ast.Ir (Ir(..), OperatorMap)
 
-import Hburg.Parse.Lexer (Token(..), TokenClass(..))
+import Hburg.Parse.Lexer (Token(..), TokenTy(..))
 import Hburg.Parse.Msg (parseErrDupBind, parseErrTok, parseErrRedef)
 
 {- qualified imports  -}
@@ -58,28 +58,28 @@ import qualified Hburg.Csa.Elem as Elem (new)
 %monad { P } { thenP } { returnP }
 %tokentype { Token }
 %token
-  cost        { ConToken _ TCost _ }
-  sem         { ConToken _ TSemAction _ }
-  generator   { ConToken _ TKeyword "generator" }
-  declarations{ ConToken _ TKeyword "declarations" }
-  operators   { ConToken _ TKeyword "operators" }
-  rules       { ConToken _ TKeyword "rules" }
-  end         { ConToken _ TKeyword "end" }
-  ident       { ConToken _ TIdent _ }
-  term        { ConToken _ TTerm _ }
-  attrident   { ConToken _ TAttrIdent _ }
-  out         { ConToken _ TAttrKeyword "out" }
-  '<'         { ConToken _ TAttrStart "<:" }
-  '>'         { ConToken _ TAttrEnd ":>" }
-  ','         { ConToken _ TComma _ }
-  '|'         { ConToken _ TOr _ }
-  '['         { ConToken _ TBoxOpen _ }
-  ']'         { ConToken _ TBoxClose _ }
-  '('         { ConToken _ TParenOpen _ }
-  ')'         { ConToken _ TParenClose _ }
-  '='         { ConToken _ TAssign _ }
-  ':'         { ConToken _ TColon _ }
-  '.'         { ConToken _ TPeriod _ }
+  cost        { MkToken _ (TCost _) }
+  sem         { MkToken _ (TSemAction _) }
+  generator   { MkToken _ (TKeyword "generator") }
+  declarations{ MkToken _ (TKeyword "declarations") }
+  operators   { MkToken _ (TKeyword "operators") }
+  rules       { MkToken _ (TKeyword "rules") }
+  end         { MkToken _ (TKeyword "end") }
+  ident       { MkToken _ (TIdent _) }
+  term        { MkToken _ (TTerm _) }
+  attrident   { MkToken _ (TAttrIdent _) }
+  out         { MkToken _ (TAttrKeyword "out") }
+  '<'         { MkToken _ TAttrStart }
+  '>'         { MkToken _ TAttrEnd }
+  ','         { MkToken _ TComma }
+  '|'         { MkToken _ TOr }
+  '['         { MkToken _ TBoxOpen }
+  ']'         { MkToken _ TBoxClose }
+  '('         { MkToken _ TParenOpen }
+  ')'         { MkToken _ TParenClose }
+  '='         { MkToken _ TAssign }
+  ':'         { MkToken _ TColon }
+  '.'         { MkToken _ TPeriod }
 %%
 
 -------------------------------------------------------------------
@@ -87,32 +87,28 @@ import qualified Hburg.Csa.Elem as Elem (new)
 -- The Generator itself
 --
 G :: { Ir }
-  : generator
-      Incl
-    declarations
-      Sem
-    operators
-      Ops
-    rules
-      Ds
+  : generator Incl
+    declarations Sem
+    operators Ops
+    rules Ds
     end
       {%
         let (ops, opctx) = $6                     -- Operators and their Context
             (defs, defctx, opmap) = $8            -- Definitions and their Context
-            entries = (map (\d -> Debug.new Debug.Debug (show d)) defs) -- debug entries
-              ++ [Debug.new Debug.Debug ("Definition-" ++ show defctx)]
-              ++ [Debug.new Debug.Debug ("Operator-" ++ show opctx)]
+            entries = (map (\d -> Debug.new Debug.Debug $ show d) defs) -- debug entries
+              ++ [Debug.new Debug.Debug $ "Definition-" ++ show defctx]
+              ++ [Debug.new Debug.Debug $ "Operator-" ++ show opctx]
         in
         case (Ctx.merge defctx opctx) of
           Right ctx ->
             case Csa.checkCtx defs ctx of
               Nothing ->
-                returnP Ir  { include = $2
-                            , declaration = Decl.new $4
-                            , operators = ops
-                            , definitions = reverse defs
-                            , debug = entries
-                            , operatorMap = opmap}
+                returnP Ir { include = $2
+                           , declaration = Decl.new $4
+                           , operators = ops
+                           , definitions = reverse defs
+                           , debug = entries
+                           , operatorMap = opmap}
               Just errors -> failP (foldr1 (\e old -> e ++"\n"++ old) errors)
           Left (el1, el2) -> error "\nERROR: Merging of Definition and Operator Context failed!\n"
       }
@@ -452,10 +448,10 @@ m `thenP` k =
     ParseOk a -> k a                -- Indicates sucessful parse
     ParseErr err a ->               -- Indicates CSA errors
       case k a of
-        ParseOk   a      -> ParseErr err a
-        ParseErr  nerr a -> ParseErr (err ++ nerr) a
+        ParseOk   a'     -> ParseErr err a'
+        ParseErr  err' a'-> ParseErr (err ++ err') a'
         ParseFail failed -> ParseFail (err ++ failed)
-    ParseFail failed -> ParseFail failed  -- Indicates non-recoverable CSA error
+    ParseFail f -> ParseFail f      -- Indicates non-recoverable CSA error
 
 returnP :: a -> P a
 returnP ok = ParseOk ok
@@ -464,22 +460,22 @@ failP :: String -> P a
 failP msg = ParseFail [Debug.new Debug.Error msg]
 
 errP :: String -> a -> P a
-errP msg rest = ParseErr [ Debug.new Debug.Error msg ] rest
+errP msg rest = ParseErr [Debug.new Debug.Error msg] rest
 
 updateOpMap :: N.Node -> OperatorMap -> OperatorMap
 updateOpMap n opmap =
   M.alter
     (\a ->
       if (isJust a)
-        then Just $ S.insert (op $ getId n) (fromJust a)
-        else Just $ S.singleton (op $ getId n))
-    (length (N.getChildren n))
+        then Just $ S.insert (op . getId $ n) (fromJust a)
+        else Just $ S.singleton (op . getId $ n))
+    (length . N.getChildren $ n)
     opmap
 
 -- Called by Happy if a parse error occurs
 happyError :: [Token] -> P a
-happyError [] = failP ("Parse Error at unknown token? Sorry!")
-happyError (tok:toks)  = failP (parseErrTok tok (show $ Id.toIdent tok))
+happyError [] = failP "Parse Error at unknown token? Sorry!"
+happyError (tok:toks)  = failP (parseErrTok tok $ show . Id.toIdent $ tok )
 
 -----------------------------------------------------------------------------
 }

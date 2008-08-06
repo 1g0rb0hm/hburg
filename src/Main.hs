@@ -23,6 +23,8 @@ import IO
 import System
 import System.Console.GetOpt
 
+import Hburg.Util (die, bye)
+
 import Hburg.Parse.Lexer (scanner)
 import Hburg.Parse.Parser (ParseResult(..), parse)
 
@@ -31,7 +33,7 @@ import qualified Hburg.Debug as D (Level(..), Entry, new, filter, format)
 
 import qualified Hburg.Ast.Ir as Ir (Ir(..))
 
-import qualified Hburg.Gen.Backend as B (emit)
+import qualified Hburg.Gen.Backend as B (Language(..), toLang, emit)
 import qualified Hburg.Gen.Emit as E (Emit(..))
 
 ------------------------------------------------------------------------------------
@@ -42,24 +44,13 @@ main = do
   args <- getArgs
   codeGen args
 
-{- | Successful Exit -}
-bye :: String -> IO a
-bye s = do
-  putStrLn s
-  exitWith (ExitSuccess)
-
-{- | Exit upon failure -}
-die :: String -> IO a
-die s = do
-  hPutStrLn stderr s
-  exitWith (ExitFailure 1)
-
 {- | Command line arguments -}
 data CLIFlags =
   OptHelp
   | OptOutputClass String
   | OptOutputPackage String
   | OptNodeKindType String
+  | OptTargetLang String
   | OptDebug
   deriving (Eq)
 
@@ -75,7 +66,9 @@ argInfo =
   , Option [ 'p' ] ["package"] (ReqArg OptOutputPackage "Package")
       "Java package name (e.g.: comp.gen)"
   , Option [ 't' ] ["type"] (ReqArg OptNodeKindType "Type")
-      "Java datatype which discriminates IR nodes (default: NodeKind)"]
+      "Java datatype which discriminates IR nodes (default: NodeKind)"
+  , Option [ 'l' ] ["lang"] (ReqArg OptTargetLang "Java")
+      "Target Laguage. Possible values: (Java|C#) (default: Java)"]
 
 {- | Program usage -}
 usage :: String -> String
@@ -88,20 +81,26 @@ usage prog = "Usage: "++ prog ++" [OPTION...] file"
 getOutputClassName :: [CLIFlags] -> IO (String)
 getOutputClassName cli =
   case [ s | (OptOutputClass s) <- cli ] of
-    [] -> return ("Codegen")
-    files -> return (last files)
+    [] -> return "Codegen"
+    files -> return . last $ files
 
 getOutputPackage :: [CLIFlags] -> IO (String)
 getOutputPackage cli =
   case [ s | (OptOutputPackage s) <- cli ] of
-    [] -> return ("")
-    packages -> return (last packages)
+    [] -> return ""
+    packages -> return . last $ packages
 
 getNodeKindType :: [CLIFlags] -> IO (String)
 getNodeKindType cli =
   case [ s | (OptNodeKindType s) <- cli ] of
-    [] -> return ("NodeKind")
-    types -> return (last types)
+    [] -> return "NodeKind"
+    types -> return . last $ types
+
+getTargetLanguage :: [CLIFlags] -> IO (B.Language)
+getTargetLanguage cli =
+  case [ s | (OptTargetLang s) <- cli ] of
+    [] -> return B.Java
+    lang -> return . B.toLang . last $ lang
 
 {- | Evaluate arguments and kick of scanner and parser -}
 codeGen :: [String] -> IO ()
@@ -115,19 +114,21 @@ codeGen args =
       class'  <- getOutputClassName cli
       pkg     <- getOutputPackage cli
       type'   <- getNodeKindType cli
+      lang    <- getTargetLanguage cli
       -- Run Parser
       case runParse content of
         -- Successful Parse
-        Right result -> do
-          outputFiles $ B.emit class' pkg type' result
+        Right parse -> do
+          code <- B.emit lang class' pkg type' parse
+          outputFiles code
           if (OptDebug `elem` cli)
-            then bye $ D.format $ D.filter D.All $ Ir.debug result
+            then bye . D.format $ D.filter D.All $ Ir.debug parse
             else bye ""
         -- Parse Errors
         Left err | OptDebug `elem` cli ->
-          die $ D.format $ D.filter D.All err
+          die . D.format $ D.filter D.All err
         Left err ->
-          die $ D.format $ D.filter D.Error err
+          die . D.format $ D.filter D.Error err
     -- Parameter Error
     (_,_,errors) -> do
       prog <- getProgName
