@@ -9,12 +9,12 @@ Homepage:       https://www.bytelabs.org/project/haskell-bottom-up-rewrite-gener
 Category:       Code Generation
 Synopsis:       Haskell Bottom Up Rewrite Generator
 Description:
-    HBURG is a program that generates tree parsers for cost-augmented
+    <https://www.bytelabs.org/project/haskell-bottom-up-rewrite-generator/ HBURG> is a program that generates tree parsers for cost-augmented
     tree grammars. It is useful for writing code generators for compilers.
     Given a mapping of a tree structured intermediate representation onto
     target machine instructions, HBURG generates a code generator that can
     be plugged into the instruction selection phase of a compiler. For more
-    information see "http://www.bytelabs.org/pub/papers/hburg07.pdf".
+    information see <https://www.bytelabs.org/pub/papers/hburg07.pdf>.
 Stability:      Experimental
 cabal-version: >=1.6
 build-type: Simple
@@ -48,11 +48,12 @@ executable hburg
     hs-source-dirs: src
 
     if flag(small_base)
-      build-depends: base >= 3, containers, array
+      build-depends: base >= 4.5 && < 5.0, containers, array
     else
-      build-depends: base >= 1.0
+      build-depends: base >= 4.5 && < 5.0
 
-    build-depends: filepath, mtl, pretty, utf8-string 
+    build-depends: filepath, mtl, pretty, utf8-string
+    build-tools: alex, happy
 
   other-modules:
       Hburg.Ast.Attr
