@@ -36,9 +36,9 @@ instance E.ElemClass Ident where
   elemShow (MkTokId (MkToken _ tok)) = show tok
   elemShow (MkIdent str) = str
   elemType _ = E.EIdent
-  elemL (MkTokId t@(MkToken _ _)) = E.elemL t
+  elemL (MkTokId t) = E.elemL t
   elemL _ = -1
-  elemC (MkTokId t@(MkToken _ _)) = E.elemC t
+  elemC (MkTokId t) = E.elemC t
   elemC _ = -1
 
 instance Eq Ident where

@@ -41,7 +41,7 @@ class TermClass a where
   getNonTerminal :: a -> Nt.Nt
   
   hasAttr :: a -> Bool
-  hasAttr a = not $ null $ getAttr a
+  hasAttr a = not . null . getAttr $ a
   getAttr :: a -> [Attr]
   
   hasBinding :: a -> Bool

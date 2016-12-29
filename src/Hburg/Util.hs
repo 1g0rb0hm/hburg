@@ -17,10 +17,10 @@ module Hburg.Util (
 ) where
 
 {- unqualified imports  -}
-import IO
-import System
+import System.IO
 
 {- qualified imports  -}
+import qualified System.Exit as E
 import qualified Data.Char as C (ord, toUpper)
 
 ------------------------------------------------------------------------------------
@@ -55,12 +55,12 @@ toUpper str = map (C.toUpper) (str)
 bye :: String -> IO a
 bye s = do
   putStrLn s
-  exitWith (ExitSuccess)
+  E.exitWith (E.ExitSuccess)
 
 {- | Exit upon failure -}
 die :: String -> IO a
 die s = do
   hPutStrLn stderr s
-  exitWith (ExitFailure 1)
+  E.exitWith (E.ExitFailure 1)
 
 ------------------------------------------------------------------------------------

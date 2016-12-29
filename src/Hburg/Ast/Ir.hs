@@ -17,7 +17,7 @@ module Hburg.Ast.Ir (
 ) where
 
 {- unqualified imports  -}
-import Maybe (fromJust, isJust)
+import Data.Maybe (fromJust, isJust)
 
 import Hburg.Ast.Term (TermClass(..))
 

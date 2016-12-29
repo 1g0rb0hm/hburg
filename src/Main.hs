@@ -19,8 +19,7 @@ module Main (
 ) where
 
 {- unqualified imports  -}
-import IO
-import System
+import System.Environment
 import System.Console.GetOpt
 
 import Hburg.Util (die, bye)

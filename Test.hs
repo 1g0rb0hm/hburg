@@ -17,11 +17,11 @@ import System.Directory
 import System.Environment
 import System.Exit
 import Data.List
-import Control.Monad
+import Control.Exception
 
 {- qualified imports  -}
 import qualified Distribution.Simple as Cabal (defaultMainArgs)
-import qualified System.Cmd as Cmd (system)
+import qualified System.Process as Cmd (system)
 
 -----------------------------------------------------------------------------
 
@@ -69,7 +69,7 @@ main = do
 inputFiles :: FilePath -> Suffix -> IO [String]
 inputFiles path sfx = do
   contents <- getDirectoryContents path
-    `catch` (\e -> do {putStrLn . show $ e; return []})
+    `catch` (\e -> do {putStrLn . show $ (e::IOException); return []})
   return $ map (path ++) $ filter (isSuffixOf sfx) contents
 
 -- | Build HBURG by running specified Cabal targets
@@ -91,13 +91,13 @@ usage = do
 setupTest :: IO ()
 setupTest = do
   createDirectoryIfMissing True "test/target" 
-    `catch` (putStrLn . show)
+    `catch` (\e -> do {putStrLn . show $ (e::IOException)})
 
 -- | Cleanup after test
 cleanUpTest :: IO ()
 cleanUpTest = do
   removeDirectoryRecursive "test/target"
-    `catch` (putStrLn . show)
+    `catch` (\e -> do {putStrLn . show $ (e::IOException)})
 
 -- | Run our test case
 runTest :: ExitCode -> Grammar -> IO (ExitCode, String)
@@ -110,7 +110,7 @@ runTest code gram =
     putStrLn $ "Output Start>>"
     exitCode <- Cmd.system cmd
       `catch` (\e -> do {
-          putStrLn . show $ e;
+          putStrLn . show $ (e::IOException);
           return (ExitFailure 2)})
     cleanUpTest
     putStrLn "<<Output End"

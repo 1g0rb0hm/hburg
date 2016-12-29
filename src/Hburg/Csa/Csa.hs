@@ -20,13 +20,13 @@ module Hburg.Csa.Csa (
 ) where
 
 {- unqualified imports  -}
-import Maybe (fromJust, isJust, isNothing)
-import List (find)
+import Data.Maybe (fromJust, isJust, isNothing)
+import Data.List (find)
 import Hburg.Ast.Term (Term, TermClass(..))
 import Hburg.Parse.Msg (parseErrElem, typeErr)
 
 {- qualified imports  -}
-import qualified List as L (find)
+import qualified Data.List as L (find)
 import qualified Data.Set as S
 import qualified Data.Map as M
 
@@ -237,8 +237,8 @@ typeCheck n tymap =
                     if (S.null (S.intersection p (returns ent')))
                       then Just (typeErr (E.new n) i (show (E.elemType n) ++" '"++
                           N.showAsFun n ++
-                          "' - expected type"++ (if (S.size p > 1) then "s" else "") ++
-                          " '"++ show (S.toList p) ++
+                          "' - expected type"++ (if (S.size p > 1) then "s '" else " '") ++
+                          show (S.toList p) ++
                           "' but found '"++ show (S.toList (returns ent')) ++"'"))
                       else Nothing
                   else

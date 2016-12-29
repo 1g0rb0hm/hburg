@@ -23,7 +23,7 @@ module Hburg.Ast.Closure (
 ) where
 
 {- unqualified imports  -}
-import Maybe (isJust, fromJust)
+import Data.Maybe (isJust, fromJust)
 
 {- qualified imports  -}
 import qualified Data.Map as M

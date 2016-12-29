@@ -67,10 +67,10 @@ data Elem
   where Elem :: (ElemClass a) => a -> Elem
 
 instance Eq Elem where
-  (==) a1 a2 = elemId a1 == elemId a2
+  (==) a b = elemId a == elemId b
 
 instance Ord Elem where
-  compare a1 a2 = compare a1 a2
+  compare a b = compare a b
 
 instance Show Elem where
   show (Elem e) = show e

@@ -223,7 +223,7 @@ mapChildren _ (N { child = Nil }) = []
 mapChildren f n =
   let children = getChildren n in
   map 
-    (\(index, child) -> f index child)
+    (\(idx, child) -> f idx child)
     (zip [1 .. (length children)]  children)
 
 {- | mapPreOrder. Pre order AST traversal. -}

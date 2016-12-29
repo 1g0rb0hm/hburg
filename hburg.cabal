@@ -1,11 +1,11 @@
 -- Package Stanza
 Name:           hburg
-Version:        1.1.2
+Version:        1.1.3
 License:        BSD3
 License-file:   LICENSE
 Author:         Igor Boehm <igor@bytelabs.org>
 Maintainer:     igor@bytelabs.org
-Homepage:       http://www.bytelabs.org/hburg.html
+Homepage:       https://www.bytelabs.org/project/haskell-bottom-up-rewrite-generator/
 Category:       Code Generation
 Synopsis:       Haskell Bottom Up Rewrite Generator
 Description:
@@ -43,7 +43,6 @@ flag small_base
   description: Choose the new smaller, split-up base package.
 
 executable hburg
-    executable: hburg
     main-is: Main.hs
     hs-source-dirs: src
 
@@ -52,7 +51,7 @@ executable hburg
     else
       build-depends: base >= 1.0
 
-    build-depends: haskell98 >= 1.0, filepath, mtl, pretty
+    build-depends: filepath, mtl, pretty, utf8-string 
 
   other-modules:
       Hburg.Ast.Attr

@@ -16,7 +16,8 @@ module Hburg.Parse.Parser (
 ) where
 
 {- unqualified imports  -}
-import Maybe (isJust, fromJust)
+import Data.Maybe (isJust, fromJust)
+import Control.Monad (liftM)
 
 import Hburg.Util (toInt)
 
@@ -153,7 +154,7 @@ Op :: { (Operator, Ctx.Ctx) }
 --
 -- Definitions of non terminals
 --
-Ds :: { ([ Def.Definition ], Ctx.Ctx, OperatorMap) }
+Ds :: { ([Def.Definition], Ctx.Ctx, OperatorMap) }
   : D
       { (\(d, ctx, opmap) -> ([d], ctx, opmap)) $1 }
   | Ds D
@@ -434,6 +435,20 @@ Sem :: { C.Code }
 
 -- | Monad P deals with Parse Results
 type P a = ParseResult a
+
+instance Functor ParseResult where
+  fmap = liftM
+
+instance Applicative ParseResult where
+  pure = returnP
+  (<*>) = ap  {- defined in Control.Monad -}
+  -- NB: DO NOT USE `(*>) = (>>)`
+  -- (*>) = {- move the definition of `>>` from the `Monad` instance here -}  
+    
+instance Monad ParseResult where
+  return = returnP
+  (>>=) = thenP
+  fail = failP
 
 -- | ParseResult type
 data ParseResult a =

@@ -25,8 +25,8 @@ module Hburg.Ast.Def (
 ) where
 
 {- unqualified imports  -}
-import List (find)
-import Maybe (isJust)
+import Data.List (find)
+import Data.Maybe (isJust)
 
 import Hburg.Ast.Attr (Attr, attrEqualInOut)
 import Hburg.Ast.Node (Node, getTerm)

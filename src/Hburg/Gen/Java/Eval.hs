@@ -15,7 +15,7 @@ module Hburg.Gen.Java.Eval (
 ) where
 
 {- unqualified imports  -}
-import Maybe (fromJust, isJust)
+import Data.Maybe (fromJust, isJust)
 import Control.Monad.State
 
 import Text.PrettyPrint

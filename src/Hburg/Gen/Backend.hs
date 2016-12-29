@@ -48,7 +48,7 @@ toLang "Java" =  Java
 toLang "C#" = Csharp
 toLang s = Undefined s
 
--- | Generates all the code which is necessary in order to make our code generator work.
+{- | Generates all the code that is necessary in order to make code generator work. -}
 emit :: Language -> Class -> Package -> NodeKind -> Ir.Ir -> IO [C.Class]
 emit lang cname pkg nkind ir =
   case lang of

@@ -21,6 +21,7 @@ module Hburg.Parse.Lexer (
 import Hburg.Csa.Elem (ElemClass(..))
 
 {- qualified imports  -}
+import qualified Codec.Binary.UTF8.String as U (encodeChar, decode)
 
 -----------------------------------------------------------------------------
 
@@ -76,13 +77,13 @@ CODEGENERATOR :-
   <0>"<:"             { attrStart }
   <0>"<."             { attrStart } -- like Coco/R
   <attr> $white+      ;
-  <attr> @attrkeyword { \t@(_,_,s) n -> mkT (TAttrKeyword $ take n s) t n }
-  <attr> @attrident   { \t@(_,_,s) n -> mkT (TAttrIdent $ take n s) t n }
+  <attr> @attrkeyword { \t@(_,_,_,s) n -> mkT (TAttrKeyword $ take n s) t n }
+  <attr> @attrident   { \t@(_,_,_,s) n -> mkT (TAttrIdent $ take n s) t n }
   <attr> $comma       { mkT TComma }
   <attr> ":>"         { attrEnd }
   <attr> ".>"         { attrEnd } -- like Coco/R
 
-  <0> @keywords       { \t@(_,_,s) n -> mkT (TKeyword $ take n s) t n }
+  <0> @keywords       { \t@(_,_,_,s) n -> mkT (TKeyword $ take n s) t n }
 
   <0> $comma          { mkT TComma }
   <0> $or             { mkT TOr }
@@ -94,17 +95,17 @@ CODEGENERATOR :-
   <0> $colon          { mkT TColon }
   <0> $period         { mkT TPeriod }
 
-  <0> @term           { \t@(_,_,s) n -> mkT (TTerm  $ take n s) t n }
-  <0> @ident          { \t@(_,_,s) n -> mkT (TIdent $ take n s) t n }
+  <0> @term           { \t@(_,_,_,s) n -> mkT (TTerm  $ take n s) t n }
+  <0> @ident          { \t@(_,_,_,s) n -> mkT (TIdent $ take n s) t n }
 
-  <0> $digit+         { \t@(_,_,s) n -> mkT (TCost  $ take n s) t n }
+  <0> $digit+         { \t@(_,_,_,s) n -> mkT (TCost  $ take n s) t n }
 
 {
 -----------------------------------------------------------------------------
 
 {- | Easily create 'Alex Token's -}
 mkT :: TokenTy -> AlexInput -> Int -> Alex Token
-mkT tok (pos,_,_) _ = return $ MkToken pos tok
+mkT tok (pos,_,_,_) _ = return $ MkToken pos tok
 
 -----------------------------------------------------------------------------
 
@@ -163,7 +164,7 @@ instance Show TokenTy where
   show TEOF = "EOF"
 
 instance Show Token where
-  show (MkToken pos tok) = showPosn pos ++" - "++ show tok
+  show (MkToken p t) = showPosn p ++" - "++ show t
 
 instance Eq Token where
   (==) (MkToken p1 t1) (MkToken p2 t2) = p1 == p2 && t1 == t2
@@ -187,12 +188,12 @@ instance ElemClass Token where
 -----------------------------------------------------------------------------
 
 attrStart :: AlexInput -> Int -> Alex Token
-attrStart (p,_,_) _ = do
+attrStart (p,_,_,_) _ = do
   alexSetStartCode attr
   return $ MkToken p TAttrStart
 
 attrEnd :: AlexInput -> Int -> Alex Token
-attrEnd (p,_,_) _ = do
+attrEnd (p,_,_,_) _ = do
   alexSetStartCode 0
   return $ MkToken p TAttrEnd
 
@@ -202,23 +203,23 @@ semAction dot _ _ = do
   inp <- alexGetInput
   scan [] inp
   where
-    scan :: [Char] -> AlexInput -> Alex Token
+    scan :: [Byte] -> AlexInput -> Alex Token
     scan cs inp = do
-      case alexGetChar inp of
+      case alexGetByte inp of
         Just (c1,inp)
-          | c1 == dot ->
-          case alexGetChar inp of
+          | c1 == (head $ U.encodeChar dot) ->
+          case alexGetByte inp of
             Just (c2,inp)
-              | c2 == ')' -> done cs inp
+              | c2 == (head $ U.encodeChar ')') -> done cs inp
             Just (c2,inp) -> scan (c2:c1:cs) inp
             Nothing -> semError inp
         Just (c1,inp) -> scan (c1:cs) inp
         Nothing -> semError inp
 
-    done :: [Char] -> AlexInput -> Alex Token
-    done cs inp@(p,_,_) = do
+    done :: [Byte] -> AlexInput -> Alex Token
+    done cs inp@(p,_,_,_) = do
       alexSetInput inp
-      return $ MkToken p $ TSemAction $ reverse cs
+      return $ MkToken p $ TSemAction $ reverse $ U.decode cs
 
     semError :: AlexInput -> Alex Token
     semError inp = do
@@ -230,7 +231,7 @@ showPosn (AlexPn _ l c) = "[line:"++ show l ++" col:"++ show c ++"]"
 
 alexError' :: String -> Alex Token
 alexError' s = do
-  (p,_,inp) <- alexGetInput
+  (p,_,_,inp) <- alexGetInput
   alexError $ s ++" "++ showPosn p ++": "++
     (if (null inp)
       then " at EOF"
