@@ -137,8 +137,8 @@ data TokenTy =
 {- | Token Datatype -}
 data Token =
   MkToken
-    AlexPosn -- ^ token position information
-    TokenTy  -- ^ token
+    AlexPosn
+    TokenTy  {- ^ token position and type information -}
 
 -----------------------------------------------------------------------------
 
